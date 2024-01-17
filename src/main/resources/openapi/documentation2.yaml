@@ -1,0 +1,34 @@
+openapi: "3.0.3"
+info:
+  title: "ingrid_api API"
+  description: "ingrid_api API"
+  version: "1.0.0"
+servers:
+- url: "https://ingrid_api"
+paths:
+  /:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Hello World 2!"
+  /api2/test:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Test von API 2"

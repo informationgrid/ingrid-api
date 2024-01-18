@@ -7,6 +7,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 
 class ApplicationTest {
@@ -16,9 +17,9 @@ class ApplicationTest {
             configureRouting1()
             configureRouting2()
         }
-        client.get("/api1/").apply {
+        client.get("/").apply {
             assertEquals(HttpStatusCode.OK, status)
-            assertEquals("Hello World 1!", bodyAsText())
+            assertContains(bodyAsText(), "Available APIs:")
         }
     }
 }

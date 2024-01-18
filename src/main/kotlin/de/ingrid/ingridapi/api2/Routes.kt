@@ -9,13 +9,14 @@ import io.ktor.server.routing.*
 fun Application.configureRouting2() {
     routing {
         route("api2", { specId = "api2" }) {
-            get("/", {description="Introduction"}) {
-                call.respondText("Hello World 2!")
-            }
-            get("test", {description="Test api"}) {
+            get("test", { description = "Test api" }) {
                 call.respondText("Test von API 2 :-)")
             }
-            get("param/{arg1}") {
+            get("param/{arg1}", {
+                request {
+                    pathParameter<String>("arg1") { description = "This is the arg1-parameter" }
+                }
+            }) {
                 call.respondText("Param: ${call.parameters["arg1"]}")
             }
         }

@@ -13,6 +13,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
@@ -52,28 +53,35 @@ fun Application.base() {
         }
     }
     install(SwaggerUI) {
-        swagger {
-            swaggerUrl = "swagger-ui"
-            forwardRoot = true
-        }
         info {
-            title = "Example API"
             version = "latest"
-            description = "Example API for testing and demonstration purposes."
         }
         server {
             url = "http://0.0.0.0:8080"
             description = "Development Server"
         }
         spec("api1") {
+            swagger {
+                swaggerUrl = ""
+            }
             info {
                 title = "Example of API 1"
+                description = "Example API 1 for testing and demonstration purposes."
             }
         }
         spec("api2") {
+            swagger {
+                swaggerUrl = ""
+            }
             info {
                 title = "Example of API 2"
+                description = "Example API 2 for testing and demonstration purposes."
             }
+        }
+    }
+    routing {
+        route("/") {
+            get { call.respondText("Available APIs: api1, api2") }
         }
     }
 }

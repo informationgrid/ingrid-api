@@ -7,14 +7,11 @@ import io.ktor.server.routing.*
 import org.koin.ktor.ext.inject
 
 fun Application.configureRouting1() {
-    
+
     val service by inject<Api1Service>()
-    
+
     routing {
         route("api1", { specId = "api1" }) {
-            get("/") {
-                call.respondText("Hello World 1!")
-            }
 
             get("test") {
                 call.respondText("Test von API 1 :-)")

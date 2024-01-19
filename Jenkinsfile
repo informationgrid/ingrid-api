@@ -32,7 +32,7 @@ pipeline {
                 DOCKER_REGISTRY_CREDS = credentials('docker-registry-wemove')
             }
             steps {
-                sh './gradlew publishImage'
+                sh './gradlew -Djib.console=plain publishImage'
             }
         }
     }

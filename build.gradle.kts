@@ -26,8 +26,8 @@ ktor {
     docker {
         jreVersion.set(JavaVersion.VERSION_17)
         
-        val tag = if (!System.getenv("branch_name").isNullOrEmpty())
-            (if (System.getenv("branch_name") == "develop") "latest" else System.getenv("branch_name")).replace("/", "-")
+        val tag = if (!System.getenv("BRANCH_NAME").isNullOrEmpty())
+            (if (System.getenv("BRANCH_NAME") == "develop") "latest" else System.getenv("BRANCH_NAME")).replace("/", "-")
         else
             "???"
 

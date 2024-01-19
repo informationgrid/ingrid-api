@@ -1,3 +1,5 @@
+import io.ktor.plugin.features.*
+
 val ktor_version: String by project
 val kotlin_version: String by project
 val koin_version: String by project
@@ -22,8 +24,15 @@ application {
 ktor {
     docker {
         jreVersion.set(JavaVersion.VERSION_17)
+        externalRegistry.set(
+            DockerImageRegistry.externalRegistry(
+                providers.environmentVariable("DOCKER_REGISTRY_CREDS_USR"),
+                providers.environmentVariable("DOCKER_REGISTRY_CREDS_PSW"),
+                provider { "docker-registry.wemove.com/ingrid-api" }
+            )
+        )
         localImageName.set("docker-registry.wemove.com/ingrid-api")
-        imageTag.set("0.0.1")
+//        imageTag.set("0.0.1")
     }
 }
 

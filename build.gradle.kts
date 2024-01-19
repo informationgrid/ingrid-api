@@ -5,6 +5,7 @@ val logback_version: String by project
 
 plugins {
     kotlin("jvm") version "1.9.22"
+    kotlin("plugin.serialization") version "1.9.22"
     id("io.ktor.plugin") version "2.3.7"
 }
 
@@ -28,6 +29,11 @@ ktor {
 
 repositories {
     mavenCentral()
+    maven("https://maven.tryformation.com/releases") {
+        content {
+            includeGroup("com.jillesvangurp")
+        }
+    }
 }
 
 dependencies {
@@ -50,6 +56,9 @@ dependencies {
     
     // swagger
     implementation("io.github.smiley4:ktor-swagger-ui:2.7.4")
+    
+    // elasticsearch-client
+    implementation("com.jillesvangurp:search-client:2.1.13")
 
     // dependency injection
     implementation("io.insert-koin:koin-ktor:$koin_version")

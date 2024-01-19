@@ -3,6 +3,7 @@ package de.ingrid.ingridapi
 import de.ingrid.ingridapi.api1.Api1Service
 import de.ingrid.ingridapi.api1.configureRouting1
 import de.ingrid.ingridapi.api2.configureRouting2
+import de.ingrid.ingridapi.core.services.ElasticsearchService
 import io.github.smiley4.ktorswaggerui.SwaggerUI
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -14,7 +15,6 @@ import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
@@ -23,7 +23,8 @@ import org.koin.logger.slf4jLogger
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 val appModule = module {
-    singleOf(::Api1Service)
+    single { Api1Service() }
+    single { ElasticsearchService() }
 }
 
 fun Application.base() {

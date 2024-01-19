@@ -2,6 +2,7 @@ package de.ingrid.ingridapi
 
 import de.ingrid.ingridapi.api1.Api1Service
 import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
 import org.koin.test.KoinTest
 import org.koin.test.inject
 import kotlin.test.Test
@@ -13,6 +14,7 @@ class CheckModulesTest : KoinTest {
 
     @Test
     fun koinTest() {
+        stopKoin()
         startKoin {
             modules(appModule)
             assertEquals(3, api1Service.getList().size)

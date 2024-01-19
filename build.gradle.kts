@@ -26,8 +26,8 @@ ktor {
         jreVersion.set(JavaVersion.VERSION_17)
         externalRegistry.set(
             DockerImageRegistry.externalRegistry(
-                providers.environmentVariable("DOCKER_REGISTRY_CREDS_USR"),
-                providers.environmentVariable("DOCKER_REGISTRY_CREDS_PSW"),
+                providers.environmentVariable("REGISTRY_USER"),
+                providers.environmentVariable("REGISTRY_PWD"),
                 provider { "docker-registry.wemove.com/ingrid-api" }
             )
         )

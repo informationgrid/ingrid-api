@@ -1,3 +1,4 @@
+import fr.brouillard.oss.gradle.plugins.JGitverPluginExtensionBranchPolicy
 import io.ktor.plugin.features.*
 
 val ktor_version: String by project
@@ -9,10 +10,10 @@ plugins {
     kotlin("jvm") version "1.9.22"
     kotlin("plugin.serialization") version "1.9.22"
     id("io.ktor.plugin") version "2.3.7"
+    id("fr.brouillard.oss.gradle.jgitver") version "0.9.1"
 }
 
 group = "de.ingrid.ingridapi"
-version = "0.0.1"
 
 application {
     mainClass.set("io.ktor.server.netty.EngineMain")
@@ -24,16 +25,34 @@ application {
 ktor {
     docker {
         jreVersion.set(JavaVersion.VERSION_17)
+        
+        val tag = if (!System.getenv("branch_name").isNullOrEmpty())
+            (if (System.getenv("branch_name") == "develop") "latest" else System.getenv("branch_name")).replace("/", "-")
+        else
+            "???"
+
         externalRegistry.set(
             DockerImageRegistry.externalRegistry(
-                providers.environmentVariable("REGISTRY_USER"),
-                providers.environmentVariable("REGISTRY_PWD"),
+                providers.environmentVariable("DOCKER_REGISTRY_CREDS_USR"),
+                providers.environmentVariable("DOCKER_REGISTRY_CREDS_PSW"),
                 provider { "docker-registry.wemove.com/ingrid-api" }
             )
         )
         localImageName.set("docker-registry.wemove.com/ingrid-api")
-//        imageTag.set("0.0.1")
+        imageTag.set(tag)
     }
+}
+
+jgitver {
+
+    policy(closureOf<JGitverPluginExtensionBranchPolicy> {
+        pattern = "([main|develop|support].*)"
+        transformations = listOf("IGNORE")
+    })
+    policy(closureOf<JGitverPluginExtensionBranchPolicy> {
+        pattern = "(\\d+\\.\\d+\\.\\d+)"
+        transformations = listOf("IGNORE")
+    })
 }
 
 repositories {
@@ -58,14 +77,14 @@ dependencies {
     implementation("io.ktor:ktor-server-compression-jvm:2.3.7")
     implementation("io.ktor:ktor-server-host-common-jvm:2.3.7")
     implementation("io.ktor:ktor-server-status-pages-jvm:2.3.7")
-    
+
     // support JSON export
     implementation("io.ktor:ktor-server-content-negotiation")
     implementation("io.ktor:ktor-serialization-kotlinx-json")
-    
+
     // swagger
     implementation("io.github.smiley4:ktor-swagger-ui:2.7.4")
-    
+
     // elasticsearch-client
     implementation("com.jillesvangurp:search-client:2.1.13")
 
@@ -75,7 +94,7 @@ dependencies {
     testImplementation("io.insert-koin:koin-test:$koin_version")
 
     implementation("ch.qos.logback:logback-classic:$logback_version")
-    
+
     // tests
     testImplementation("io.ktor:ktor-server-tests-jvm")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")

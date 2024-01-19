@@ -32,7 +32,7 @@ pipeline {
                 DOCKER_REGISTRY_CREDS = credentials('docker-registry-wemove')
             }
             steps {
-                sh("REGISTRY_USER=$DOCKER_REGISTRY_CREDS_USR REGISTRY_PWD=$DOCKER_REGISTRY_CREDS_PSW ./gradlew publishImage")
+                sh './gradlew publishImage'
             }
         }
     }

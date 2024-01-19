@@ -25,11 +25,17 @@ application {
 ktor {
     docker {
         jreVersion.set(JavaVersion.VERSION_17)
-        
-        val tag = if (!System.getenv("BRANCH_NAME").isNullOrEmpty())
-            (if (System.getenv("BRANCH_NAME") == "main") "latest" else System.getenv("BRANCH_NAME")).replace("/", "-")
-        else
+
+        val branchName = System.getenv("BRANCH_NAME").orEmpty()
+        val tagName = System.getenv("TAG_NAME").orEmpty()
+
+        val tag = if (tagName.isNotEmpty()) {
+            tagName
+        } else if (branchName.isNotEmpty()) {
+            if (branchName == "main") "latest" else branchName.replace("/", "-")
+        } else {
             "???"
+        }
 
         externalRegistry.set(
             DockerImageRegistry.externalRegistry(

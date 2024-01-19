@@ -27,7 +27,7 @@ ktor {
         jreVersion.set(JavaVersion.VERSION_17)
         
         val tag = if (!System.getenv("BRANCH_NAME").isNullOrEmpty())
-            (if (System.getenv("BRANCH_NAME") == "develop") "latest" else System.getenv("BRANCH_NAME")).replace("/", "-")
+            (if (System.getenv("BRANCH_NAME") == "main") "latest" else System.getenv("BRANCH_NAME")).replace("/", "-")
         else
             "???"
 

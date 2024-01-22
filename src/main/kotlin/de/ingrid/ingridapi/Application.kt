@@ -12,6 +12,7 @@ import io.ktor.server.netty.*
 import io.ktor.server.plugins.compression.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.plugins.forwardedheaders.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -44,6 +45,8 @@ fun Application.base() {
         allowHeader(HttpHeaders.ContentType)
         anyHost()
     }
+    install(ForwardedHeaders) // WARNING: for security, do not include this if not behind a reverse proxy
+    install(XForwardedHeaders) // WARNING: for security, do not include this if not behind a reverse proxy
     install(StatusPages) {
         status(HttpStatusCode.NotFound) { call, status ->
             call.respondText(text = "404: This Page Was Not Found", status = status)

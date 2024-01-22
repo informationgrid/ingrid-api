@@ -80,9 +80,11 @@ dependencies {
     implementation("io.ktor:ktor-server-cors")
     implementation("io.ktor:ktor-server-compression")
     implementation("io.ktor:ktor-server-status-pages")
-    implementation("io.ktor:ktor-server-compression-jvm:2.3.7")
-    implementation("io.ktor:ktor-server-host-common-jvm:2.3.7")
-    implementation("io.ktor:ktor-server-status-pages-jvm:2.3.7")
+    implementation("io.ktor:ktor-server-compression-jvm")
+    implementation("io.ktor:ktor-server-host-common-jvm")
+    implementation("io.ktor:ktor-server-status-pages-jvm")
+    implementation("io.ktor:ktor-server-forwarded-header")
+    implementation("io.ktor:ktor-server-forwarded-header-jvm")
 
     // support JSON export
     implementation("io.ktor:ktor-server-content-negotiation")

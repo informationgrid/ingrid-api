@@ -60,10 +60,10 @@ fun Application.base() {
         info {
             version = "latest"
         }
-        server {
-            url = "http://0.0.0.0:8080"
-            description = "Development Server"
-        }
+//        server {
+//            url = "http://0.0.0.0:8080"
+//            description = "Development Server"
+//        }
         spec("api1") {
             swagger {
                 swaggerUrl = ""

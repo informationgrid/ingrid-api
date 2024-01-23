@@ -24,13 +24,25 @@ import org.koin.logger.slf4jLogger
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 val appModule = module {
+
     single { Api1Service() }
-    single { ElasticsearchService() }
+    single {
+        ElasticsearchService(getProperty("elasticHost"), getProperty("elasticPort"))
+    }
 }
 
 fun Application.base() {
+    val elasticHost = environment.config.property("ktor.elasticsearch.host").getString()
+    val elasticPort = environment.config.property("ktor.elasticsearch.port").getString().toInt()
+
     install(Koin) {
         slf4jLogger()
+        properties(
+            mapOf(
+                "elasticHost" to elasticHost,
+                "elasticPort" to elasticPort
+            )
+        )
         modules(appModule)
     }
     install(ContentNegotiation) {

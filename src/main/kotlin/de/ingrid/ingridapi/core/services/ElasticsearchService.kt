@@ -11,17 +11,20 @@ data class TestDocument(
 )
 
 
-class ElasticsearchService {
+class ElasticsearchService(host: String, port: Int) {
 
-
-    internal val log = KtorSimpleLogger("de.ingrid.ingridapi.core.services.ElasticsearchService")
+    private val log = KtorSimpleLogger("de.ingrid.ingridapi.core.services.ElasticsearchService")
     private val client = SearchClient(
-        KtorRestClient(host = "localhost", port = 9200)
+        KtorRestClient(host = host, port = port)
     )
 
+    init {
+        log.info("Elastic Host: $host:$port")
+    }
+
     suspend fun search(searchQuery: SearchDSL? = null): SearchResponse.Hits? {
-        val results = if (searchQuery == null) client.search("ingrid_cat")
-        else client.search("ingrid_cat", searchQuery)
+        val results = if (searchQuery == null) client.search("")
+        else client.search("", searchQuery)
 
         log.debug("found ${results.total} hits")
         results

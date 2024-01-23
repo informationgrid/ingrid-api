@@ -8,6 +8,9 @@ ktor:
       - de.ingrid.ingridapi.ApplicationKt.module2
   deployment:
     port: 8080
+    watch: 
+      - classes
+      - resources
   elasticsearch:
     host: "${ES_HOST}:localhost"
     port: "${ES_PORT}:9200"

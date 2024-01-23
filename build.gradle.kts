@@ -73,8 +73,6 @@ repositories {
 dependencies {
     // ktor
     implementation("io.ktor:ktor-server-core-jvm")
-    implementation("io.ktor:ktor-server-openapi")
-    implementation("io.ktor:ktor-server-swagger-jvm")
     implementation("io.ktor:ktor-server-netty-jvm")
     implementation("io.ktor:ktor-server-config-yaml")
     implementation("io.ktor:ktor-server-cors")

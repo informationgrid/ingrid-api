@@ -12,5 +12,5 @@ ktor:
       - classes
       - resources
   elasticsearch:
-    host: "${ES_HOST}:localhost"
-    port: "${ES_PORT}:9200"
+    host: "$ES_HOST:localhost"
+    port: "$ES_PORT:9200"

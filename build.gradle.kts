@@ -9,7 +9,7 @@ val logback_version: String by project
 plugins {
     kotlin("jvm") version "1.9.22"
     kotlin("plugin.serialization") version "1.9.22"
-    id("io.ktor.plugin") version "2.3.7"
+    id("io.ktor.plugin") version "2.3.8"
     id("fr.brouillard.oss.gradle.jgitver") version "0.9.1"
 }
 
@@ -92,7 +92,7 @@ dependencies {
     implementation("io.github.smiley4:ktor-swagger-ui:2.7.4")
 
     // elasticsearch-client
-    implementation("com.jillesvangurp:search-client:2.1.13")
+    implementation("com.jillesvangurp:search-client:2.1.20")
 
     // dependency injection
     implementation("io.insert-koin:koin-ktor:$koin_version")

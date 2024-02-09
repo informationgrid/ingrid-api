@@ -1,7 +1,6 @@
 package de.ingrid.ingridapi
 
-import de.ingrid.ingridapi.api1.Api1Service
-import de.ingrid.ingridapi.api1.configureRouting1
+import de.ingrid.ingridapi.portal.configureRouting1
 import de.ingrid.ingridapi.api2.configureRouting2
 import de.ingrid.ingridapi.core.services.ElasticsearchService
 import io.github.smiley4.ktorswaggerui.SwaggerUI
@@ -25,7 +24,6 @@ fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 val appModule = module {
 
-    single { Api1Service() }
     single {
         ElasticsearchService(getProperty("elasticHost"), getProperty("elasticPort"))
     }
@@ -76,15 +74,16 @@ fun Application.base() {
 //            url = "http://0.0.0.0:8080"
 //            description = "Development Server"
 //        }
-        spec("api1") {
+        spec("portal") {
             swagger {
                 swaggerUrl = ""
             }
             info {
-                title = "Example of API 1"
+                title = "Portal API"
                 description = "Example API 1 for testing and demonstration purposes."
             }
         }
+/*
         spec("api2") {
             swagger {
                 swaggerUrl = ""
@@ -94,15 +93,16 @@ fun Application.base() {
                 description = "Example API 2 for testing and demonstration purposes."
             }
         }
+*/
     }
     routing {
         route("/") {
-            get { call.respondText("Available APIs: api1, api2") }
+            get { call.respondText("Available APIs: portal") }
         }
     }
 }
 
-fun Application.module1() {
+fun Application.portal() {
     configureRouting1()
 }
 

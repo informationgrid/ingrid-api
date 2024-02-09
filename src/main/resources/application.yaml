@@ -4,8 +4,8 @@ ktor:
   application:
     modules: 
       - de.ingrid.ingridapi.ApplicationKt.base
-      - de.ingrid.ingridapi.ApplicationKt.module1
-      - de.ingrid.ingridapi.ApplicationKt.module2
+      - de.ingrid.ingridapi.ApplicationKt.portal
+#      - de.ingrid.ingridapi.ApplicationKt.module2
   deployment:
     port: 8080
     watch: 

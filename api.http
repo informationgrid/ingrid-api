@@ -1,0 +1,11 @@
+POST localhost:8080/portal/search
+Content-Type: application/json
+
+{
+  "query": {
+    "query_string": {
+      "query": "test",
+      "default_field": "content"
+    }
+  }
+}

@@ -1,7 +1,7 @@
 package de.ingrid.ingridapi.core.services
 
 import com.jillesvangurp.ktsearch.*
-import com.jillesvangurp.searchdsls.querydsl.SearchDSL
+import com.jillesvangurp.searchdsls.querydsl.*
 import io.ktor.util.logging.*
 import kotlinx.serialization.Serializable
 
@@ -20,6 +20,10 @@ class ElasticsearchService(host: String, port: Int) {
 
     init {
         log.info("Elastic Host: $host:$port")
+    }
+    
+    suspend fun search(rawQuery: String): SearchResponse.Hits? {
+        return client.search("ingrid", rawJson = rawQuery ).hits
     }
 
     suspend fun search(searchQuery: SearchDSL? = null): SearchResponse.Hits? {

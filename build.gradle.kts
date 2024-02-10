@@ -107,6 +107,7 @@ dependencies {
     testImplementation("io.insert-koin:koin-test:$koin_version")
 
     implementation("ch.qos.logback:logback-classic:$logback_version")
+    implementation("io.github.oshai:kotlin-logging-jvm:5.1.0")
 
     // tests
     testImplementation("io.ktor:ktor-server-tests-jvm")

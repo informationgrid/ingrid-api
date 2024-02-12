@@ -7,5 +7,17 @@ Content-Type: application/json
       "query": "test",
       "default_field": "content"
     }
+  },
+  "fields": [
+    "title", "t01_object.obj_id"
+  ],
+  "_source": false,
+  "size": 1,
+  "aggs": {
+    "my-agg-name": {
+      "terms": {
+        "field": "iPlugId"
+      }
+    }
   }
 }

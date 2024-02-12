@@ -11,6 +11,7 @@ plugins {
     kotlin("plugin.serialization") version "1.9.22"
     id("io.ktor.plugin") version "2.3.8"
     id("fr.brouillard.oss.gradle.jgitver") version "0.9.1"
+    id("com.diffplug.spotless") version "6.25.0"
 }
 
 group = "de.ingrid.ingridapi"
@@ -59,6 +60,12 @@ jgitver {
         pattern = "(\\d+\\.\\d+\\.\\d+)"
         transformations = listOf("IGNORE")
     })
+}
+
+spotless {
+    kotlin { 
+        ktfmt().kotlinlangStyle()
+    }
 }
 
 repositories {

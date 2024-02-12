@@ -15,7 +15,6 @@ fun Application.configurePortalRouting() {
 
     routing {
         route("portal", { specId = "portal" }) {
-
             post("search", { request { body<String>() } }) {
                 call.respond(elastic.search(call.receiveText())?.hits ?: emptyList())
             }

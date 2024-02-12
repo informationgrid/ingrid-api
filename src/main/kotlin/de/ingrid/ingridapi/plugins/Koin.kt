@@ -12,12 +12,7 @@ fun Application.configureKoin() {
 
     install(Koin) {
         slf4jLogger()
-        properties(
-            mapOf(
-                "elasticHost" to elasticHost,
-                "elasticPort" to elasticPort
-            )
-        )
+        properties(mapOf("elasticHost" to elasticHost, "elasticPort" to elasticPort))
         modules(appModule)
     }
 }

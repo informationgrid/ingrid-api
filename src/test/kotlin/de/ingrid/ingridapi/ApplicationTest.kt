@@ -1,7 +1,7 @@
 package de.ingrid.ingridapi
 
-import de.ingrid.ingridapi.portal.configurePortalRouting
 import de.ingrid.ingridapi.api2.configureRouting2
+import de.ingrid.ingridapi.portal.configurePortalRouting
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*

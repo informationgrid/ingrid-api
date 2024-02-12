@@ -17,17 +17,18 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
 
-
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.base() {
     configureKoin()
     install(ContentNegotiation) {
-        json(Json {
-            prettyPrint = true
-//            isLenient = true // allow unquoated strings (be more liberal)
-//            explicitNulls = true // 
-        })
+        json(
+            Json {
+                prettyPrint = true
+                //            isLenient = true // allow unquoated strings (be more liberal)
+                //            explicitNulls = true //
+            }
+        )
     }
     install(Compression)
     install(CORS) {
@@ -38,8 +39,11 @@ fun Application.base() {
         allowHeader(HttpHeaders.ContentType)
         anyHost()
     }
-    install(ForwardedHeaders) // WARNING: for security, do not include this if not behind a reverse proxy
-    install(XForwardedHeaders) // WARNING: for security, do not include this if not behind a reverse proxy
+
+    // WARNING: for security, do not include this if not behind a reverse proxy
+    install(ForwardedHeaders)
+    install(XForwardedHeaders)
+
     install(StatusPages) {
         status(HttpStatusCode.NotFound) { call, status ->
             call.respondText(text = "404: This Page Was Not Found", status = status)
@@ -50,39 +54,16 @@ fun Application.base() {
         }
     }
     install(SwaggerUI) {
-        info {
-            version = "latest"
-        }
-//        server {
-//            url = "http://0.0.0.0:8080"
-//            description = "Development Server"
-//        }
+        info { version = "latest" }
         spec("portal") {
-            swagger {
-                swaggerUrl = ""
-            }
+            swagger { swaggerUrl = "" }
             info {
                 title = "Portal API"
                 description = "Example API 1 for testing and demonstration purposes."
             }
         }
-        /*
-                spec("api2") {
-                    swagger {
-                        swaggerUrl = ""
-                    }
-                    info {
-                        title = "Example of API 2"
-                        description = "Example API 2 for testing and demonstration purposes."
-                    }
-                }
-        */
     }
-    routing {
-        route("/") {
-            get { call.respondText("Available APIs: portal") }
-        }
-    }
+    routing { route("/") { get { call.respondText("Available APIs: portal") } } }
 }
 
 fun Application.portal() {

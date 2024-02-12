@@ -1,50 +1,30 @@
 package de.ingrid.ingridapi.core.services
 
 import com.jillesvangurp.ktsearch.*
-import com.jillesvangurp.searchdsls.querydsl.SearchDSL
-import io.ktor.util.logging.*
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class TestDocument(
-    val title: String,
-)
-
+import com.jillesvangurp.searchdsls.querydsl.term
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import mu.KotlinLogging.logger
 
 class ElasticsearchService(host: String, port: Int) {
 
-    private val log = KtorSimpleLogger("de.ingrid.ingridapi.core.services.ElasticsearchService")
-    private val client = SearchClient(
-        KtorRestClient(host = host, port = port)
-    )
+    private val log = logger {}
+    private val client = SearchClient(KtorRestClient(host = host, port = port))
 
     init {
         log.info("Elastic Host: $host:$port")
     }
 
     suspend fun search(rawQuery: String): SearchResponse.Hits? {
-        return client.search(getActiveIndices().joinToString(","), rawJson = rawQuery).hits
+        val indices =
+            getActiveIndices().joinToString(",").also { log.debug { "Searching in indices: $it" } }
+        return client.search(indices, rawJson = rawQuery).hits
     }
 
-    private fun getActiveIndices(): List<String> {
-        return listOf("ingrid")
-    }
-
-    suspend fun search(searchQuery: SearchDSL? = null): SearchResponse.Hits? {
-        val results = if (searchQuery == null) client.search("")
-        else client.search("", searchQuery)
-
-        log.debug("found ${results.total} hits")
-        results
-            // extension function that deserializes
-            // the hits using kotlinx.serialization
-            .parseHits<TestDocument>()
-            .forEach {
-                // we feel lucky
-                log.debug("doc: ${it.title}")
-            }
-        // you can also get the JsonObject if you don't
-        // have a model class
-        return results.hits
+    private suspend fun getActiveIndices(): List<String> {
+        return client
+            .search("ingrid_meta") { query = term("active", "true") }
+            .parseHits<JsonObject>()
+            .mapNotNull { it["linkedIndex"]?.jsonPrimitive?.content }
     }
 }

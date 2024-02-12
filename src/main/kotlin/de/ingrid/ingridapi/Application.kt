@@ -1,8 +1,8 @@
 package de.ingrid.ingridapi
 
-import de.ingrid.ingridapi.portal.configureRouting1
 import de.ingrid.ingridapi.api2.configureRouting2
-import de.ingrid.ingridapi.core.services.ElasticsearchService
+import de.ingrid.ingridapi.plugins.configureKoin
+import de.ingrid.ingridapi.portal.configurePortalRouting
 import io.github.smiley4.ktorswaggerui.SwaggerUI
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -15,36 +15,19 @@ import io.ktor.server.plugins.forwardedheaders.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import org.koin.dsl.module
-import org.koin.ktor.plugin.Koin
-import org.koin.logger.slf4jLogger
+import kotlinx.serialization.json.Json
 
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
-val appModule = module {
-
-    single {
-        ElasticsearchService(getProperty("elasticHost"), getProperty("elasticPort"))
-    }
-}
-
 fun Application.base() {
-    val elasticHost = environment.config.property("ktor.elasticsearch.host").getString()
-    val elasticPort = environment.config.property("ktor.elasticsearch.port").getString().toInt()
-
-    install(Koin) {
-        slf4jLogger()
-        properties(
-            mapOf(
-                "elasticHost" to elasticHost,
-                "elasticPort" to elasticPort
-            )
-        )
-        modules(appModule)
-    }
+    configureKoin()
     install(ContentNegotiation) {
-        json()
+        json(Json {
+            prettyPrint = true
+//            isLenient = true // allow unquoated strings (be more liberal)
+//            explicitNulls = true // 
+        })
     }
     install(Compression)
     install(CORS) {
@@ -83,17 +66,17 @@ fun Application.base() {
                 description = "Example API 1 for testing and demonstration purposes."
             }
         }
-/*
-        spec("api2") {
-            swagger {
-                swaggerUrl = ""
-            }
-            info {
-                title = "Example of API 2"
-                description = "Example API 2 for testing and demonstration purposes."
-            }
-        }
-*/
+        /*
+                spec("api2") {
+                    swagger {
+                        swaggerUrl = ""
+                    }
+                    info {
+                        title = "Example of API 2"
+                        description = "Example API 2 for testing and demonstration purposes."
+                    }
+                }
+        */
     }
     routing {
         route("/") {
@@ -103,7 +86,7 @@ fun Application.base() {
 }
 
 fun Application.portal() {
-    configureRouting1()
+    configurePortalRouting()
 }
 
 fun Application.module2() {

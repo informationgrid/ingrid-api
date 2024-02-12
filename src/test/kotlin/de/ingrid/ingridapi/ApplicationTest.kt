@@ -1,6 +1,6 @@
 package de.ingrid.ingridapi
 
-import de.ingrid.ingridapi.portal.configureRouting1
+import de.ingrid.ingridapi.portal.configurePortalRouting
 import de.ingrid.ingridapi.api2.configureRouting2
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -14,7 +14,7 @@ class ApplicationTest {
     @Test
     fun testRoot() = testApplication {
         application {
-            configureRouting1()
+            configurePortalRouting()
             configureRouting2()
         }
         client.get("/").apply {

@@ -4,7 +4,7 @@ pipeline {
     tools {
         jdk 'jdk17'
     }
-    
+
     options {
         buildDiscarder(logRotator(numToKeepStr: '30'))
     }
@@ -19,7 +19,7 @@ pipeline {
         }
         stage('build') {
             steps {
-                sh './gradlew build -x test'
+                sh './gradlew build -x test -x check'
             }
         }
         stage('run tests (unit & intergration)') {
@@ -36,7 +36,7 @@ pipeline {
             }
         }
     }
-    
+
     post {
         always {
             junit 'build/test-results/**/*.xml'

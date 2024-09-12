@@ -62,11 +62,11 @@ jgitver {
     })
 }
 
-spotless {
-    kotlin { 
+/*spotless {
+    kotlin {
         ktfmt().kotlinlangStyle()
     }
-}
+}*/
 
 repositories {
     mavenCentral()

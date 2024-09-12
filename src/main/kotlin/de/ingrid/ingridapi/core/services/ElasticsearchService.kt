@@ -7,10 +7,10 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging.logger
 
-class ElasticsearchService(host: String, port: Int) {
+class ElasticsearchService(host: String, port: Int, https: Boolean, user: String?, password: String?) {
 
     private val log = logger {}
-    private val client = SearchClient(KtorRestClient(host = host, port = port))
+    private val client = SearchClient(KtorRestClient(host = host, port = port, https = https, user = user, password = password))
 
     init {
         log.info("Elastic Host: $host:$port")

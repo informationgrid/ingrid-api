@@ -2,15 +2,18 @@
 ktor:
   development: true
   application:
-    modules: 
+    modules:
       - de.ingrid.ingridapi.ApplicationKt.base
       - de.ingrid.ingridapi.ApplicationKt.portal
 #      - de.ingrid.ingridapi.ApplicationKt.module2
   deployment:
     port: 8080
-    watch: 
+    watch:
       - classes
       - resources
   elasticsearch:
     host: "$ES_HOST:localhost"
     port: "$ES_PORT:9200"
+    https: "$ES_HTTPS:false"
+    username: "$ES_USERNAME:"
+    password: "$ES_PASSWORD:"

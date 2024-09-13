@@ -1,24 +1,35 @@
 package de.ingrid.ingridapi.core.services
 
-import com.jillesvangurp.ktsearch.*
+import com.jillesvangurp.ktsearch.KtorRestClient
+import com.jillesvangurp.ktsearch.SearchClient
+import com.jillesvangurp.ktsearch.SearchResponse
+import com.jillesvangurp.ktsearch.parseHits
+import com.jillesvangurp.ktsearch.search
+import com.jillesvangurp.ktsearch.total
 import com.jillesvangurp.searchdsls.querydsl.term
+import de.ingrid.ingridapi.config.AppConfig
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging.logger
 
 class ElasticsearchService(
-    host: String,
-    port: Int,
-    https: Boolean,
-    user: String?,
-    password: String?,
+    config: AppConfig,
 ) {
     private val log = logger {}
-    private val client = SearchClient(KtorRestClient(host = host, port = port, https = https, user = user, password = password))
+    private val client =
+        SearchClient(
+            KtorRestClient(
+                host = config.elasticHost,
+                port = config.elasticPort,
+                https = config.elasticHttps,
+                user = config.elasticUsername,
+                password = config.elasticPassword,
+            ),
+        )
 
     init {
-        log.info("Elastic Host: $host:$port")
+        log.info("Elastic Host: ${config.elasticHost}:${config.elasticPort}")
     }
 
     suspend fun search(rawQuery: String): SearchResult {

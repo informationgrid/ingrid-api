@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:no-wildcard-imports", "PropertyName")
+
 import fr.brouillard.oss.gradle.plugins.JGitverPluginExtensionBranchPolicy
 import io.ktor.plugin.features.*
 
@@ -7,9 +9,9 @@ val koin_version: String by project
 val logback_version: String by project
 
 plugins {
-    kotlin("jvm") version "1.9.22"
-    kotlin("plugin.serialization") version "1.9.22"
-    id("io.ktor.plugin") version "2.3.8"
+    kotlin("jvm") version "1.9.25"
+    kotlin("plugin.serialization") version "1.9.25"
+    id("io.ktor.plugin") version "2.3.12"
     id("fr.brouillard.oss.gradle.jgitver") version "0.9.1"
     id("com.diffplug.spotless") version "6.25.0"
 }
@@ -23,27 +25,32 @@ application {
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
 }
 
+kotlin {
+    jvmToolchain(21)
+}
+
 ktor {
     docker {
-        jreVersion.set(JavaVersion.VERSION_17)
+        jreVersion.set(JavaVersion.VERSION_21)
 
         val branchName = System.getenv("BRANCH_NAME").orEmpty()
         val tagName = System.getenv("TAG_NAME").orEmpty()
 
-        val tag = if (tagName.isNotEmpty()) {
-            tagName
-        } else if (branchName.isNotEmpty()) {
-            if (branchName == "main") "latest" else branchName.replace("/", "-")
-        } else {
-            "???"
-        }
+        val tag =
+            if (tagName.isNotEmpty()) {
+                tagName
+            } else if (branchName.isNotEmpty()) {
+                if (branchName == "main") "latest" else branchName.replace("/", "-")
+            } else {
+                "???"
+            }
 
         externalRegistry.set(
             DockerImageRegistry.externalRegistry(
                 providers.environmentVariable("DOCKER_REGISTRY_CREDS_USR"),
                 providers.environmentVariable("DOCKER_REGISTRY_CREDS_PSW"),
-                provider { "docker-registry.wemove.com/ingrid-api" }
-            )
+                provider { "docker-registry.wemove.com/ingrid-api" },
+            ),
         )
         localImageName.set("docker-registry.wemove.com/ingrid-api")
         imageTag.set(tag)
@@ -52,14 +59,18 @@ ktor {
 
 jgitver {
 
-    policy(closureOf<JGitverPluginExtensionBranchPolicy> {
-        pattern = "([main|develop|support].*)"
-        transformations = listOf("IGNORE")
-    })
-    policy(closureOf<JGitverPluginExtensionBranchPolicy> {
-        pattern = "(\\d+\\.\\d+\\.\\d+)"
-        transformations = listOf("IGNORE")
-    })
+    policy(
+        closureOf<JGitverPluginExtensionBranchPolicy> {
+            pattern = "([main|develop|support].*)"
+            transformations = listOf("IGNORE")
+        },
+    )
+    policy(
+        closureOf<JGitverPluginExtensionBranchPolicy> {
+            pattern = "(\\d+\\.\\d+\\.\\d+)"
+            transformations = listOf("IGNORE")
+        },
+    )
 }
 
 /*spotless {

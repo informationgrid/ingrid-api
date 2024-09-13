@@ -27,7 +27,7 @@ fun Application.base() {
                 prettyPrint = true
                 //            isLenient = true // allow unquoated strings (be more liberal)
                 //            explicitNulls = true //
-            }
+            },
         )
     }
     install(Compression)

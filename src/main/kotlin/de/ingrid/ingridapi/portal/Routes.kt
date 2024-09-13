@@ -10,7 +10,6 @@ import io.ktor.server.routing.*
 import org.koin.ktor.ext.inject
 
 fun Application.configurePortalRouting() {
-
     val elastic by inject<ElasticsearchService>()
 
     routing {

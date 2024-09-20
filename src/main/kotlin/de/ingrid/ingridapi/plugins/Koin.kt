@@ -2,6 +2,7 @@ package de.ingrid.ingridapi.plugins
 
 import de.ingrid.ingridapi.config.AppConfig
 import de.ingrid.ingridapi.core.services.ElasticsearchService
+import de.ingrid.ingridapi.portal.services.CatalogService
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import org.koin.dsl.module
@@ -18,6 +19,7 @@ fun Application.configureKoin() {
 val appModule =
     module {
         single { AppConfig() }
+        single { CatalogService() }
         single(createdAtStart = true) {
             ElasticsearchService(get())
         }

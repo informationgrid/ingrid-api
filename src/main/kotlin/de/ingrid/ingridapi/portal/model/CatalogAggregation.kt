@@ -10,28 +10,29 @@ import kotlinx.serialization.json.jsonPrimitive
 
 @Serializable
 data class Source(
-    val dataSourceName: String,
-    private val partner: JsonElement,
-    private val datatype: JsonElement,
+    val dataSourceName: String? = null,
+    private val partner: JsonElement? = null,
+    private val datatype: JsonElement? = null,
 ) {
     fun getPartner(): List<String> =
         if (partner is JsonPrimitive) {
             listOf(partner.content)
         } else {
-            partner.jsonArray.map { it.jsonPrimitive.content }
+            partner?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
         }
 
     fun getDatatype(): List<String> =
         if (datatype is JsonPrimitive) {
             listOf(datatype.content)
         } else {
-            datatype.jsonArray.map { it.jsonPrimitive.content }
+            datatype?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
         }
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class Hit(
-    val _source: Source,
+    @JsonNames("_source") val source: Source,
 )
 
 @Serializable
@@ -52,7 +53,7 @@ data class JsonResponse(
     fun getSource(): Source? =
         info.hits.hits
             .firstOrNull()
-            ?._source
+            ?.source
 }
 
 @ExperimentalSerializationApi

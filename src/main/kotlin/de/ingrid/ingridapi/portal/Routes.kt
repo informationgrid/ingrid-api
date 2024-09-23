@@ -2,6 +2,7 @@ package de.ingrid.ingridapi.portal
 
 import de.ingrid.ingridapi.core.services.ElasticsearchService
 import de.ingrid.ingridapi.portal.services.CatalogService
+import io.github.smiley4.ktorswaggerui.dsl.get
 import io.github.smiley4.ktorswaggerui.dsl.post
 import io.github.smiley4.ktorswaggerui.dsl.route
 import io.ktor.http.HttpStatusCode
@@ -9,7 +10,6 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
-import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import org.koin.ktor.ext.inject
 
@@ -23,14 +23,26 @@ fun Application.configurePortalRouting() {
                 call.respond(elastic.search(call.receiveText()))
             }
 
-            get("catalogs") {
+            get("catalogs", {
+                description = "Get all connected catalogs which have at least one dataset"
+            }) {
                 val response = elastic.search(getCatalogsQuery)
 
                 val result = catalogService.convertCatalogsResponse(response)
                 call.respond(result.catalogs)
             }
 
-            get("catalogs/{id}/hierarchy{parent?}") {
+            get("catalogs/{id}/hierarchy{parent?}", {
+                description = "Get the hierarchical structure of the datasets of a catalog"
+                request {
+                    pathParameter<String>("id") {
+                        description = "The ID of the catalog which represents the index name"
+                    }
+                    queryParameter<String>("parent") {
+                        description = "The UUID of the parent dataset"
+                    }
+                }
+            }) {
                 val index = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                 val parentUuid = call.parameters["parent"] ?: ""
 

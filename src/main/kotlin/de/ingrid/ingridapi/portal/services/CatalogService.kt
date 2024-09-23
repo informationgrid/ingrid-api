@@ -27,7 +27,8 @@ class CatalogService {
         val name = source?.dataSourceName ?: "???"
         val partner = source?.getPartner() ?: emptyList()
         val isAddress = source?.getDatatype()?.any { it == "address" } ?: false
-        return Catalog(id, name, partner, isAddress)
+        val isMetadata = source?.getDatatype()?.any { it == "dsc_ecs" || it == "dsc_ecs_address" } ?: false
+        return Catalog(id, name, partner, isAddress, isMetadata)
     }
 
     @OptIn(ExperimentalSerializationApi::class)

@@ -13,4 +13,5 @@ data class Catalog(
     val name: String,
     val partner: List<String>,
     val isAddress: Boolean,
+    val isMetadata: Boolean,
 )

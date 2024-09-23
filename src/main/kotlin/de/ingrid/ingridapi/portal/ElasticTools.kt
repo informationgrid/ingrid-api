@@ -8,7 +8,9 @@ val getCatalogsQuery =
         "catalogs": {
           "terms": {
             "field": "_index",
-            "exclude": ["ingrid_meta"]
+            "exclude": ["ingrid_meta"],
+            "size": 100
+            
           },
           "aggs": {
             "info": {
@@ -34,6 +36,7 @@ fun getHierarchy(
     //language=JSON
     return """
         {
+          "size": 1000,
           "query": {
             "bool": {
               "filter": [

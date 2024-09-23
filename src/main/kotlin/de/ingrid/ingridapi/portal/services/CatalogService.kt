@@ -1,78 +1,43 @@
 package de.ingrid.ingridapi.portal.services
 
 import de.ingrid.ingridapi.core.services.SearchResult
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-
-@Serializable
-data class CatalogsResult(
-    val totalHits: Long,
-    val catalogs: List<Catalog>,
-)
-
-@Serializable
-data class Catalog(
-    val id: String,
-    val name: String,
-    val partner: List<String>,
-    val isAddress: Boolean,
-)
+import de.ingrid.ingridapi.portal.model.Catalog
+import de.ingrid.ingridapi.portal.model.CatalogsResult
+import de.ingrid.ingridapi.portal.model.HitSource
+import de.ingrid.ingridapi.portal.model.JsonResponse
+import de.ingrid.ingridapi.portal.model.ResponseHierarchy
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
 
 class CatalogService {
     fun convertCatalogsResponse(response: SearchResult): CatalogsResult {
+        val json = Json { ignoreUnknownKeys = true }
         val result =
-            getItems(response)
-                ?.mapNotNull { convertToCatalog(it.jsonObject) } ?: emptyList()
+            response
+                .getAggregationBuckets("catalogs")
+                ?.mapNotNull { convertToCatalog(json.decodeFromJsonElement<JsonResponse>(it)) } ?: emptyList()
 
         return CatalogsResult(result.size.toLong(), result)
     }
 
-    private fun convertToCatalog(json: JsonObject): Catalog {
-        val id = json["key"]?.jsonPrimitive?.content!!
-        val info =
-            json["info"]
-                ?.jsonObject
-                ?.get("hits")
-                ?.jsonObject
-                ?.get("hits")
-                ?.jsonArray
-                ?.get(0)
-                ?.jsonObject
-                ?.get("_source")
-        val name =
-            info
-                ?.jsonObject
-                ?.get("dataSourceName")
-                ?.jsonPrimitive
-                ?.content ?: "???"
-        val partner =
-            kotlin
-                .runCatching {
-                    info
-                        ?.jsonObject
-                        ?.get("partner")
-                        ?.jsonArray
-                        ?.map { it.jsonPrimitive.content } ?: emptyList()
-                }.getOrDefault(emptyList())
-        val isAddress =
-            kotlin
-                .runCatching {
-                    info
-                        ?.jsonObject
-                        ?.get("datatype")
-                        ?.jsonArray
-                        ?.any { it.jsonPrimitive.content == "address" } ?: false
-                }.getOrDefault(false)
+    private fun convertToCatalog(json: JsonResponse): Catalog {
+        val id = json.key
+        val source = json.getSource()
+        val name = source?.dataSourceName ?: "???"
+        val partner = source?.getPartner() ?: emptyList()
+        val isAddress = source?.getDatatype()?.any { it == "address" } ?: false
         return Catalog(id, name, partner, isAddress)
     }
 
-    private fun getItems(response: SearchResult) =
-        response.aggregations
-            ?.get("catalogs")
-            ?.jsonObject
-            ?.get("buckets")
-            ?.jsonArray
+    fun convertCatalogHierarchyResponse(response: SearchResult): List<ResponseHierarchy> {
+        val json = Json { ignoreUnknownKeys = true }
+        return response.hits.map {
+            val hit = json.decodeFromJsonElement<HitSource>(it.source!!)
+            ResponseHierarchy(
+                it.id,
+                hit.title,
+                hit.isFolder ?: false,
+            )
+        }
+    }
 }

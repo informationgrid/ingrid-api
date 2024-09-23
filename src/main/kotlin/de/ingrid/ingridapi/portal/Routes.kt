@@ -4,6 +4,7 @@ import de.ingrid.ingridapi.core.services.ElasticsearchService
 import de.ingrid.ingridapi.portal.services.CatalogService
 import io.github.smiley4.ktorswaggerui.dsl.post
 import io.github.smiley4.ktorswaggerui.dsl.route
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.request.receiveText
@@ -29,8 +30,13 @@ fun Application.configurePortalRouting() {
                 call.respond(result.catalogs)
             }
 
-            get("catalogs/{id}/hierarchy") {
-                call.respond("Meine Kataloge - Hierarchie: " + call.parameters["id"])
+            get("catalogs/{id}/hierarchy{parent?}") {
+                val index = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                val parentUuid = call.parameters["parent"] ?: ""
+
+                val response = elastic.search(getHierarchy(index, parentUuid))
+                val result = catalogService.convertCatalogHierarchyResponse(response)
+                call.respond(result)
             }
         }
     }

@@ -9,7 +9,10 @@ import com.jillesvangurp.ktsearch.total
 import com.jillesvangurp.searchdsls.querydsl.term
 import de.ingrid.ingridapi.config.AppConfig
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging.logger
 
@@ -57,4 +60,11 @@ data class SearchResult(
     val totalHits: Long,
     val hits: List<SearchResponse.Hit>,
     val aggregations: JsonObject? = null,
-)
+) {
+    fun getAggregationBuckets(agg: String): JsonArray? =
+        aggregations
+            ?.get(agg)
+            ?.jsonObject
+            ?.get("buckets")
+            ?.jsonArray
+}

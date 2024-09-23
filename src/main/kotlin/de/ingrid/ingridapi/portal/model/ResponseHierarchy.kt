@@ -5,5 +5,6 @@ import kotlinx.serialization.Serializable
 data class ResponseHierarchy(
     val uuid: String,
     val name: String,
+    val docType: String,
     val hasChildren: Boolean,
 )

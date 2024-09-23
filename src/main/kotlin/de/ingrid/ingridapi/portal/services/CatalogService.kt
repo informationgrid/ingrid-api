@@ -38,6 +38,7 @@ class CatalogService {
             ResponseHierarchy(
                 it.id,
                 hit.title,
+                hit.docType ?: "?",
                 hit.isFolder ?: false,
             )
         }

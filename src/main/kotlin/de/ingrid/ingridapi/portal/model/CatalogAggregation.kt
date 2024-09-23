@@ -61,4 +61,5 @@ data class JsonResponse(
 data class HitSource(
     val title: String,
     @JsonNames("isfolder") val isFolder: Boolean? = false,
+    @JsonNames("t01_object.obj_class") val docType: String? = null,
 )

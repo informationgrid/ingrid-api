@@ -32,7 +32,7 @@ fun Application.configurePortalRouting() {
                 call.respond(result.catalogs)
             }
 
-            get("catalogs/{id}/hierarchy{parent?}", {
+            get("catalogs/{id}/hierarchy", {
                 description = "Get the hierarchical structure of the datasets of a catalog"
                 request {
                     pathParameter<String>("id") {

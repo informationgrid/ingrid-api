@@ -7,4 +7,5 @@ data class ResponseHierarchy(
     val name: String,
     val docType: String,
     val hasChildren: Boolean,
+    val isAddress: Boolean,
 )

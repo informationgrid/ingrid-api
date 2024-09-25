@@ -62,4 +62,12 @@ data class HitSource(
     val title: String,
     @JsonNames("isfolder") val isFolder: Boolean? = false,
     @JsonNames("t01_object.obj_class") val docType: String? = null,
-)
+    private val datatype: JsonElement? = null,
+) {
+    fun getDatatype(): List<String> =
+        if (datatype is JsonPrimitive) {
+            listOf(datatype.content)
+        } else {
+            datatype?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
+        }
+}

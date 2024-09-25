@@ -32,9 +32,10 @@ val getCatalogsQuery =
 fun getHierarchy(
     index: String,
     parent: String? = null,
-): String {
-    //language=JSON
-    return """
+): String =
+    if (parent == null) {
+        //language=JSON
+        """
         {
           "size": 1000,
           "query": {
@@ -46,13 +47,65 @@ fun getHierarchy(
                   }
                 }
               ],
-              "must": {
-                "term": {
-                  "parent.object_node.obj_uuid": "$parent"
+              "should": [
+                {
+                  "term": {
+                    "parent.object_node.obj_uuid": ""
+                  }
+                },
+                {
+                  "term": {
+                    "parent.address_node.addr_uuid": ""
+                  }
+                },
+                {
+                  "bool": {
+                    "must_not": [
+                      {
+                        "exists": {
+                          "field": "parent.object_node.obj_uuid"
+                        }
+                      },
+                      {
+                        "exists": {
+                          "field": "parent.address_node.addr_uuid"
+                        }
+                      }
+                    ]
+                  }
                 }
-              }
+              ]
             }
           }
         } 
         """.trimIndent()
-}
+    } else {
+        """
+        {
+          "size": 1000,
+          "query": {
+            "bool": {
+              "filter": [
+                {
+                  "term": {
+                    "_index": "$index"
+                  }
+                }
+              ],
+              "should": [
+                {
+                  "term": {
+                    "parent.object_node.obj_uuid": "$parent"
+                  }
+                },
+                {
+                  "term": {
+                    "parent.address_node.addr_uuid": "$parent"
+                  }
+                }
+              ]
+            }
+          }
+        }
+        """.trimIndent()
+    }

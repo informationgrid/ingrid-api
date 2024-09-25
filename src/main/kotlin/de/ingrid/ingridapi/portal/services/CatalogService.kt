@@ -41,6 +41,7 @@ class CatalogService {
                 hit.title,
                 hit.docType ?: "?",
                 hit.isFolder ?: false,
+                hit.getDatatype().any { it == "address" },
             )
         }
     }

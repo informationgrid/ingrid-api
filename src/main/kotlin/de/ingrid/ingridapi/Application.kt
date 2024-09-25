@@ -9,15 +9,10 @@ import de.ingrid.ingridapi.plugins.configureStatusPages
 import de.ingrid.ingridapi.plugins.configureSwagger
 import de.ingrid.ingridapi.portal.configurePortalRouting
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.netty.EngineMain
 import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
-import io.ktor.server.response.respondText
-import io.ktor.server.routing.get
-import io.ktor.server.routing.route
-import io.ktor.server.routing.routing
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
@@ -33,7 +28,7 @@ fun Application.base() {
 
     configureStatusPages()
     configureSwagger()
-    routing { route("/") { get { call.respondText("Available APIs: portal") } } }
+    configureBaseRoutes()
 }
 
 fun Application.portal() {

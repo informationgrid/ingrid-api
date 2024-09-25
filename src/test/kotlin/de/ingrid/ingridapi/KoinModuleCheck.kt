@@ -1,20 +1,13 @@
 package de.ingrid.ingridapi
 
-import kotlin.test.Test
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
+import de.ingrid.ingridapi.plugins.appModule
 import org.koin.test.KoinTest
+import org.koin.test.verify.verify
+import kotlin.test.Test
 
-class CheckModulesTest : KoinTest {
-
-    //    private val api1Service by inject<Api1Service>()
-
+class KoinModuleCheck : KoinTest {
     @Test
     fun koinTest() {
-        stopKoin()
-        startKoin {
-            //            modules(appModule)
-            //            assertEquals(3, api1Service.getList().size)
-        }
+        appModule.verify()
     }
 }

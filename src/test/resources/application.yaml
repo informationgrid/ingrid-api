@@ -1,0 +1,9 @@
+
+ktor:
+  development: true
+  elasticsearch:
+    host: "localhost"
+    port: "9200"
+    https: "false"
+    username: ""
+    password: ""

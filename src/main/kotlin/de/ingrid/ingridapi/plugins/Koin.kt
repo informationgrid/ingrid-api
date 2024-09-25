@@ -20,7 +20,5 @@ val appModule =
     module {
         single { AppConfig() }
         single { CatalogService() }
-        single(createdAtStart = true) {
-            ElasticsearchService(get())
-        }
+        single { ElasticsearchService(get()) }
     }

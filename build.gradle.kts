@@ -128,6 +128,6 @@ dependencies {
     // tests
     testImplementation("io.ktor:ktor-server-tests-jvm")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
-    testImplementation("io.ktor:ktor-server-test-host-jvm:2.3.12")
-    testImplementation("org.jetbrains.kotlin:kotlin-test:$kotlin_version")
+//    testImplementation("io.ktor:ktor-server-test-host-jvm:2.3.12")
+//    testImplementation("org.jetbrains.kotlin:kotlin-test")
 }

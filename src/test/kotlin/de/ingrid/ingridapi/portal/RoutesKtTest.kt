@@ -11,7 +11,6 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.post
-import io.ktor.client.utils.EmptyContent.status
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.testing.ApplicationTestBuilder
@@ -85,6 +84,9 @@ class RoutesKtTest : KoinTest {
     @Test
     fun testGetPortalCatalogsIdHierarchyEmpty() =
         appWrapper { client ->
+            declareMock<ElasticsearchService> {
+                coEvery { search(any()) } returns createSearchResult("[]")
+            }
             client.get("/portal/catalogs/test-catalog/hierarchy").apply {
                 assertEquals(HttpStatusCode.OK, status)
                 assertEquals(emptyList<List<ResponseHierarchy>>(), body())

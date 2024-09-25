@@ -2,15 +2,16 @@ package de.ingrid.ingridapi.core.services
 
 import com.jillesvangurp.ktsearch.KtorRestClient
 import com.jillesvangurp.ktsearch.SearchClient
-import com.jillesvangurp.ktsearch.SearchResponse
 import com.jillesvangurp.ktsearch.parseHits
 import com.jillesvangurp.ktsearch.search
 import com.jillesvangurp.ktsearch.total
 import com.jillesvangurp.searchdsls.querydsl.term
 import de.ingrid.ingridapi.config.AppConfig
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -42,7 +43,7 @@ class ElasticsearchService(
 
         return SearchResult(
             response.total,
-            response.hits?.hits ?: emptyList(),
+            Json.encodeToJsonElement(response.hits?.hits ?: emptyList()) as JsonArray,
             response.aggregations,
         )
     }
@@ -58,7 +59,7 @@ class ElasticsearchService(
 @Serializable
 data class SearchResult(
     val totalHits: Long,
-    val hits: List<SearchResponse.Hit>,
+    val hits: JsonArray,
     val aggregations: JsonObject? = null,
 ) {
     fun getAggregationBuckets(agg: String): JsonArray? =
@@ -68,3 +69,6 @@ data class SearchResult(
             ?.get("buckets")
             ?.jsonArray
 }
+
+// @Serializable
+// data class SearchResultHits

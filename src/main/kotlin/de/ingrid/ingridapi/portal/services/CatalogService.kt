@@ -9,6 +9,8 @@ import de.ingrid.ingridapi.portal.model.ResponseHierarchy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class CatalogService {
     fun convertCatalogsResponse(response: SearchResult): CatalogsResult {
@@ -35,9 +37,9 @@ class CatalogService {
     fun convertCatalogHierarchyResponse(response: SearchResult): List<ResponseHierarchy> {
         val json = Json { ignoreUnknownKeys = true }
         return response.hits.map {
-            val hit = json.decodeFromJsonElement<HitSource>(it.source!!)
+            val hit = json.decodeFromJsonElement<HitSource>(it.jsonObject["_source"]!!)
             ResponseHierarchy(
-                it.id,
+                it.jsonObject["_id"]?.jsonPrimitive?.content ?: "?",
                 hit.title,
                 hit.docType ?: "?",
                 hit.isFolder ?: false,

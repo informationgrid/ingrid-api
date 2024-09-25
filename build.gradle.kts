@@ -106,6 +106,8 @@ dependencies {
     // support JSON export
     implementation("io.ktor:ktor-server-content-negotiation")
     implementation("io.ktor:ktor-serialization-kotlinx-json")
+    // actually useful for tests
+    implementation("io.ktor:ktor-client-content-negotiation")
 
     // swagger
     implementation("io.github.smiley4:ktor-swagger-ui:2.7.4")

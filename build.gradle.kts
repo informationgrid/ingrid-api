@@ -1,17 +1,14 @@
-@file:Suppress("ktlint:standard:no-wildcard-imports", "PropertyName")
-
 import fr.brouillard.oss.gradle.plugins.JGitverPluginExtensionBranchPolicy
-import io.ktor.plugin.features.*
+import io.ktor.plugin.features.DockerImageRegistry
 
 val ktor_version: String by project
-val kotlin_version: String by project
 val koin_version: String by project
 val logback_version: String by project
 val mockk_version = "1.13.12"
 
 plugins {
-    kotlin("jvm") version "1.9.25"
-    kotlin("plugin.serialization") version "1.9.25"
+    kotlin("jvm") version "2.0.20"
+    kotlin("plugin.serialization") version "2.0.20"
     id("io.ktor.plugin") version "2.3.12"
     id("fr.brouillard.oss.gradle.jgitver") version "0.9.1"
     id("com.diffplug.spotless") version "6.25.0"

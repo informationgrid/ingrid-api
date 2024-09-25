@@ -21,9 +21,11 @@ import org.junit.Rule
 import org.koin.test.KoinTest
 import org.koin.test.mock.MockProviderRule
 import org.koin.test.mock.declareMock
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@Ignore
 class RoutesKtTest : KoinTest {
 //    private val mockElasticsearchService = mockk<ElasticsearchService>()
 

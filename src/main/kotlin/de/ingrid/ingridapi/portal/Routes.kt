@@ -44,7 +44,7 @@ fun Application.configurePortalRouting() {
                 }
             }) {
                 val index = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
-                val parentUuid = call.parameters["parent"] ?: ""
+                val parentUuid = call.parameters["parent"]
 
                 val response = elastic.search(getHierarchy(index, parentUuid))
                 val result = catalogService.convertCatalogHierarchyResponse(response)

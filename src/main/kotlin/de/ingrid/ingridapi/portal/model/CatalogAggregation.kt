@@ -62,6 +62,7 @@ data class HitSource(
     val title: String,
     @JsonNames("isfolder") val isFolder: Boolean? = false,
     @JsonNames("t01_object.obj_class") val docType: String? = null,
+    @JsonNames("t02_address.typ") val addressType: String? = null,
     private val datatype: JsonElement? = null,
 ) {
     fun getDatatype(): List<String> =

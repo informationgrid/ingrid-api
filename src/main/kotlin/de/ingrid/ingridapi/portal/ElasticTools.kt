@@ -40,48 +40,48 @@ fun getHierarchy(
           "size": 1000,
           "query": {
             "bool": {
-              "must": [
-                {
-                  "filter": [
-                    {
-                      "term": {
-                        "_index": "$index"
-                      }
+                "filter": [
+                  {
+                    "term": {
+                      "_index": "$index"
                     }
-                  ],
-                  "should": [
-                    {
-                      "bool": {
-                        "must_not": {
-                          "exists": {
-                            "field": "parentObj"
-                          }
-                        }
-                      },
-                    {
-                      "bool": {
-                        "must_not": {
-                          "exists": {
-                            "field": "parentAddr"
-                          }
+                  }
+                ],
+              "must": {
+                "bool": {
+                "should": [
+                  {
+                    "bool": {
+                      "must_not": {
+                        "exists": {
+                          "field": "parent.object_node.obj_uuid"
                         }
                       }
-                    },
-                    {
-                      "term": {
-                        "parentObj": ""
-                      }
-                    },
-                    {
-                      "term": {
-                        "parentAddr": ""
+                    }
+                  },
+                  {
+                    "bool": {
+                      "must_not": {
+                        "exists": {
+                          "field": "parent.address_node.addr_uuid"
+                        }
                       }
                     }
+                  },
+                  {
+                    "term": {
+                      "parent.object_node.obj_uuid": ""
                     }
-                  ],
-                  "minimum_should_match": 1
+                  },
+                  {
+                    "term": {
+                      "parent.address_node.addr_uuid": ""
+                    }
+                  }
+                ],
+                "minimum_should_match": 1
                 }
-              ]
+              }
             }
           }
         } 

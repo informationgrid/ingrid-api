@@ -8,7 +8,10 @@ import de.ingrid.ingridapi.portal.model.JsonResponse
 import de.ingrid.ingridapi.portal.model.ResponseHierarchy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -37,14 +40,43 @@ class CatalogService {
     fun convertCatalogHierarchyResponse(response: SearchResult): List<ResponseHierarchy> {
         val json = Json { ignoreUnknownKeys = true }
         return response.hits.map {
-            val hit = json.decodeFromJsonElement<HitSource>(it.jsonObject["_source"]!!)
+            val source = it.jsonObject["_source"]!!
+            val hit = json.decodeFromJsonElement<HitSource>(source)
+            val hasChildren = determineHasChildren(hit, source)
             ResponseHierarchy(
                 it.jsonObject["_id"]?.jsonPrimitive?.content ?: "?",
                 hit.title,
-                hit.docType ?: "?",
-                hit.isFolder ?: false,
+                hit.docType ?: hit.addressType ?: "?",
+                hasChildren,
                 hit.getDatatype().any { it == "address" },
             )
+        }
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    private fun determineHasChildren(
+        hit: HitSource,
+        it: JsonElement,
+    ): Boolean {
+        val hasObjectChildren = countItemsPrimitiveOrArray(it, "children.object_node.obj_uuid") > 0
+        val hasAddressChildren = countItemsPrimitiveOrArray(it, "children.address_node.addr_uuid") > 0
+
+        return hit.isFolder ?: false ||
+            hasObjectChildren ||
+            hasAddressChildren
+    }
+
+    private fun countItemsPrimitiveOrArray(
+        json: JsonElement,
+        field: String,
+    ): Int {
+        val element: JsonElement = json.jsonObject[field] ?: return 0
+        return if (element is JsonArray) {
+            element.jsonArray.size
+        } else if (element.jsonPrimitive.content.isNotEmpty()) {
+            1
+        } else {
+            0
         }
     }
 }

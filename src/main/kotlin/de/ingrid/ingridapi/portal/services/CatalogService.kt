@@ -43,12 +43,13 @@ class CatalogService {
             val source = it.jsonObject["_source"]!!
             val hit = json.decodeFromJsonElement<HitSource>(source)
             val hasChildren = determineHasChildren(hit, source)
+            val isAddress = hit.getDatatype().any { it == "address" }
             ResponseHierarchy(
                 it.jsonObject["_id"]?.jsonPrimitive?.content ?: "?",
                 hit.title,
-                hit.docType ?: hit.addressType ?: "?",
+                (if (isAddress) hit.getAddressTypeDatatype() else hit.docType) ?: "?",
                 hasChildren,
-                hit.getDatatype().any { it == "address" },
+                isAddress,
             )
         }
     }

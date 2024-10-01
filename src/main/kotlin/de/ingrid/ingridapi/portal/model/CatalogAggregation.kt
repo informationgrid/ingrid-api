@@ -64,29 +64,36 @@ data class HitSource(
     @JsonNames("t01_object.obj_class") val docType: String? = null,
     @JsonNames("t02_address.typ") private val addressType: JsonElement? = null,
     private val datatype: JsonElement? = null,
-    @JsonNames("t02_address.firstname") private val firstName: String? = null,
-    @JsonNames("t02_address.lastname") private val lastName: String? = null,
-    @JsonNames("organisation") private val organisation: String? = null,
+    @JsonNames("t02_address.firstname") private val firstName: JsonElement? = null,
+    @JsonNames("t02_address.lastname") private val lastName: JsonElement? = null,
+    @JsonNames("organisation") private val organisation: JsonElement? = null,
 ) {
-    fun getDatatype(): List<String> =
-        if (datatype is JsonPrimitive) {
-            listOf(datatype.content)
-        } else {
-            datatype?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
-        }
+    fun getDatatype(): List<String> = getContentAsList(datatype)
 
-    fun getAddressTypeDatatype(): String =
-        if (addressType is JsonPrimitive) {
-            addressType.content
-        } else {
-            addressType?.jsonArray?.map { it.jsonPrimitive.content }?.firstOrNull() ?: "?"
-        }
+    fun getAddressTypeDatatype(): String = getFirstContent(addressType)
 
     fun getTitle(): String {
         if (title.isNotEmpty()) return title
 
-        if (lastName.isNullOrEmpty() && firstName.isNullOrEmpty()) return organisation ?: "???"
+        val firstNameString = getFirstContent(firstName)
+        val lastNameString = getFirstContent(lastName)
 
-        return "$lastName, $firstName"
+        if (lastNameString.isEmpty() && firstNameString.isEmpty()) return getFirstContent(organisation)
+
+        return "$lastNameString, $firstNameString"
     }
+
+    private fun getFirstContent(element: JsonElement?): String =
+        if (element is JsonPrimitive) {
+            element.content
+        } else {
+            element?.jsonArray?.map { it.jsonPrimitive.content }?.firstOrNull() ?: "?"
+        }
+
+    private fun getContentAsList(element: JsonElement?): List<String> =
+        if (element is JsonPrimitive) {
+            listOf(element.content)
+        } else {
+            element?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
+        }
 }

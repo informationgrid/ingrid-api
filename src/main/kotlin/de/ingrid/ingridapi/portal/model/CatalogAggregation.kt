@@ -59,11 +59,14 @@ data class JsonResponse(
 @ExperimentalSerializationApi
 @Serializable
 data class HitSource(
-    val title: String,
+    private val title: String,
     @JsonNames("isfolder") val isFolder: Boolean? = false,
     @JsonNames("t01_object.obj_class") val docType: String? = null,
     @JsonNames("t02_address.typ") private val addressType: JsonElement? = null,
     private val datatype: JsonElement? = null,
+    @JsonNames("t02_address.firstname") private val firstName: String? = null,
+    @JsonNames("t02_address.lastname") private val lastName: String? = null,
+    @JsonNames("organisation") private val organisation: String? = null,
 ) {
     fun getDatatype(): List<String> =
         if (datatype is JsonPrimitive) {
@@ -73,9 +76,17 @@ data class HitSource(
         }
 
     fun getAddressTypeDatatype(): String =
-        if (datatype is JsonPrimitive) {
-            datatype.content
+        if (addressType is JsonPrimitive) {
+            addressType.content
         } else {
-            datatype?.jsonArray?.map { it.jsonPrimitive.content }?.firstOrNull() ?: "?"
+            addressType?.jsonArray?.map { it.jsonPrimitive.content }?.firstOrNull() ?: "?"
         }
+
+    fun getTitle(): String {
+        if (title.isNotEmpty()) return title
+
+        if (lastName.isNullOrEmpty() && firstName.isNullOrEmpty()) return organisation ?: "???"
+
+        return "$lastName, $firstName"
+    }
 }

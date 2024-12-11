@@ -51,7 +51,11 @@ class ElasticsearchService(
     // TODO: add caching to this function
     private suspend fun getActiveIndices(): List<String> =
         client
-            .search("ingrid_meta") { query = term("active", "true") }
+            .search("ingrid_meta") {
+                query = term("active", "true")
+                from = 0
+                resultSize = 100
+            }
             .parseHits<JsonObject>()
             .mapNotNull { it["linkedIndex"]?.jsonPrimitive?.content }
 }

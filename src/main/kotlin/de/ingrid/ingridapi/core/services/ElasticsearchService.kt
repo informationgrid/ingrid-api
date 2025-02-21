@@ -7,6 +7,7 @@ import com.jillesvangurp.ktsearch.search
 import com.jillesvangurp.ktsearch.total
 import com.jillesvangurp.searchdsls.querydsl.term
 import de.ingrid.ingridapi.config.AppConfig
+import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -15,7 +16,6 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import mu.KotlinLogging.logger
 
 class ElasticsearchService(
     config: AppConfig,
@@ -33,7 +33,7 @@ class ElasticsearchService(
         )
 
     init {
-        log.info("Elastic Host: ${config.elasticHost}:${config.elasticPort}")
+        log.info { "Elastic Host: ${config.elasticHost}:${config.elasticPort}" }
     }
 
     suspend fun search(rawQuery: String): SearchResult {
@@ -41,6 +41,7 @@ class ElasticsearchService(
             getActiveIndices().joinToString(",").also { log.debug { "Searching in indices: $it" } }
         val response = client.search(indices, rawJson = rawQuery)
 
+        log.info { "Found ${response.hits?.hits?.size} hits on indices: $indices" }
         return SearchResult(
             response.total,
             Json.encodeToJsonElement(response.hits?.hits ?: emptyList()) as JsonArray,

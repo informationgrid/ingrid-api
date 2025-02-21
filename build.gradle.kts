@@ -7,9 +7,9 @@ val logback_version: String by project
 val mockk_version = "1.13.12"
 
 plugins {
-    kotlin("jvm") version "2.0.20"
-    kotlin("plugin.serialization") version "2.0.20"
-    id("io.ktor.plugin") version "2.3.12"
+    kotlin("jvm") version "2.0.21"
+    kotlin("plugin.serialization") version "2.0.21"
+    id("io.ktor.plugin") version "3.1.0"
     id("fr.brouillard.oss.gradle.jgitver") version "0.9.1"
     id("com.diffplug.spotless") version "6.25.0"
 }
@@ -107,10 +107,10 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation")
 
     // swagger
-    implementation("io.github.smiley4:ktor-swagger-ui:2.7.4")
+    implementation("io.github.smiley4:ktor-swagger-ui:4.1.6")
 
     // elasticsearch-client
-    implementation("com.jillesvangurp:search-client:2.1.20")
+    implementation("com.jillesvangurp:search-client:2.3.12")
 
     // dependency injection
     implementation(project.dependencies.platform("io.insert-koin:koin-bom:$koin_version"))
@@ -122,10 +122,10 @@ dependencies {
     testImplementation("io.mockk:mockk:$mockk_version")
 
     implementation("ch.qos.logback:logback-classic:$logback_version")
-    implementation("io.github.oshai:kotlin-logging-jvm:5.1.0")
+    implementation("io.github.oshai:kotlin-logging-jvm:7.0.4")
 
     // tests
-    testImplementation("io.ktor:ktor-server-tests-jvm")
+    testImplementation("io.ktor:ktor-server-tests-jvm:2.3.13")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 //    testImplementation("io.ktor:ktor-server-test-host-jvm:2.3.12")
 //    testImplementation("org.jetbrains.kotlin:kotlin-test")

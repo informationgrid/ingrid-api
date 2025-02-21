@@ -8,7 +8,6 @@ fun Application.configureSwagger() {
     install(SwaggerUI) {
         info { version = "latest" }
         spec("portal") {
-            swagger { swaggerUrl = "" }
             info {
                 title = "Portal API"
                 description = "Example API 1 for testing and demonstration purposes."

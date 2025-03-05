@@ -39,7 +39,7 @@ class ElasticsearchService(
     suspend fun search(rawQuery: String): SearchResult {
         val indices =
             getActiveIndices().joinToString(",").also { log.debug { "Searching in indices: $it" } }
-        val response = client.search(indices, rawJson = rawQuery)
+        val response = client.search(indices, rawJson = rawQuery, ignoreUnavailable = true)
 
         log.info { "Found ${response.hits?.hits?.size} hits on indices: $indices" }
         return SearchResult(

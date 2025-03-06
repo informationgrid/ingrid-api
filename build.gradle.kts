@@ -110,7 +110,7 @@ dependencies {
     implementation("io.github.smiley4:ktor-swagger-ui:4.1.6")
 
     // elasticsearch-client
-    implementation("com.jillesvangurp:search-client:2.3.12")
+    implementation("com.jillesvangurp:search-client:2.3.13")
 
     // dependency injection
     implementation(project.dependencies.platform("io.insert-koin:koin-bom:$koin_version"))

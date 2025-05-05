@@ -41,7 +41,7 @@ class ElasticsearchService(
             getActiveIndices().joinToString(",").also { log.debug { "Searching in indices: $it" } }
         val response = client.search(indices, rawJson = rawQuery, ignoreUnavailable = true)
 
-        log.info { "Found ${response.hits?.hits?.size} hits on indices: $indices" }
+        log.debug { "Found ${response.hits?.hits?.size} hits on indices: $indices" }
         return SearchResult(
             response.total,
             Json.encodeToJsonElement(response.hits?.hits ?: emptyList()) as JsonArray,

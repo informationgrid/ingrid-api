@@ -29,7 +29,7 @@ class CatalogService {
     private fun convertToCatalog(json: JsonResponse): Catalog {
         val id = json.key
         val source = json.getSource()
-        val name = source?.dataSourceName ?: "???"
+        val name = source?.collectionName ?: "???"
         val partner = source?.getPartner() ?: emptyList()
         val isAddress = source?.getDatatype()?.any { it == "address" } ?: false
         val isMetadata = source?.getDatatype()?.any { it == "dsc_ecs" || it == "dsc_ecs_address" } ?: false
@@ -63,8 +63,8 @@ class CatalogService {
         val hasAddressChildren = countItemsPrimitiveOrArray(it, "children.address_node.addr_uuid") > 0
 
         return hit.isFolder ?: false ||
-            hasObjectChildren ||
-            hasAddressChildren
+                hasObjectChildren ||
+                hasAddressChildren
     }
 
     private fun countItemsPrimitiveOrArray(

@@ -18,7 +18,7 @@ val getCatalogsQuery =
                 "size": 1,
                 "_source": {
                   "include": [
-                    "dataSourceName","partner", "plugId", "datatype"
+                    "collection.name", "t03_catalogue.cat_name", "dataSourceName","partner", "plugId", "datatype"
                   ]
                 }
               }

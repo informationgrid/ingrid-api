@@ -22,7 +22,7 @@ pipeline {
                 sh './gradlew build -x test -x check'
             }
         }
-        stage('run tests (unit & intergration)') {
+        stage('run tests (unit & integration)') {
             steps {
                 sh './gradlew test'
             }

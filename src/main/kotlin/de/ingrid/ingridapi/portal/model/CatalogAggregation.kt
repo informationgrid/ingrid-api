@@ -11,7 +11,7 @@ import kotlinx.serialization.json.jsonPrimitive
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class Source(
-    @JsonNames("collection.name", "t03_catalogue.cat_name", "dataSourceName")
+    @JsonNames("collection.name", "dataSourceName")
     val collectionName: String? = null,
     private val partner: JsonElement? = null,
     private val datatype: JsonElement? = null,

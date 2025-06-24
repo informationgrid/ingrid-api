@@ -6,9 +6,9 @@ pipeline {
     }
 
     environment {
-        RPM_PUBLIC_KEY  = credentials('itzbund-ingrid-rpm-public')
-        RPM_PRIVATE_KEY = credentials('itzbund-ingrid-rpm-private')
-        RPM_SIGN_PASSPHRASE = credentials('itzbund-ingrid-rpm-passphrase')
+        RPM_PUBLIC_KEY  = credentials('ingrid-rpm-public')
+        RPM_PRIVATE_KEY = credentials('ingrid-rpm-private')
+        RPM_SIGN_PASSPHRASE = credentials('ingrid-rpm-passphrase')
     }
 
     options {

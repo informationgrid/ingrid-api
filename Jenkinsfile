@@ -48,7 +48,7 @@ pipeline {
 
                 script {
 
-                    def containerId = sh(script: "docker run -d -e RPM_SIGN_PASSPHRASE=$RPM_SIGN_PASSPHRASE --entrypoint=\"\" docker-registry.wemove.com/ingrid-rpmbuilder-jdk21-improved tail -f /dev/null", returnStdout: true).trim()
+                    def containerId = sh(script: "docker run -d -e RPM_SIGN_PASSPHRASE=%RPM_SIGN_PASSPHRASE% --entrypoint=\"\" docker-registry.wemove.com/ingrid-rpmbuilder-jdk21-improved tail -f /dev/null", returnStdout: true).trim()
 
                     try {
                         sh "docker cp build/distributions ${containerId}:/files"

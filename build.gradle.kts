@@ -11,6 +11,7 @@ plugins {
     id("io.ktor.plugin") version "3.1.2"
     id("fr.brouillard.oss.gradle.jgitver") version "0.9.1"
     id("com.diffplug.spotless") version "7.0.3"
+    id("org.cyclonedx.bom") version "2.3.1"
 }
 
 group = "de.ingrid.ingridapi"
@@ -128,4 +129,22 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 //    testImplementation("io.ktor:ktor-server-test-host-jvm:2.3.12")
 //    testImplementation("org.jetbrains.kotlin:kotlin-test")
+}
+
+tasks.cyclonedxBom {
+    // includeConfigs is the list of configuration names to include when generating the BOM (leave empty to include every configuration), regex is supported
+    setIncludeConfigs(listOf("runtimeClasspath"))
+    // skipConfigs is a list of configuration names to exclude when generating the BOM, regex is supported
+    setSkipConfigs(listOf("compileClasspath", "testCompileClasspath"))
+    // Specified the type of project being built. Defaults to 'library'
+    setProjectType("application")
+    // Specified the version of the CycloneDX specification to use. Defaults to '1.5'
+    setSchemaVersion("1.5")
+    // Boms destination directory. Defaults to 'build/reports'
+    setDestination(file("build/reports"))
+    // The file name for the generated BOMs (before the file format suffix). Defaults to 'bom'
+    setOutputName("bom")
+    // The file format generated, can be xml, json or all for generating both. Defaults to 'all'
+    setOutputFormat("json")
+    setComponentVersion(rootProject.version.toString())
 }

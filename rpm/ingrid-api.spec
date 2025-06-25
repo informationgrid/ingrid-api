@@ -1,5 +1,5 @@
 Name:                       ingrid-api
-Version:                    0.1.0
+Version:                    0.0.0
 Release:                    dev
 Summary:                    InGrid API
 Group:                      Applications/Internet

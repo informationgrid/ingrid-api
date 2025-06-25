@@ -24,7 +24,7 @@ pipeline {
                 # On main branch without tag, use last tag
                 echo "${LAST_TAG_VERSION}"
             else
-                # On other branches, use branch name with slashes replaced by hyphens
+                # On other branches, use branch name with slashes replaced by underscores
                 echo "${BRANCH_NAME}" | sed 's/\\//_/g'
             fi
         ''', returnStdout: true).trim()
@@ -44,7 +44,7 @@ pipeline {
         }
         stage('build') {
             steps {
-                sh './gradlew build -x test -x check'
+                sh './gradlew build cyclonedxBom -x test -x check'
             }
         }
         stage('run tests (unit & integration)') {
@@ -103,10 +103,12 @@ pipeline {
         stage('Deploy RPM') {
             steps {
                 script {
-                    def repoType = env.GIT_TAG_OUTPUT ? "rpm-ingrid-releases/" : "rpm-ingrid-snapshots/"
+                    def repoType = env.GIT_TAG_OUTPUT ? "rpm-ingrid-releases" : "rpm-ingrid-snapshots"
+                    sh "mv build/reports/bom.json build/reports/ingrid-api-${VERSION}.bom.json"
 
                     withCredentials([usernamePassword(credentialsId: '9623a365-d592-47eb-9029-a2de40453f68', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
-                        sh "curl -f --user \$USERNAME:\$PASSWORD --upload-file build/rpms/*.rpm https://nexus.informationgrid.eu/repository/${repoType}"
+                        sh "curl -f --user $USERNAME:$PASSWORD --upload-file build/rpms/*.rpm https://nexus.informationgrid.eu/repository/${repoType}/"
+                        sh "curl -f --user $USERNAME:$PASSWORD --upload-file build/reports/*.bom.json https://nexus.informationgrid.eu/repository/${repoType}/"
                     }
                 }
             }

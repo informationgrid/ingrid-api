@@ -11,19 +11,21 @@ pipeline {
         RPM_SIGN_PASSPHRASE = credentials('ingrid-rpm-passphrase')
         // Determine if we're on a tag and get the version
         GIT_TAG_OUTPUT = sh(script: "git tag --points-at HEAD", returnStdout: true).trim()
+        // Get current branch name
+        BRANCH_NAME = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
+        // Get the last tag version
+        LAST_TAG_VERSION = sh(script: "git describe --tags --abbrev=0 || echo '0.0.0'", returnStdout: true).trim()
+        // Set VERSION based on conditions
         VERSION = sh(script: '''
             if [ -n "${GIT_TAG_OUTPUT}" ]; then
+                # On a tag commit, use the tag value
                 echo "${GIT_TAG_OUTPUT}"
+            elif [ "${BRANCH_NAME}" = "main" ]; then
+                # On main branch without tag, use last tag
+                echo "${LAST_TAG_VERSION}"
             else
-                git describe --tags --abbrev=0 || echo "0.0.0"
-            fi
-        ''', returnStdout: true).trim()
-        // For non-tag builds, add .dev suffix
-        FULL_VERSION = sh(script: '''
-            if [ -n "${GIT_TAG_OUTPUT}" ]; then
-                echo "${VERSION}"
-            else
-                echo "${VERSION}.dev"
+                # On other branches, use branch name with slashes replaced by hyphens
+                echo "${BRANCH_NAME}" | sed 's/\\//_/g'
             fi
         ''', returnStdout: true).trim()
     }
@@ -65,9 +67,9 @@ pipeline {
 
                 script {
                     // Update RPM spec file with the correct version
-                    sh "sed -i 's/^Version:.*/Version:                    ${VERSION}/' rpm/ingrid-api.spec"
+                    sh "sed -i 's/^Version:.*/Version: ${VERSION}/' rpm/ingrid-api.spec"
                     // Update Release field based on whether we're on a tag
-                    sh "sed -i 's/^Release:.*/Release:                    ${env.GIT_TAG_OUTPUT ? '1' : 'dev'}/' rpm/ingrid-api.spec"
+                    sh "sed -i 's/^Release:.*/Release: ${env.GIT_TAG_OUTPUT ? '1' : 'dev'}/' rpm/ingrid-api.spec"
 
                     def containerId = sh(script: "docker run -d -e RPM_SIGN_PASSPHRASE=$RPM_SIGN_PASSPHRASE --entrypoint=\"\" docker-registry.wemove.com/ingrid-rpmbuilder-jdk21-improved tail -f /dev/null", returnStdout: true).trim()
 
@@ -101,14 +103,10 @@ pipeline {
         stage('Deploy RPM') {
             steps {
                 script {
-                    def repoUrl = env.GIT_TAG_OUTPUT ?
-                        "https://nexus.informationgrid.eu/repository/rpm-ingrid-releases/" :
-                        "https://nexus.informationgrid.eu/repository/rpm-ingrid-snapshots/"
-
-                    echo "Deploying RPM to ${repoUrl} with version ${FULL_VERSION}"
+                    def repoType = env.GIT_TAG_OUTPUT ? "rpm-ingrid-releases/" : "rpm-ingrid-snapshots/"
 
                     withCredentials([usernamePassword(credentialsId: '9623a365-d592-47eb-9029-a2de40453f68', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
-                        sh "curl -f --user \$USERNAME:\$PASSWORD --upload-file build/rpms/*.rpm ${repoUrl}"
+                        sh "curl -f --user \$USERNAME:\$PASSWORD --upload-file build/rpms/*.rpm https://nexus.informationgrid.eu/repository/${repoType}"
                     }
                 }
             }

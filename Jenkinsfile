@@ -71,14 +71,14 @@ pipeline {
                     // Update Release field based on whether we're on a tag
                     sh "sed -i 's/^Release:.*/Release: ${env.GIT_TAG_OUTPUT ? '1' : 'dev'}/' rpm/ingrid-api.spec"
 
-                    def containerId = sh(script: "docker run -d -e RPM_SIGN_PASSPHRASE=$RPM_SIGN_PASSPHRASE --entrypoint=\"\" docker-registry.wemove.com/ingrid-rpmbuilder-jdk21-improved tail -f /dev/null", returnStdout: true).trim()
+                    def containerId = sh(script: "docker run -d -e RPM_SIGN_PASSPHRASE=\$RPM_SIGN_PASSPHRASE --entrypoint=\"\" docker-registry.wemove.com/ingrid-rpmbuilder-jdk21-improved tail -f /dev/null", returnStdout: true).trim()
 
                     try {
                         sh "docker cp build/distributions ${containerId}:/files"
                         sh "docker cp rpm/ingrid-api.spec ${containerId}:/root/rpmbuild/SPECS/ingrid-api.spec"
                         sh "docker cp rpm/. ${containerId}:/rpm"
-                        sh "docker cp $RPM_PUBLIC_KEY ${containerId}:/public.key"
-                        sh "docker cp $RPM_PRIVATE_KEY ${containerId}:/private.key"
+                        sh "docker cp \$RPM_PUBLIC_KEY ${containerId}:/public.key"
+                        sh "docker cp \$RPM_PRIVATE_KEY ${containerId}:/private.key"
 
                         sh """
                             docker exec ${containerId} bash -c "
@@ -107,8 +107,10 @@ pipeline {
                     sh "mv build/reports/bom.json build/reports/ingrid-api-${VERSION}.bom.json"
 
                     withCredentials([usernamePassword(credentialsId: '9623a365-d592-47eb-9029-a2de40453f68', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
-                        sh "curl -f --user $USERNAME:$PASSWORD --upload-file build/rpms/*.rpm https://nexus.informationgrid.eu/repository/${repoType}/"
-                        sh "curl -f --user $USERNAME:$PASSWORD --upload-file build/reports/*.bom.json https://nexus.informationgrid.eu/repository/${repoType}/"
+                        sh '''
+                            curl -f --user $USERNAME:$PASSWORD --upload-file build/rpms/*.rpm https://nexus.informationgrid.eu/repository/''' + repoType + '''/
+                            curl -f --user $USERNAME:$PASSWORD --upload-file build/reports/*.bom.json https://nexus.informationgrid.eu/repository/''' + repoType + '''/
+                        '''
                     }
                 }
             }

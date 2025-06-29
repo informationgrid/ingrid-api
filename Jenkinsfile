@@ -1,5 +1,6 @@
 pipeline {
     agent any
+    triggers{ cron( getCronParams() ) }
 
     tools {
         jdk 'jdk21'
@@ -35,21 +36,22 @@ pipeline {
     }
 
     stages {
-        stage('initialize') {
-            steps {
-                script {
-                    sh './gradlew clean'
-                }
-            }
-        }
         stage('build') {
+            when { not { buildingTag() } }
             steps {
-                sh './gradlew build cyclonedxBom -x test -x check'
+                sh './gradlew clean build cyclonedxBom -x test -x check'
             }
         }
         stage('run tests (unit & integration)') {
+            when { not { buildingTag() } }
             steps {
                 sh './gradlew test'
+            }
+        }
+        stage ('Base-Image Update') {
+            when { buildingTag() }
+            steps {
+                sh './gradlew --no-daemon -Djib.console=plain build -x test -x check'
             }
         }
         stage('deploy') {
@@ -63,8 +65,6 @@ pipeline {
 
         stage('Build RPM') {
             steps {
-                echo 'Starting to build RPM package'
-
                 script {
                     // Update RPM spec file with the correct version
                     sh "sed -i 's/^Version:.*/Version: ${VERSION}/' rpm/ingrid-api.spec"
@@ -74,13 +74,13 @@ pipeline {
                     def containerId = sh(script: "docker run -d -e RPM_SIGN_PASSPHRASE=\$RPM_SIGN_PASSPHRASE --entrypoint=\"\" docker-registry.wemove.com/ingrid-rpmbuilder-jdk21-improved tail -f /dev/null", returnStdout: true).trim()
 
                     try {
-                        sh "docker cp build/distributions ${containerId}:/files"
-                        sh "docker cp rpm/ingrid-api.spec ${containerId}:/root/rpmbuild/SPECS/ingrid-api.spec"
-                        sh "docker cp rpm/. ${containerId}:/rpm"
-                        sh "docker cp \$RPM_PUBLIC_KEY ${containerId}:/public.key"
-                        sh "docker cp \$RPM_PRIVATE_KEY ${containerId}:/private.key"
 
                         sh """
+                            docker cp build/distributions ${containerId}:/files &&
+                            docker cp rpm/ingrid-api.spec ${containerId}:/root/rpmbuild/SPECS/ingrid-api.spec &&
+                            docker cp rpm/. ${containerId}:/rpm &&
+                            docker cp \$RPM_PUBLIC_KEY ${containerId}:/public.key &&
+                            docker cp \$RPM_PRIVATE_KEY ${containerId}:/private.key &&
                             docker exec ${containerId} bash -c "
                             rpmbuild -bb /root/rpmbuild/SPECS/ingrid-api.spec &&
                             gpg --batch --import public.key &&
@@ -130,5 +130,24 @@ pipeline {
                         to: '${DEFAULT_RECIPIENTS}')
             }
         }
+    }
+}
+
+def getCronParams() {
+    String tagTimestamp = env.TAG_TIMESTAMP
+    long diffInDays = 0
+    if (tagTimestamp != null) {
+        long diff = "${currentBuild.startTimeInMillis}".toLong() - "${tagTimestamp}".toLong()
+        diffInDays = diff / (1000 * 60 * 60 * 24)
+        echo "Days since release: ${diffInDays}"
+    }
+
+    def versionMatcher = /\d\.\d\.\d(.\d)?/
+    if( env.TAG_NAME ==~ versionMatcher && diffInDays < 180) {
+        // every Sunday between midnight and 6am
+        return 'H H(0-6) * * 0'
+    }
+    else {
+        return ''
     }
 }

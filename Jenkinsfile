@@ -64,6 +64,15 @@ pipeline {
         }
 
         stage('Build RPM') {
+            when {
+                anyOf {
+                    not { buildingTag() }
+                    allOf {
+                        buildingTag()
+                        expression { return currentBuild.number == 1 }
+                    }
+                }
+            }
             steps {
                 script {
                     // Update RPM spec file with the correct version
@@ -101,6 +110,15 @@ pipeline {
         }
 
         stage('Deploy RPM') {
+            when {
+                anyOf {
+                    not { buildingTag() }
+                    allOf {
+                        buildingTag()
+                        expression { return currentBuild.number == 1 }
+                    }
+                }
+            }
             steps {
                 script {
                     def repoType = env.GIT_TAG_OUTPUT ? "rpm-ingrid-releases" : "rpm-ingrid-snapshots"

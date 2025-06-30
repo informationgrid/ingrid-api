@@ -12,11 +12,8 @@ pipeline {
         RPM_SIGN_PASSPHRASE = credentials('ingrid-rpm-passphrase')
         // Determine if we're on a tag and get the version
         GIT_TAG_OUTPUT = sh(script: "git tag --points-at HEAD", returnStdout: true).trim()
-        // Get current branch name
         BRANCH_NAME = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
-        // Get the last tag version
         LAST_TAG_VERSION = sh(script: "git describe --tags --abbrev=0 || echo '0.0.0'", returnStdout: true).trim()
-        // Set VERSION based on conditions
         VERSION = sh(script: '''
             if [ -n "${GIT_TAG_OUTPUT}" ]; then
                 # On a tag commit, use the tag value
@@ -36,25 +33,21 @@ pipeline {
     }
 
     stages {
-        stage('build') {
-            when { not { buildingTag() } }
+        stage('Build Image') {
+            when { expression { return shouldBuildDevOrRelease() } }
             steps {
                 sh './gradlew clean build cyclonedxBom -x test -x check'
             }
         }
-        stage('run tests (unit & integration)') {
-            when { not { buildingTag() } }
-            steps {
-                sh './gradlew test'
-            }
-        }
+
         stage ('Base-Image Update') {
-            when { buildingTag() }
+            when { not { expression { return shouldBuildDevOrRelease() } } }
             steps {
                 sh './gradlew --no-daemon -Djib.console=plain build -x test -x check'
             }
         }
-        stage('deploy') {
+
+        stage('Deploy Image') {
             environment {
                 DOCKER_REGISTRY_CREDS = credentials('docker-registry-wemove')
             }
@@ -63,16 +56,15 @@ pipeline {
             }
         }
 
-        stage('Build RPM') {
-            when {
-                anyOf {
-                    not { buildingTag() }
-                    allOf {
-                        buildingTag()
-                        expression { return currentBuild.number == 1 }
-                    }
-                }
+        stage('Tests') {
+            when { expression { return shouldBuildDevOrRelease() } }
+            steps {
+                sh './gradlew test'
             }
+        }
+
+        stage('Build RPM') {
+            when { expression { return shouldBuildDevOrRelease() } }
             steps {
                 script {
                     // Update RPM spec file with the correct version
@@ -110,15 +102,7 @@ pipeline {
         }
 
         stage('Deploy RPM') {
-            when {
-                anyOf {
-                    not { buildingTag() }
-                    allOf {
-                        buildingTag()
-                        expression { return currentBuild.number == 1 }
-                    }
-                }
-            }
+            when { expression { return shouldBuildDevOrRelease() } }
             steps {
                 script {
                     def repoType = env.GIT_TAG_OUTPUT ? "rpm-ingrid-releases" : "rpm-ingrid-snapshots"
@@ -167,5 +151,15 @@ def getCronParams() {
     }
     else {
         return ''
+    }
+}
+
+def shouldBuildDevOrRelease() {
+    return anyOf {
+        not { buildingTag() }
+        allOf {
+            buildingTag()
+            expression { return currentBuild.number == 1 }
+        }
     }
 }

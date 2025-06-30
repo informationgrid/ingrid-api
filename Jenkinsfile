@@ -18,14 +18,19 @@ pipeline {
 
     stages {
         stage('Build Image') {
-            when { not { buildingTag() } }
+            when { expression { return shouldBuildDevOrRelease() } }
             steps {
                 sh './gradlew clean build cyclonedxBom -x test -x check'
             }
         }
 
         stage ('Base-Image Update') {
-            when { not { expression { return shouldBuildDevOrRelease() } } }
+            when {
+                allOf {
+                    buildingTag()
+                    expression { return currentBuild.number > 1 }
+                }
+            }
             steps {
                 sh './gradlew --no-daemon -Djib.console=plain build -x test -x check'
             }

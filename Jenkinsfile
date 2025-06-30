@@ -89,6 +89,7 @@ pipeline {
                 script {
                     def repoType = env.TAG_NAME ? "rpm-ingrid-releases" : "rpm-ingrid-snapshots"
                     sh "mv build/reports/bom.json build/reports/ingrid-api-${determineVersion()}.bom.json"
+                    // Test comment
 
                     withCredentials([usernamePassword(credentialsId: '9623a365-d592-47eb-9029-a2de40453f68', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
                         sh '''

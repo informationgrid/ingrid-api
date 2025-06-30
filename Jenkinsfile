@@ -37,6 +37,17 @@ pipeline {
         }
 
         stage('Deploy Image') {
+            // do not run when building a release from a branch-Jenkins-Job
+            // In Jenkins there's a special Tag-Job, that handles the release
+            when {
+                anyOf {
+                    expression { return shouldBuildDevOrRelease() }
+                    allOf {
+                        buildingTag()
+                        expression { return currentBuild.number > 1 }
+                    }
+                }
+            }
             environment {
                 DOCKER_REGISTRY_CREDS = credentials('docker-registry-wemove')
             }

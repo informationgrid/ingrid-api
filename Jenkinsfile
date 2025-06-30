@@ -67,9 +67,7 @@ pipeline {
             when { expression { return shouldBuildDevOrRelease() } }
             steps {
                 script {
-                    // Update RPM spec file with the correct version
                     sh "sed -i 's/^Version:.*/Version: ${VERSION}/' rpm/ingrid-api.spec"
-                    // Update Release field based on whether we're on a tag
                     sh "sed -i 's/^Release:.*/Release: ${env.GIT_TAG_OUTPUT ? '1' : 'dev'}/' rpm/ingrid-api.spec"
 
                     def containerId = sh(script: "docker run -d -e RPM_SIGN_PASSPHRASE=\$RPM_SIGN_PASSPHRASE --entrypoint=\"\" docker-registry.wemove.com/ingrid-rpmbuilder-jdk21-improved tail -f /dev/null", returnStdout: true).trim()

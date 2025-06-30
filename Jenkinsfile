@@ -151,11 +151,6 @@ def determineVersion() {
 }
 
 def shouldBuildDevOrRelease() {
-    return anyOf {
-        not { buildingTag() }
-        allOf {
-            buildingTag()
-            expression { return currentBuild.number == 1 }
-        }
-    }
+    // If no tag is being built OR it is the first build of a tag
+    return !buildingTag() || (buildingTag() && currentBuild.number == 1)
 }

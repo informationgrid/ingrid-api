@@ -10,22 +10,6 @@ pipeline {
         RPM_PUBLIC_KEY  = credentials('ingrid-rpm-public')
         RPM_PRIVATE_KEY = credentials('ingrid-rpm-private')
         RPM_SIGN_PASSPHRASE = credentials('ingrid-rpm-passphrase')
-        // Determine if we're on a tag and get the version
-        GIT_TAG_OUTPUT = sh(script: "git tag --points-at HEAD", returnStdout: true).trim()
-        BRANCH_NAME = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
-        LAST_TAG_VERSION = sh(script: "git describe --tags --abbrev=0 || echo '0.0.0'", returnStdout: true).trim()
-        VERSION = sh(script: '''
-            if [ -n "${GIT_TAG_OUTPUT}" ]; then
-                # On a tag commit, use the tag value
-                echo "${GIT_TAG_OUTPUT}"
-            elif [ "${BRANCH_NAME}" = "main" ]; then
-                # On main branch without tag, use last tag
-                echo "${LAST_TAG_VERSION}"
-            else
-                # On other branches, use branch name with slashes replaced by underscores
-                echo "${BRANCH_NAME}" | sed 's/\\//_/g'
-            fi
-        ''', returnStdout: true).trim()
     }
 
     options {
@@ -34,7 +18,7 @@ pipeline {
 
     stages {
         stage('Build Image') {
-            when { expression { return shouldBuildDevOrRelease() } }
+            when { not { buildingTag() } }
             steps {
                 sh './gradlew clean build cyclonedxBom -x test -x check'
             }
@@ -67,8 +51,8 @@ pipeline {
             when { expression { return shouldBuildDevOrRelease() } }
             steps {
                 script {
-                    sh "sed -i 's/^Version:.*/Version: ${VERSION}/' rpm/ingrid-api.spec"
-                    sh "sed -i 's/^Release:.*/Release: ${env.GIT_TAG_OUTPUT ? '1' : 'dev'}/' rpm/ingrid-api.spec"
+                    sh "sed -i 's/^Version:.*/Version: ${determineVersion()}/' rpm/ingrid-api.spec"
+                    sh "sed -i 's/^Release:.*/Release: ${env.TAG_NAME ? '1' : 'dev'}/' rpm/ingrid-api.spec"
 
                     def containerId = sh(script: "docker run -d -e RPM_SIGN_PASSPHRASE=\$RPM_SIGN_PASSPHRASE --entrypoint=\"\" docker-registry.wemove.com/ingrid-rpmbuilder-jdk21-improved tail -f /dev/null", returnStdout: true).trim()
 
@@ -103,8 +87,8 @@ pipeline {
             when { expression { return shouldBuildDevOrRelease() } }
             steps {
                 script {
-                    def repoType = env.GIT_TAG_OUTPUT ? "rpm-ingrid-releases" : "rpm-ingrid-snapshots"
-                    sh "mv build/reports/bom.json build/reports/ingrid-api-${VERSION}.bom.json"
+                    def repoType = env.TAG_NAME ? "rpm-ingrid-releases" : "rpm-ingrid-snapshots"
+                    sh "mv build/reports/bom.json build/reports/ingrid-api-${determineVersion()}.bom.json"
 
                     withCredentials([usernamePassword(credentialsId: '9623a365-d592-47eb-9029-a2de40453f68', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
                         sh '''
@@ -149,6 +133,14 @@ def getCronParams() {
     }
     else {
         return ''
+    }
+}
+
+def determineVersion() {
+    if (env.TAG_NAME) {
+        return env.TAG_NAME
+    } else {
+        return env.BRANCH_NAME.replaceAll('/', '_')
     }
 }
 

@@ -105,7 +105,6 @@ pipeline {
                 script {
                     def repoType = env.TAG_NAME ? "rpm-ingrid-releases" : "rpm-ingrid-snapshots"
                     sh "mv build/reports/bom.json build/reports/ingrid-api-${determineVersion()}.bom.json"
-                    // Test comment
 
                     withCredentials([usernamePassword(credentialsId: '9623a365-d592-47eb-9029-a2de40453f68', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
                         sh '''
@@ -162,6 +161,10 @@ def determineVersion() {
 }
 
 def shouldBuildDevOrRelease() {
+    echo "buildingTag(): ${buildingTag()}"
+    echo "TAG_NAME: ${env.TAG_NAME}"
+    echo "currentBuild.number: ${currentBuild.number}"
+
     // If no tag is being built OR it is the first build of a tag
     return !buildingTag() || (buildingTag() && currentBuild.number == 1)
 }

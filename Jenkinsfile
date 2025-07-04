@@ -161,10 +161,7 @@ def determineVersion() {
 }
 
 def shouldBuildDevOrRelease() {
-    echo "buildingTag(): ${buildingTag()}"
-    echo "TAG_NAME: ${env.TAG_NAME}"
-    echo "currentBuild.number: ${currentBuild.number}"
-
     // If no tag is being built OR it is the first build of a tag
-    return !buildingTag() || (buildingTag() && currentBuild.number == 1)
+    boolean isTag = env.TAG_NAME != null && env.TAG_NAME.trim() != ''
+    return !isTag || (isTag && currentBuild.number == 1)
 }

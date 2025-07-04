@@ -2,6 +2,7 @@
 
 ## Development
 
+Test 
 Just run `Application.kt` in your IntelliJ-IDE or call the following gradle command:
 
 ```shell

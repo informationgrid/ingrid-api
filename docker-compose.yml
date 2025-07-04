@@ -1,0 +1,25 @@
+services:
+
+  rpm:
+    image: docker-registry.wemove.com/ingrid-rpmbuilder-php8
+    volumes:
+      - ./rpm/ingrid-api.spec:/root/rpmbuild/SPECS/ingrid-api.spec
+      - ./rpm/ingrid-api.service:/rpm/ingrid-api.service
+      - ./output-rpm:/root/rpmbuild/RPMS
+      - ./build:/build
+    command: rpmbuild -bb /root/rpmbuild/SPECS/ingrid-api.spec
+
+  rpm-demo:
+    build: ./rpm
+    privileged: true
+    volumes:
+      - ./output-rpm:/install-rpm
+      - ./rpm/systemctl.py:/usr/bin/systemctl
+    ports:
+      - "8889:8080"
+    command: >
+      bash -c "
+      alien -i install-rpm/noarch/ingrid-api-*.rpm &&
+      systemctl enable ingrid-api &&
+      systemctl start ingrid-api &&
+      tail -f /dev/null"

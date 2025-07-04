@@ -1,0 +1,18 @@
+[Unit]
+Description=Ingrid API Service
+After=network.target
+
+[Service]
+Type=simple
+User=ingrid
+Group=ingrid
+WorkingDirectory=/opt/ingrid/ingrid-api
+ExecStart=/opt/ingrid/ingrid-api/bin/ingrid-api
+Restart=on-failure
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=ingrid-api
+
+[Install]
+WantedBy=multi-user.target

@@ -11,7 +11,7 @@ ktor:
     watch:
       - classes
       - resources
-    rootPath: "$CONTEXT_PATH:/"
+    rootPath: "$CONTEXT_PATH:"
   elasticsearch:
     host: "$ES_HOST:localhost"
     port: "$ES_PORT:9200"

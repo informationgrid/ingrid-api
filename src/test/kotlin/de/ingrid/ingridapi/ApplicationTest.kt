@@ -19,5 +19,9 @@ class ApplicationTest {
                 assertEquals(HttpStatusCode.OK, status)
                 assertContains(bodyAsText(), "Available APIs:")
             }
+            client.get("").apply {
+                assertEquals(HttpStatusCode.OK, status)
+                assertContains(bodyAsText(), "Available APIs:")
+            }
         }
 }

@@ -3,6 +3,7 @@ Description=Ingrid API Service
 After=network.target
 
 [Service]
+Environment=
 Type=simple
 User=ingrid
 Group=ingrid

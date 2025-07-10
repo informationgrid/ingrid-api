@@ -14,7 +14,7 @@ fun Application.configureRouting2() {
       openApi("api2") // api-spec json is served at '/myApi.json'
     }
     route("api2", {specName = "api2"}) {
-      swaggerUI("/portal/myApi.json") // swagger-ui is available at '/mySwagger' or '/mySwagger/index.html'
+      swaggerUI("myApi.json") // swagger-ui is available at '/mySwagger' or '/mySwagger/index.html'
       get("test", { description = "Test api" }) { call.respondText("Test von API 2 :-)") }
       get(
         "param/{arg1}",

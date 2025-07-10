@@ -23,7 +23,7 @@ fun Application.configurePortalRouting() {
       openApi("portal") // api-spec json is served at '/myApi.json'
     }
     route("portal", {specName = "portal"}) {
-      swaggerUI("/portal/myApi.json") // swagger-ui is available at '/mySwagger' or '/mySwagger/index.html'
+      swaggerUI("myApi.json") // swagger-ui is available at '/mySwagger' or '/mySwagger/index.html'
       post("search", { request { body<String>() } }) {
         call.respond(elastic.search(call.receiveText()))
       }

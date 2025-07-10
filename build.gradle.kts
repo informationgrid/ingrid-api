@@ -107,7 +107,8 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation")
 
     // swagger
-    implementation("io.github.smiley4:ktor-swagger-ui:4.1.6")
+    implementation("io.github.smiley4:ktor-swagger-ui:5.1.0")
+    implementation("io.github.smiley4:ktor-openapi:5.1.0")
 
     // elasticsearch-client
     implementation("com.jillesvangurp:search-client:2.3.13")

@@ -18,7 +18,12 @@ pipeline {
 
     stages {
         stage('Build Image') {
-            when { expression { return shouldBuildDevOrRelease() } }
+            when {
+                allOf {
+                    shouldBuildDockerImage()
+                    shouldBuildDevOrRelease()
+                }
+            }
             steps {
                 sh './gradlew clean build cyclonedxBom -x test -x check'
             }
@@ -27,6 +32,7 @@ pipeline {
         stage ('Base-Image Update') {
             when {
                 allOf {
+                    shouldBuildDockerImage()
                     buildingTag()
                     expression { return currentBuild.number > 1 }
                 }
@@ -41,10 +47,10 @@ pipeline {
             // In Jenkins there's a special Tag-Job, that handles the release
             when {
                 anyOf {
-                    expression { return shouldBuildDevOrRelease() }
+                    expression { return shouldBuildDevOrRelease() && shouldBuildDockerImage() }
                     allOf {
                         buildingTag()
-                        expression { return currentBuild.number > 1 }
+                        expression { return currentBuild.number > 1 && shouldBuildDockerImage() }
                     }
                 }
             }
@@ -164,4 +170,8 @@ def shouldBuildDevOrRelease() {
     // If no tag is being built OR it is the first build of a tag
     boolean isTag = env.TAG_NAME != null && env.TAG_NAME.trim() != ''
     return !isTag || (isTag && currentBuild.number == 1)
+}
+
+def shouldBuildDockerImage() {
+    return !env.TAG_NAME.startsWith("RPM-")
 }

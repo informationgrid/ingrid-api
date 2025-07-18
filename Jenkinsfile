@@ -65,34 +65,31 @@ pipeline {
 
         stage('Build RPM') {
             when { expression { return shouldBuildDevOrRelease() } }
+            agent {
+                docker {
+                    image 'docker-registry.wemove.com/ingrid-rpmbuilder-jdk21-improved'
+                    reuseNode true
+                }
+            }
             steps {
                 script {
                     sh "sed -i 's/^Version:.*/Version: ${determineVersion()}/' rpm/ingrid-api.spec"
                     sh "sed -i 's/^Release:.*/Release: ${env.TAG_NAME ? '1' : 'dev'}/' rpm/ingrid-api.spec"
 
-                    def containerId = sh(script: "docker run -d -e RPM_SIGN_PASSPHRASE=\$RPM_SIGN_PASSPHRASE --entrypoint=\"\" docker-registry.wemove.com/ingrid-rpmbuilder-jdk21-improved tail -f /dev/null", returnStdout: true).trim()
+                    // Copy files to expected locations in container
+                    sh "mkdir -p ./build/rpms /root/rpmbuild/SPECS"
+                    sh "cp ${WORKSPACE}/rpm/ingrid-api.spec /root/rpmbuild/SPECS/ingrid-api.spec"
 
-                    try {
+                    // Build and sign RPM
+                    sh """
+                        rpmbuild -bb /root/rpmbuild/SPECS/ingrid-api.spec &&
+                        gpg --batch --import $RPM_PUBLIC_KEY &&
+                        gpg --batch --import $RPM_PRIVATE_KEY &&
+                        expect /rpm-sign.exp /root/rpmbuild/RPMS/noarch/*.rpm
+                    """
 
-                        sh """
-                            docker cp build/distributions ${containerId}:/files &&
-                            docker cp rpm/ingrid-api.spec ${containerId}:/root/rpmbuild/SPECS/ingrid-api.spec &&
-                            docker cp rpm/. ${containerId}:/rpm &&
-                            docker cp \$RPM_PUBLIC_KEY ${containerId}:/public.key &&
-                            docker cp \$RPM_PRIVATE_KEY ${containerId}:/private.key &&
-                            docker exec ${containerId} bash -c "
-                            rpmbuild -bb /root/rpmbuild/SPECS/ingrid-api.spec &&
-                            gpg --batch --import public.key &&
-                            gpg --batch --import private.key &&
-                            expect /rpm-sign.exp /root/rpmbuild/RPMS/noarch/*.rpm
-                            "
-                        """
-
-                        sh "docker cp ${containerId}:/root/rpmbuild/RPMS/noarch ./build/rpms"
-
-                    } finally {
-                        sh "docker rm -f ${containerId}"
-                    }
+                    // Copy built RPMs back to workspace
+                    sh "cp -r /root/rpmbuild/RPMS/noarch/* ${WORKSPACE}/build/rpms/"
 
                     archiveArtifacts artifacts: 'build/rpms/ingrid-api-*.rpm', fingerprint: true
                 }

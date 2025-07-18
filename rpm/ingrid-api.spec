@@ -26,12 +26,12 @@ InGrid API
 rm -Rf %{buildroot}*
 
 mkdir -p %{target}
-unzip -qq "/files/ingrid-api-[0-9]*.zip"
+unzip -qq "${WORKSPACE}/build/distributions/ingrid-api-[0-9]*.zip"
 mv ./ingrid-api-*/* %{target}
 
 # Copy over the systemd unit file
 mkdir -p %{buildroot}%{systemd_dir}
-cp /rpm/%{ingrid_unit_name} %{buildroot}%{systemd_dir}
+cp ${WORKSPACE}/rpm/%{ingrid_unit_name} %{buildroot}%{systemd_dir}
 
 %files
 %defattr(0644,ingrid,ingrid,0755)

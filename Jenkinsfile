@@ -74,7 +74,7 @@ pipeline {
             steps {
                 script {
                     sh "sed -i 's/^Version:.*/Version: ${determineVersion()}/' rpm/ingrid-api.spec"
-                    sh "sed -i 's/^Release:.*/Release: ${env.TAG_NAME ? '1' : 'dev'}/' rpm/ingrid-api.spec"
+                    sh "sed -i 's/^Release:.*/Release: ${determineRpmReleasePart()}/' rpm/ingrid-api.spec"
 
                     // Copy files to expected locations in container
                     sh "mkdir -p ./build/rpms /root/rpmbuild/SPECS"
@@ -152,11 +152,23 @@ def getCronParams() {
 def determineVersion() {
     if (env.TAG_NAME) {
         if (env.TAG_NAME.startsWith("RPM-")) {
-            return env.TAG_NAME.substring(4) // Remove "RPM-" prefix
+            def lastDashIndex = env.TAG_NAME.lastIndexOf("-")
+            return env.TAG_NAME.substring(4, lastDashIndex)
         }
         return env.TAG_NAME
     } else {
         return env.BRANCH_NAME.replaceAll('/', '_')
+    }
+}
+
+def determineRpmReleasePart() {
+    if (env.TAG_NAME) {
+        if (env.TAG_NAME.startsWith("RPM-")) {
+            return env.TAG_NAME.substring(env.TAG_NAME.lastIndexOf("-") + 1)
+        }
+        return '1'
+    } else {
+        return 'dev'
     }
 }
 

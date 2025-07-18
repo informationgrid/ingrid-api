@@ -154,6 +154,9 @@ def getCronParams() {
 
 def determineVersion() {
     if (env.TAG_NAME) {
+        if (env.TAG_NAME.startsWith("RPM-")) {
+            return env.TAG_NAME.substring(4) // Remove "RPM-" prefix
+        }
         return env.TAG_NAME
     } else {
         return env.BRANCH_NAME.replaceAll('/', '_')

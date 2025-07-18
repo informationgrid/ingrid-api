@@ -35,7 +35,7 @@ ktor {
         val tagName = System.getenv("TAG_NAME").orEmpty()
 
         val tag =
-            if (tagName.isNotEmpty()) {
+            if (tagName.isNotEmpty() && !tagName.startsWith("RPM-")) {
                 tagName
             } else if (branchName.isNotEmpty()) {
                 if (branchName == "main") "latest" else branchName.replace("/", "-")

@@ -76,7 +76,7 @@ pipeline {
                     sh "sed -i 's/^Version:.*/Version: ${determineVersion()}/' rpm/ingrid-api.spec"
                     sh "sed -i 's/^Release:.*/Release: ${determineRpmReleasePart()}/' rpm/ingrid-api.spec"
 
-                    // Copy files to expected locations in container
+                    // Prepare build
                     sh "mkdir -p ./build/rpms /root/rpmbuild/SPECS"
                     sh "cp ${WORKSPACE}/rpm/ingrid-api.spec /root/rpmbuild/SPECS/ingrid-api.spec"
 
@@ -91,7 +91,7 @@ pipeline {
                     // Copy built RPMs back to workspace
                     sh "cp -r /root/rpmbuild/RPMS/noarch/* ${WORKSPACE}/build/rpms/"
 
-                    archiveArtifacts artifacts: 'build/rpms/ingrid-api-*.rpm', fingerprint: true
+                    archiveArtifacts artifacts: "build/rpms/ingrid-api-*.rpm", fingerprint: true
                 }
             }
         }
@@ -102,6 +102,7 @@ pipeline {
                 script {
                     def repoType = env.TAG_NAME ? "rpm-ingrid-releases" : "rpm-ingrid-snapshots"
                     sh "mv build/reports/bom.json build/reports/ingrid-api-${determineVersion()}.bom.json"
+                    archiveArtifacts artifacts: "build/reports/*.bom.json", fingerprint: true
 
                     withCredentials([usernamePassword(credentialsId: '9623a365-d592-47eb-9029-a2de40453f68', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
                         sh '''
@@ -151,7 +152,7 @@ def getCronParams() {
 
 def determineVersion() {
     if (env.TAG_NAME) {
-        if (env.TAG_NAME.startsWith("RPM-")) {
+        if (env.TAG_NAME.startsWith("RPM-")) { // e.g. RPM-8.0.0-0.1SNAPSHOT
             def lastDashIndex = env.TAG_NAME.lastIndexOf("-")
             return env.TAG_NAME.substring(4, lastDashIndex)
         }
@@ -182,5 +183,4 @@ def shouldBuildDockerImage() {
     if (env.TAG_NAME && env.TAG_NAME.startsWith("RPM-")) {
         return false
     } else return true
-
 }

@@ -1,11 +1,10 @@
 
 ktor:
-  development: true
+  development: "$DEVELOPMENT:false"
   application:
     modules:
       - de.ingrid.ingridapi.ApplicationKt.base
       - de.ingrid.ingridapi.ApplicationKt.portal
-#      - de.ingrid.ingridapi.ApplicationKt.module2
   deployment:
     port: 8080
     watch:

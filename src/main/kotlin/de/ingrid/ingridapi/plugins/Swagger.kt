@@ -9,7 +9,7 @@ fun Application.configureSwagger() {
     spec("portal") {
       info {
         title = "Portal API"
-        description = "Example API 1 for testing and demonstration purposes."
+        description = "This API is used by the InGrid Portal to retrieve data."
       }
     }
   }

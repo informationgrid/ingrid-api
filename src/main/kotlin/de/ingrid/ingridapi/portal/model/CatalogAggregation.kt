@@ -77,7 +77,7 @@ data class HitSource(
 
     fun getTitle(): String {
 
-        if (docType.isEmpty()) {
+        if (docType.isNullOrEmpty()) {
             val personTitleString = getFirstContent(personTitle)
             val firstNameString = getFirstContent(firstName)
             val lastNameString = getFirstContent(lastName)

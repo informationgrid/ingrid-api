@@ -66,6 +66,7 @@ data class HitSource(
     @JsonNames("t01_object.obj_class") val docType: String? = null,
     @JsonNames("t02_address.typ") private val addressType: JsonElement? = null,
     private val datatype: JsonElement? = null,
+    @JsonNames("t02_address.title") private val personTitle: JsonElement? = null,
     @JsonNames("t02_address.firstname") private val firstName: JsonElement? = null,
     @JsonNames("t02_address.lastname") private val lastName: JsonElement? = null,
     @JsonNames("organisation") private val organisation: JsonElement? = null,
@@ -77,12 +78,24 @@ data class HitSource(
     fun getTitle(): String {
         if (title.isNotEmpty()) return title
 
+        val personTitleString = getFirstContent(personTitle)
         val firstNameString = getFirstContent(firstName)
         val lastNameString = getFirstContent(lastName)
 
         if (lastNameString.isEmpty() && firstNameString.isEmpty()) return getFirstContent(organisation)
 
-        return "$lastNameString, $firstNameString"
+        val builder = StringBuilder()
+
+        if (personTitleString.isNotEmpty())
+            builder.append("$personTitleString")
+
+        if (firstNameString.isNotEmpty())
+            builder.append(" $firstNameString")
+
+        if (lastNameString.isNotEmpty())
+            builder.append(" $lastNameString")
+
+        return builder.toString().trim()
     }
 
     private fun getFirstContent(element: JsonElement?): String =

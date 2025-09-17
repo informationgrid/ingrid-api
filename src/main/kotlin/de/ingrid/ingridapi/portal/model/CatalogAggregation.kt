@@ -104,7 +104,7 @@ data class HitSource(
         if (element is JsonPrimitive) {
             element.content
         } else {
-            element?.jsonArray?.map { it.jsonPrimitive.content }?.firstOrNull() ?: "?"
+            element?.jsonArray?.map { it.jsonPrimitive.content }?.firstOrNull() ?: ""
         }
 
     private fun getContentAsList(element: JsonElement?): List<String> =

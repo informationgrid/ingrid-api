@@ -81,8 +81,10 @@ data class HitSource(
             val personTitleString = getFirstContent(personTitle)
             val firstNameString = getFirstContent(firstName)
             val lastNameString = getFirstContent(lastName)
+            val organisationString = getFirstContent(organisation)
 
-            if (lastNameString.isEmpty() && firstNameString.isEmpty()) return getFirstContent(organisation)
+            if (organisationString.trim().isNotEmpty())
+                return organisationString.trim()
 
             val personString = buildString {
                 if (personTitleString.trim().isNotEmpty())
@@ -94,7 +96,6 @@ data class HitSource(
                 if (lastNameString.trim().isNotEmpty())
                     append(" $lastNameString")
             }
-
             if (personString.trim().isNotEmpty())
                 return personString.trim()
         }

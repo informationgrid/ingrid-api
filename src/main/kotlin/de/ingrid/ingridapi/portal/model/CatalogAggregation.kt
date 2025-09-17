@@ -76,8 +76,6 @@ data class HitSource(
     fun getAddressTypeDatatype(): String = getFirstContent(addressType)
 
     fun getTitle(): String {
-        if (title.isNotEmpty()) return title
-
         val personTitleString = getFirstContent(personTitle)
         val firstNameString = getFirstContent(firstName)
         val lastNameString = getFirstContent(lastName)
@@ -95,7 +93,11 @@ data class HitSource(
         if (lastNameString.isNotEmpty())
             builder.append(" $lastNameString")
 
-        return builder.toString().trim()
+        val person = builder.toString().trim()
+        if (person.isNotEmpty())
+            return person
+
+        return title
     }
 
     private fun getFirstContent(element: JsonElement?): String =

@@ -1,5 +1,5 @@
 import fr.brouillard.oss.gradle.plugins.JGitverPluginExtensionBranchPolicy
-import io.ktor.plugin.features.DockerImageRegistry
+import io.ktor.plugin.features.*
 
 val koin_version: String by project
 val logback_version: String by project
@@ -47,10 +47,9 @@ ktor {
             DockerImageRegistry.externalRegistry(
                 providers.environmentVariable("DOCKER_REGISTRY_CREDS_USR"),
                 providers.environmentVariable("DOCKER_REGISTRY_CREDS_PSW"),
-                provider { "docker-registry.wemove.com/ingrid-api" },
+                provider { "docker-registry.wemove.com/ingrid-api:$tag" },
             ),
         )
-        localImageName.set("docker-registry.wemove.com/ingrid-api")
         imageTag.set(tag)
     }
 }
@@ -151,7 +150,7 @@ tasks.cyclonedxBom {
 }
 
 tasks {
-  test {
-    ignoreFailures = true
-  }
+    test {
+        ignoreFailures = true
+    }
 }

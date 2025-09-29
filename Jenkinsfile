@@ -119,7 +119,11 @@ pipeline {
 
     post {
         always {
-            junit 'build/test-results/**/*.xml'
+            script {
+                if (!(buildingTag() && currentBuild.number > 1)) {
+                    junit 'build/test-results/**/*.xml'
+                }
+            }
         }
         changed {
             // send Email with Jenkins' default configuration

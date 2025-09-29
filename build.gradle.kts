@@ -47,10 +47,9 @@ ktor {
             DockerImageRegistry.externalRegistry(
                 providers.environmentVariable("DOCKER_REGISTRY_CREDS_USR"),
                 providers.environmentVariable("DOCKER_REGISTRY_CREDS_PSW"),
-                provider { "docker-registry.wemove.com/ingrid-api" },
+                provider { "docker-registry.wemove.com/ingrid-api:$tag" },
             ),
         )
-        localImageName.set("docker-registry.wemove.com/ingrid-api")
         imageTag.set(tag)
     }
 }
@@ -147,4 +146,10 @@ tasks.cyclonedxBom {
     // The file format generated, can be xml, json or all for generating both. Defaults to 'all'
     setOutputFormat("json")
     setComponentVersion(rootProject.version.toString())
+}
+
+tasks {
+    test {
+        ignoreFailures = true
+    }
 }

@@ -84,7 +84,7 @@ pipeline {
                     ]) {
                         sh 'gpg --batch --import $RPM_PUBLIC_KEY'
                         sh 'gpg --batch --import $RPM_PRIVATE_KEY'
-                        sh "mkdir -p ./build ./build/rpms ./build/rpms/ingrid"
+                        sh "mkdir -p ./build/rpms/ingrid"
                         sh "cp -r /root/rpmbuild/RPMS/noarch/* ${WORKSPACE}/build/rpms/ingrid/"
                         sh "expect /rpm-sign.exp ${WORKSPACE}/build/rpms/ingrid/*.rpm"
 
@@ -100,7 +100,7 @@ pipeline {
                         sh 'rm -f ~/.gnupg/*.gpg'
                         sh 'gpg --batch --import $RPM_PUBLIC_KEY'
                         sh 'gpg --batch --import $RPM_PRIVATE_KEY'
-                        sh "mkdir -p ./build ./build/rpms ./build/rpms/itzbund"
+                        sh "mkdir -p ./build/rpms/itzbund"
                         sh "cp -r /root/rpmbuild/RPMS/noarch/* ${WORKSPACE}/build/rpms/itzbund/"
                         sh "expect /rpm-sign.exp ${WORKSPACE}/build/rpms/itzbund/*.rpm"
 

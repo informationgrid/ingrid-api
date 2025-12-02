@@ -12,5 +12,11 @@ fun Application.configureSwagger() {
         description = "This API is used by the InGrid Portal to retrieve data."
       }
     }
+    spec("ogc-records") {
+      info {
+        title = "OGC API - Records"
+        description = "OGC API Records endpoints as specified by OGC."
+      }
+    }
   }
 }

@@ -5,6 +5,7 @@ ktor:
     modules:
       - de.ingrid.ingridapi.ApplicationKt.base
       - de.ingrid.ingridapi.ApplicationKt.portal
+      - de.ingrid.ingridapi.ApplicationKt.ogcRecords
   deployment:
     port: 8080
     watch:

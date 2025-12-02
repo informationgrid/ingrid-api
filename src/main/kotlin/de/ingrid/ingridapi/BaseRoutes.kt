@@ -7,7 +7,7 @@ import io.ktor.server.routing.*
 fun Application.configureBaseRoutes() {
   routing {
     // Handle both root paths (with and without trailing slash)
-    val responseText = "Available APIs: portal"
+    val responseText = "Available APIs: portal, ogc/records"
     get("/") { call.respondText(responseText) }
     get("") { call.respondText(responseText) }
   }

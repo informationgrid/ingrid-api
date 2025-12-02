@@ -3,6 +3,7 @@ package de.ingrid.ingridapi
 import de.ingrid.ingridapi.api2.configureRouting2
 import de.ingrid.ingridapi.plugins.*
 import de.ingrid.ingridapi.portal.configurePortalRouting
+import de.ingrid.ingridapi.ogc.records.configureOgcRecordsRouting
 import io.ktor.server.application.*
 import io.ktor.server.netty.*
 
@@ -29,4 +30,8 @@ fun Application.portal() {
 
 fun Application.module2() {
   configureRouting2()
+}
+
+fun Application.ogcRecords() {
+  configureOgcRecordsRouting()
 }

@@ -1,5 +1,6 @@
 package de.ingrid.ingridapi.ogc.records
 
+import de.ingrid.ingridapi.ogc.records.services.RecordsService
 import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.openApi
 import io.github.smiley4.ktoropenapi.route
@@ -8,8 +9,12 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.koin.ktor.ext.inject
 
 fun Application.configureOgcRecordsRouting() {
+
+  val recordsService by inject<RecordsService>()
+
   routing {
     // Serve the OpenAPI JSON for OGC Records at '/ogc/records/myApi.json'
     route("ogc/records/myApi.json") { openApi("ogc-records") }
@@ -27,9 +32,18 @@ fun Application.configureOgcRecordsRouting() {
             "title" to "OGC API - Records",
             "links" to listOf(
               mapOf("rel" to "self", "href" to "/ogc/records", "type" to "application/json"),
-              mapOf("rel" to "service-desc", "href" to "/ogc/records/myApi.json", "type" to "application/vnd.oai.openapi+json;version=3.0"),
+              mapOf(
+                "rel" to "service-desc",
+                "href" to "/ogc/records/myApi.json",
+                "type" to "application/vnd.oai.openapi+json;version=3.0"
+              ),
               mapOf("rel" to "conformance", "href" to "/ogc/records/conformance", "type" to "application/json"),
-              mapOf("rel" to "data", "href" to "/ogc/records/collections", "type" to "application/json", "title" to "Collections")
+              mapOf(
+                "rel" to "data",
+                "href" to "/ogc/records/collections",
+                "type" to "application/json",
+                "title" to "Collections"
+              )
             )
           )
         )
@@ -55,24 +69,12 @@ fun Application.configureOgcRecordsRouting() {
       get("collections", {
         description = "Lists available record collections"
       }) {
-        val collections = listOf(
+        val collections = recordsService.getCollections().map {
           mapOf(
-            "id" to "records",
-            "title" to "Records",
-            "description" to "A collection of searchable records",
-            "itemType" to "record",
-            "extent" to mapOf<String, Any>(
-              "spatial" to mapOf(
-                "bbox" to listOf(listOf(-180, -90, 180, 90)),
-                "crs" to "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
-              )
-            ),
-            "links" to listOf(
-              mapOf("rel" to "self", "href" to "/ogc/records/collections/records", "type" to "application/json"),
-              mapOf("rel" to "items", "href" to "/ogc/records/collections/records/items", "type" to "application/geo+json")
-            )
+            "id" to it["indexId"],
+            "title" to it["iPlugName"],
           )
-        )
+        }
         call.respond(mapOf("collections" to collections))
       }
 

@@ -18,61 +18,65 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 class ElasticsearchService(
-    config: AppConfig,
+  config: AppConfig,
 ) {
-    private val log = logger {}
-    private val client =
-        SearchClient(
-            KtorRestClient(
-                host = config.elasticHost,
-                port = config.elasticPort,
-                https = config.elasticHttps,
-                user = config.elasticUsername,
-                password = config.elasticPassword,
-            ),
-        )
+  private val log = logger {}
+  private val client =
+    SearchClient(
+      KtorRestClient(
+        host = config.elasticHost,
+        port = config.elasticPort,
+        https = config.elasticHttps,
+        user = config.elasticUsername,
+        password = config.elasticPassword,
+      ),
+    )
 
-    init {
-        log.info { "Elastic Host: ${config.elasticHost}:${config.elasticPort}" }
-    }
+  init {
+    log.info { "Elastic Host: ${config.elasticHost}:${config.elasticPort}" }
+  }
 
-    suspend fun search(rawQuery: String): SearchResult {
-        val indices =
-            getActiveIndices().joinToString(",").also { log.debug { "Searching in indices: $it" } }
-        val response = client.search(indices, rawJson = rawQuery, ignoreUnavailable = true)
+  suspend fun search(rawQuery: String): SearchResult {
+    val indices =
+      getActiveIndices().joinToString(",").also { log.debug { "Searching in indices: $it" } }
+    val response = client.search(indices, rawJson = rawQuery, ignoreUnavailable = true)
 
-        log.debug { "Found ${response.hits?.hits?.size} hits on indices: $indices" }
-        return SearchResult(
-            response.total,
-            Json.encodeToJsonElement(response.hits?.hits ?: emptyList()) as JsonArray,
-            response.aggregations,
-        )
-    }
+    log.debug { "Found ${response.hits?.hits?.size} hits on indices: $indices" }
+    return SearchResult(
+      response.total,
+      Json.encodeToJsonElement(response.hits?.hits ?: emptyList()) as JsonArray,
+      response.aggregations,
+    )
+  }
 
-    // TODO: add caching to this function
-    private suspend fun getActiveIndices(): List<String> =
-        client
-            .search("ingrid_meta") {
-                query = term("active", "true")
-                from = 0
-                resultSize = 100
-            }
-            .parseHits<JsonObject>()
-            .mapNotNull { it["linkedIndex"]?.jsonPrimitive?.content }
+  suspend fun getActiveCatalogs(): List<JsonObject> {
+    return client
+      .search("ingrid_meta") {
+        query = term("active", "true")
+        from = 0
+        resultSize = 100
+      }
+      .parseHits<JsonObject>()
+  }
+
+  // TODO: add caching to this function
+  private suspend fun getActiveIndices(): List<String> =
+    getActiveCatalogs()
+      .mapNotNull { it["linkedIndex"]?.jsonPrimitive?.content }
 }
 
 @Serializable
 data class SearchResult(
-    val totalHits: Long,
-    val hits: JsonArray,
-    val aggregations: JsonObject? = null,
+  val totalHits: Long,
+  val hits: JsonArray,
+  val aggregations: JsonObject? = null,
 ) {
-    fun getAggregationBuckets(agg: String): JsonArray? =
-        aggregations
-            ?.get(agg)
-            ?.jsonObject
-            ?.get("buckets")
-            ?.jsonArray
+  fun getAggregationBuckets(agg: String): JsonArray? =
+    aggregations
+      ?.get(agg)
+      ?.jsonObject
+      ?.get("buckets")
+      ?.jsonArray
 }
 
 // @Serializable

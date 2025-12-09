@@ -2,6 +2,7 @@ package de.ingrid.ingridapi.plugins
 
 import de.ingrid.ingridapi.config.AppConfig
 import de.ingrid.ingridapi.core.services.ElasticsearchService
+import de.ingrid.ingridapi.ogc.records.services.RecordsService
 import de.ingrid.ingridapi.portal.services.CatalogService
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -10,15 +11,16 @@ import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
 
 fun Application.configureKoin() {
-    install(Koin) {
-        slf4jLogger()
-        modules(appModule)
-    }
+  install(Koin) {
+    slf4jLogger()
+    modules(appModule)
+  }
 }
 
 val appModule =
-    module {
-        single { AppConfig() }
-        single { CatalogService() }
-        single { ElasticsearchService(get()) }
-    }
+  module {
+    single { AppConfig() }
+    single { CatalogService() }
+    single { ElasticsearchService(get()) }
+    single { RecordsService(get()) }
+  }

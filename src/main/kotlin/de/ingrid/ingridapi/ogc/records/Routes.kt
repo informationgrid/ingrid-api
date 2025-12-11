@@ -10,6 +10,8 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.koin.ktor.ext.inject
+import de.ingrid.ingridapi.ogc.records.export.CollectionsExporterFactory
+import de.ingrid.ingridapi.ogc.records.export.parseExportFormat
 
 fun Application.configureOgcRecordsRouting() {
 
@@ -68,6 +70,10 @@ fun Application.configureOgcRecordsRouting() {
       // Collections list (placeholder)
       get("collections", {
         description = "Lists available record collections"
+        request {
+          queryParameter<String>("format") { description = "Output format: json (default) or html" }
+          queryParameter<String>("f") { description = "Alias for 'format'" }
+        }
       }) {
         val collections = recordsService.getCollections().map {
           mapOf(
@@ -75,7 +81,9 @@ fun Application.configureOgcRecordsRouting() {
             "title" to it["iPlugName"],
           )
         }
-        call.respond(mapOf("collections" to collections))
+        val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
+        val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam))
+        exporter.respond(call, collections)
       }
 
       // Single collection by id (placeholder)

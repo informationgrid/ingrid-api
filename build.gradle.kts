@@ -1,14 +1,14 @@
 import fr.brouillard.oss.gradle.plugins.JGitverPluginExtensionBranchPolicy
-import io.ktor.plugin.features.*
+import io.ktor.plugin.features.DockerImageRegistry
 
-val koin_version: String by project
-val logback_version: String by project
-val mockk_version = "1.13.12"
+val koinVersion: String by project
+val logbackVersion: String by project
+val mockkVersion = "1.13.12"
 
 plugins {
-    kotlin("jvm") version "2.1.20"
-    kotlin("plugin.serialization") version "2.1.20"
-    id("io.ktor.plugin") version "3.3.0"
+    kotlin("jvm") version "2.2.21"
+    kotlin("plugin.serialization") version "2.2.21"
+    id("io.ktor.plugin") version "3.3.3"
     id("fr.brouillard.oss.gradle.jgitver") version "0.9.1"
     id("com.diffplug.spotless") version "7.0.3"
     id("org.cyclonedx.bom") version "2.3.1"
@@ -113,15 +113,15 @@ dependencies {
     implementation("com.jillesvangurp:search-client:2.3.13")
 
     // dependency injection
-    implementation(project.dependencies.platform("io.insert-koin:koin-bom:$koin_version"))
+    implementation(project.dependencies.platform("io.insert-koin:koin-bom:$koinVersion"))
     implementation("io.insert-koin:koin-core")
     implementation("io.insert-koin:koin-ktor")
     implementation("io.insert-koin:koin-logger-slf4j")
 //    testImplementation("io.insert-koin:koin-test")
     testImplementation("io.insert-koin:koin-test-junit4")
-    testImplementation("io.mockk:mockk:$mockk_version")
+    testImplementation("io.mockk:mockk:$mockkVersion")
 
-    implementation("ch.qos.logback:logback-classic:$logback_version")
+    implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.4")
 
     // tests

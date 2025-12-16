@@ -63,8 +63,8 @@ class CatalogService {
         val hasAddressChildren = countItemsPrimitiveOrArray(it, "children.address_node.addr_uuid") > 0
 
         return hit.isFolder ?: false ||
-                hasObjectChildren ||
-                hasAddressChildren
+            hasObjectChildren ||
+            hasAddressChildren
     }
 
     private fun countItemsPrimitiveOrArray(

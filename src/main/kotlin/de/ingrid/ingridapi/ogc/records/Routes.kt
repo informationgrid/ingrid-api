@@ -9,13 +9,12 @@ import io.github.smiley4.ktoropenapi.route
 import io.github.smiley4.ktorswaggerui.swaggerUI
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.plugins.di.dependencies
+import io.ktor.server.plugins.di.resolve
 import io.ktor.server.response.respond
 import io.ktor.server.routing.routing
-import org.koin.ktor.ext.inject
 
 fun Application.configureOgcRecordsRouting() {
-    val recordsService by inject<RecordsService>()
-
     routing {
         // Serve the OpenAPI JSON for OGC Records at '/ogc/records/myApi.json'
         route("ogc/records/myApi.json") { openApi("ogc-records") }
@@ -76,6 +75,7 @@ fun Application.configureOgcRecordsRouting() {
                     queryParameter<String>("f") { description = "Alias for 'format'" }
                 }
             }) {
+                val recordsService = dependencies.resolve<RecordsService>()
                 val collections =
                     recordsService.getCollections().map {
                         mapOf(

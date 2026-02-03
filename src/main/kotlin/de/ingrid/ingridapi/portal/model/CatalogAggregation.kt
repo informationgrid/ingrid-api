@@ -76,28 +76,33 @@ data class HitSource(
     fun getAddressTypeDatatype(): String = getFirstContent(addressType)
 
     fun getTitle(): String {
-
         if (docType.isNullOrEmpty()) {
             val personTitleString = getFirstContent(personTitle)
             val firstNameString = getFirstContent(firstName)
             val lastNameString = getFirstContent(lastName)
             val organisationString = getFirstContent(organisation)
 
-            if (organisationString.trim().isNotEmpty())
+            if (organisationString.trim().isNotEmpty()) {
                 return organisationString.trim()
-
-            val personString = buildString {
-                if (personTitleString.trim().isNotEmpty())
-                    append("$personTitleString")
-
-                if (firstNameString.trim().isNotEmpty())
-                    append(" $firstNameString")
-
-                if (lastNameString.trim().isNotEmpty())
-                    append(" $lastNameString")
             }
-            if (personString.trim().isNotEmpty())
+
+            val personString =
+                buildString {
+                    if (personTitleString.trim().isNotEmpty()) {
+                        append("$personTitleString")
+                    }
+
+                    if (firstNameString.trim().isNotEmpty()) {
+                        append(" $firstNameString")
+                    }
+
+                    if (lastNameString.trim().isNotEmpty()) {
+                        append(" $lastNameString")
+                    }
+                }
+            if (personString.trim().isNotEmpty()) {
                 return personString.trim()
+            }
         }
         return title
     }

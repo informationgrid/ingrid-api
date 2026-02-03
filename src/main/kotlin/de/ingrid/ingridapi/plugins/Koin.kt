@@ -11,16 +11,16 @@ import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
 
 fun Application.configureKoin() {
-  install(Koin) {
-    slf4jLogger()
-    modules(appModule)
-  }
+    install(Koin) {
+        slf4jLogger()
+        modules(appModule)
+    }
 }
 
 val appModule =
-  module {
-    single { AppConfig() }
-    single { CatalogService() }
-    single { ElasticsearchService(get()) }
-    single { RecordsService(get()) }
-  }
+    module {
+        single { AppConfig() }
+        single { CatalogService() }
+        single { ElasticsearchService(get()) }
+        single { RecordsService(get()) }
+    }

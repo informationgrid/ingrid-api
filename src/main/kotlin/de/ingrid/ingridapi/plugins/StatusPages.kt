@@ -11,6 +11,9 @@ fun Application.configureStatusPages() {
         status(HttpStatusCode.NotFound) { call, status ->
             call.respondText(text = "404: This Page Was Not Found", status = status)
         }
+        exception<de.ingrid.ingridapi.core.services.SearchException> { call, _ ->
+            call.respondText(text = "500: Internal Server Error", status = HttpStatusCode.InternalServerError)
+        }
         exception<Throwable> { call, cause ->
             call.respondText(text = "500: $cause", status = HttpStatusCode.InternalServerError)
             throw cause

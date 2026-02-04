@@ -120,12 +120,8 @@ class RoutesKtTest {
                     }
                 }
             application {
-                install(DI) {
-                    dependencies {
-                        provide<ElasticsearchService> { esMock }
-                        provide(::CatalogService)
-                    }
-                }
+                dependencies.provide<ElasticsearchService> { esMock }
+                dependencies.provide(::CatalogService)
                 configurePortalRouting()
                 configureSerialization()
             }

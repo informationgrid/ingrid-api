@@ -13,6 +13,7 @@ import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.plugins.di.resolve
 import io.ktor.server.response.respond
 import io.ktor.server.routing.routing
+import kotlinx.serialization.json.jsonPrimitive
 
 fun Application.configureOgcRecordsRouting() {
     routing {
@@ -79,8 +80,8 @@ fun Application.configureOgcRecordsRouting() {
                 val collections =
                     recordsService.getCollections().map {
                         mapOf(
-                            "id" to it["indexId"],
-                            "title" to it["iPlugName"],
+                            "id" to it["indexId"]?.jsonPrimitive?.content,
+                            "title" to it["iPlugName"]?.jsonPrimitive?.content,
                         )
                     }
                 val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]

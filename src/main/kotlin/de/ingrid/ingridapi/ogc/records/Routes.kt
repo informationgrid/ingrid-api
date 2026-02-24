@@ -1,7 +1,12 @@
 package de.ingrid.ingridapi.ogc.records
 
+import de.ingrid.ingridapi.core.services.asSafeString
+import de.ingrid.ingridapi.ogc.records.export.CollectionSummary
 import de.ingrid.ingridapi.ogc.records.export.CollectionsExporterFactory
 import de.ingrid.ingridapi.ogc.records.export.parseExportFormat
+import de.ingrid.ingridapi.ogc.records.items.ItemExportFormat
+import de.ingrid.ingridapi.ogc.records.items.ItemsExporterFactory.create
+import de.ingrid.ingridapi.ogc.records.items.parseItemExportFormat
 import de.ingrid.ingridapi.ogc.records.services.RecordsService
 import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.openApi
@@ -11,7 +16,46 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.response.respond
 import io.ktor.server.routing.routing
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import org.koin.ktor.ext.inject
+
+@Serializable
+data class Link(
+    val rel: String,
+    val href: String,
+    val type: String? = null,
+    val title: String? = null,
+)
+
+@Serializable
+data class LandingPage(
+    val title: String,
+    val links: List<Link>,
+)
+
+@Serializable
+data class Conformance(
+    val conformsTo: List<String>,
+)
+
+@Serializable
+data class CollectionDetail(
+    val id: String,
+    val title: String,
+    val description: String,
+    val itemType: String,
+    val links: List<Link>,
+)
+
+@Serializable
+data class FeatureCollection(
+    val type: String,
+    val name: String,
+    val features: List<JsonElement>,
+    val links: List<Link>,
+)
 
 fun Application.configureOgcRecordsRouting() {
     val recordsService by inject<RecordsService>()
@@ -29,22 +73,22 @@ fun Application.configureOgcRecordsRouting() {
                 description = "Landing page for OGC API - Records"
             }) {
                 call.respond(
-                    mapOf(
-                        "title" to "OGC API - Records",
-                        "links" to
+                    LandingPage(
+                        title = "OGC API - Records",
+                        links =
                             listOf(
-                                mapOf("rel" to "self", "href" to "/ogc/records", "type" to "application/json"),
-                                mapOf(
-                                    "rel" to "service-desc",
-                                    "href" to "/ogc/records/myApi.json",
-                                    "type" to "application/vnd.oai.openapi+json;version=3.0",
+                                Link(rel = "self", href = "/ogc/records", type = "application/json"),
+                                Link(
+                                    rel = "service-desc",
+                                    href = "/ogc/records/myApi.json",
+                                    type = "application/vnd.oai.openapi+json;version=3.0",
                                 ),
-                                mapOf("rel" to "conformance", "href" to "/ogc/records/conformance", "type" to "application/json"),
-                                mapOf(
-                                    "rel" to "data",
-                                    "href" to "/ogc/records/collections",
-                                    "type" to "application/json",
-                                    "title" to "Collections",
+                                Link(rel = "conformance", href = "/ogc/records/conformance", type = "application/json"),
+                                Link(
+                                    rel = "data",
+                                    href = "/ogc/records/collections",
+                                    type = "application/json",
+                                    title = "Collections",
                                 ),
                             ),
                     ),
@@ -56,8 +100,8 @@ fun Application.configureOgcRecordsRouting() {
                 description = "Reports the conformance classes supported by this implementation"
             }) {
                 call.respond(
-                    mapOf(
-                        "conformsTo" to
+                    Conformance(
+                        conformsTo =
                             listOf(
                                 // Minimal placeholder conformance classes
                                 "http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core",
@@ -77,15 +121,20 @@ fun Application.configureOgcRecordsRouting() {
                 }
             }) {
                 val collections =
-                    recordsService.getCollections().map {
-                        mapOf(
-                            "id" to it["indexId"],
-                            "title" to it["iPlugName"],
-                        )
-                    }
+                    recordsService
+                        .getCollections()
+                        .map {
+                            val plug = it["plugdescription"] as JsonObject
+                            val name = plug["dataSourceName"].asSafeString()
+                            val description = plug["dataSourceDescription"].asSafeString()
+                            CollectionSummary(
+                                id = name,
+                                title = description,
+                            )
+                        }.toSet()
                 val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
                 val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam))
-                exporter.respond(call, collections)
+                exporter.respond(call, collections.toList())
             }
 
             // Single collection by id (placeholder)
@@ -96,19 +145,20 @@ fun Application.configureOgcRecordsRouting() {
                 }
             }) {
                 val id = call.parameters["collectionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+
                 val collection =
-                    mapOf(
-                        "id" to id,
-                        "title" to id.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
-                        "description" to "Description for collection '$id'",
-                        "itemType" to "record",
-                        "links" to
+                    CollectionDetail(
+                        id = id,
+                        title = id.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
+                        description = "Description for collection '$id'",
+                        itemType = "record",
+                        links =
                             listOf(
-                                mapOf("rel" to "self", "href" to "/ogc/records/collections/$id", "type" to "application/json"),
-                                mapOf(
-                                    "rel" to "items",
-                                    "href" to "/ogc/records/collections/$id/items",
-                                    "type" to "application/geo+json",
+                                Link(rel = "self", href = "/ogc/records/collections/$id", type = "application/json"),
+                                Link(
+                                    rel = "items",
+                                    href = "/ogc/records/collections/$id/items",
+                                    type = "application/geo+json",
                                 ),
                             ),
                     )
@@ -122,26 +172,33 @@ fun Application.configureOgcRecordsRouting() {
                     pathParameter<String>("collectionId") { description = "Collection identifier" }
                     queryParameter<Int>("limit") { description = "Max number of items to return" }
                     queryParameter<Int>("offset") { description = "Start offset for paging" }
+                    queryParameter<ItemExportFormat>("format") { description = "Output format of the collection items" }
                 }
             }) {
                 val id = call.parameters["collectionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
-                // Placeholder empty FeatureCollection
-                call.respond(
-                    mapOf(
-                        "type" to "FeatureCollection",
-                        "name" to id,
-                        "features" to emptyList<Any>(),
-                        "links" to
+                val featureCollection =
+                    FeatureCollection(
+                        type = "FeatureCollection",
+                        name = id,
+                        features = emptyList(),
+                        links =
                             listOf(
-                                mapOf(
-                                    "rel" to "self",
-                                    "href" to "/ogc/records/collections/$id/items",
-                                    "type" to "application/geo+json",
+                                Link(
+                                    rel = "self",
+                                    href = "/ogc/records/collections/$id/items",
+                                    type = "application/geo+json",
                                 ),
-                                mapOf("rel" to "collection", "href" to "/ogc/records/collections/$id", "type" to "application/json"),
+                                Link(
+                                    rel = "collection",
+                                    href = "/ogc/records/collections/$id",
+                                    type = "application/json",
+                                ),
                             ),
-                    ),
-                )
+                    )
+                val fmtParam = call.request.queryParameters["format"]
+                val exporter = create(parseItemExportFormat(fmtParam))
+                val records = recordsService.getRecords(id)
+                exporter.respond(call, featureCollection, records)
             }
         }
     }

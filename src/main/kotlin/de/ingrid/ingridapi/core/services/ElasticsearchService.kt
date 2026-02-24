@@ -2,6 +2,7 @@ package de.ingrid.ingridapi.core.services
 
 import com.jillesvangurp.ktsearch.KtorRestClient
 import com.jillesvangurp.ktsearch.SearchClient
+import com.jillesvangurp.ktsearch.SearchResponse
 import com.jillesvangurp.ktsearch.parseHits
 import com.jillesvangurp.ktsearch.search
 import com.jillesvangurp.ktsearch.total
@@ -77,6 +78,30 @@ class ElasticsearchService(
                 from = 0
                 resultSize = 100
             }.parseHits<JsonObject>()
+
+    suspend fun getIndexDocuments(
+        id: String,
+        size: Int,
+        from: Int,
+    ): SearchResponse.Hits? {
+        val filteredCatalogs =
+            getActiveCatalogs()
+                .filter {
+                    it["plugdescription"]
+                        ?.jsonObject["dataSourceName"]
+                        ?.jsonPrimitive
+                        ?.content
+                        .equals(id, ignoreCase = true)
+                }.mapNotNull { it["linkedIndex"]?.jsonPrimitive?.content }
+
+        if (filteredCatalogs.isEmpty()) {
+            return null
+        }
+        val indices =
+            filteredCatalogs.joinToString(",").also { log.debug { "Searching in indices: $it" } }
+        val response = client.search(indices, size = size, from = from)
+        return response.hits
+    }
 
     // TODO: add caching to this function
     private suspend fun getActiveIndices(): List<String> =

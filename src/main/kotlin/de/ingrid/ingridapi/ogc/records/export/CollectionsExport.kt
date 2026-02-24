@@ -4,6 +4,7 @@ import io.ktor.http.ContentType
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
+import kotlinx.serialization.Serializable
 
 enum class ExportFormat { JSON, HTML }
 
@@ -13,26 +14,38 @@ fun parseExportFormat(param: String?): ExportFormat =
         else -> ExportFormat.JSON
     }
 
+@Serializable
+data class CollectionSummary(
+    val id: String,
+    val title: String,
+    val description: String? = null,
+)
+
+@Serializable
+data class CollectionsResponse(
+    val collections: List<CollectionSummary>,
+)
+
 interface CollectionsExporter {
     suspend fun respond(
         call: ApplicationCall,
-        collections: List<Map<String, Any?>>,
+        collections: List<CollectionSummary>,
     )
 }
 
 class JsonCollectionsExporter : CollectionsExporter {
     override suspend fun respond(
         call: ApplicationCall,
-        collections: List<Map<String, Any?>>,
+        collections: List<CollectionSummary>,
     ) {
-        call.respond(mapOf("collections" to collections))
+        call.respond(CollectionsResponse(collections))
     }
 }
 
 class HtmlCollectionsExporter : CollectionsExporter {
     override suspend fun respond(
         call: ApplicationCall,
-        collections: List<Map<String, Any?>>,
+        collections: List<CollectionSummary>,
     ) {
         val html =
             buildString {
@@ -63,9 +76,9 @@ class HtmlCollectionsExporter : CollectionsExporter {
                     """.trimIndent(),
                 )
                 for (c in collections) {
-                    val id = c["id"]?.toString() ?: ""
-                    val title = c["title"]?.toString() ?: id
-                    val desc = c["description"]?.toString() ?: ""
+                    val id = c.id
+                    val title = c.title.ifEmpty { id }
+                    val desc = c.description.orEmpty()
                     append("<tr>")
                     append("<td><code>").append(escapeHtml(id)).append("</code></td>")
                     append("<td>").append(escapeHtml(title)).append("</td>")

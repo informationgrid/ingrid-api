@@ -1,5 +1,6 @@
 package de.ingrid.ingridapi.ogc.records.services
 
+import com.jillesvangurp.ktsearch.SearchResponse
 import de.ingrid.ingridapi.core.services.ElasticsearchService
 import kotlinx.serialization.json.JsonObject
 
@@ -8,8 +9,7 @@ class RecordsService(
 ) {
     suspend fun getCollections(): List<JsonObject> = esService.getActiveCatalogs()
 
-    fun getRecords() {
-    }
+    suspend fun getRecords(id: String): SearchResponse.Hits? = esService.getIndexDocuments(id, 10, 0)
 
     fun getRecord() {
     }

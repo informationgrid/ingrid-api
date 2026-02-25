@@ -3,6 +3,7 @@ package de.ingrid.ingridapi.ogc.records.items
 import com.jillesvangurp.ktsearch.SearchResponse
 import de.ingrid.ingridapi.ogc.records.FeatureCollection
 import io.ktor.server.application.ApplicationCall
+import kotlinx.serialization.json.JsonObject
 
 enum class ItemExportFormat {
     HTML,
@@ -22,6 +23,13 @@ interface ItemsExporter {
     suspend fun respond(
         call: ApplicationCall,
         featureCollection: FeatureCollection,
-        records: SearchResponse.Hits?,
+        searchResponse: SearchResponse?,
+        limit: Int,
+        offset: Int,
+    )
+
+    suspend fun respondSingle(
+        call: ApplicationCall,
+        record: JsonObject?,
     )
 }

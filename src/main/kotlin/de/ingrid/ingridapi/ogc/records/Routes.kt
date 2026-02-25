@@ -3,6 +3,7 @@ package de.ingrid.ingridapi.ogc.records
 import de.ingrid.ingridapi.core.services.asSafeString
 import de.ingrid.ingridapi.ogc.records.export.CollectionSummary
 import de.ingrid.ingridapi.ogc.records.export.CollectionsExporterFactory
+import de.ingrid.ingridapi.ogc.records.export.ExportFormat
 import de.ingrid.ingridapi.ogc.records.export.parseExportFormat
 import de.ingrid.ingridapi.ogc.records.items.ItemExportFormat
 import de.ingrid.ingridapi.ogc.records.items.ItemsExporterFactory.create
@@ -142,6 +143,7 @@ fun Application.configureOgcRecordsRouting() {
                 description = "Describes a single collection"
                 request {
                     pathParameter<String>("collectionId") { description = "Collection identifier" }
+                    queryParameter<String>("format") { description = "Output format of the collection detail" }
                 }
             }) {
                 val id = call.parameters["collectionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
@@ -154,15 +156,29 @@ fun Application.configureOgcRecordsRouting() {
                         itemType = "record",
                         links =
                             listOf(
-                                Link(rel = "self", href = "/ogc/records/collections/$id", type = "application/json"),
+                                Link(
+                                    rel = "self",
+                                    href = "/ogc/records/collections/$id",
+                                    type = "application/json",
+                                    title = "This collection as JSON",
+                                ),
+                                Link(
+                                    rel = "self",
+                                    href = "/ogc/records/collections/$id?f=html",
+                                    type = "text/html",
+                                    title = "This collection as HTML",
+                                ),
                                 Link(
                                     rel = "items",
                                     href = "/ogc/records/collections/$id/items",
                                     type = "application/geo+json",
+                                    title = "Items of this collection",
                                 ),
                             ),
                     )
-                call.respond(collection)
+                val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
+                val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam))
+                exporter.respond(call, collection)
             }
 
             // Items of a collection (FeatureCollection placeholder)
@@ -196,9 +212,29 @@ fun Application.configureOgcRecordsRouting() {
                             ),
                     )
                 val fmtParam = call.request.queryParameters["format"]
+                val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 10
+                val offset = call.request.queryParameters["offset"]?.toIntOrNull() ?: 0
                 val exporter = create(parseItemExportFormat(fmtParam))
-                val records = recordsService.getRecords(id)
-                exporter.respond(call, featureCollection, records)
+                val searchResponse = recordsService.getRecords(id, limit, offset)
+                exporter.respond(call, featureCollection, searchResponse, limit, offset)
+            }
+
+            // Single item by id
+            get("collections/{collectionId}/items/{recordId}", {
+                description = "Describes a single item (record) of the collection"
+                request {
+                    pathParameter<String>("collectionId") { description = "Collection identifier" }
+                    pathParameter<String>("recordId") { description = "Record identifier" }
+                    queryParameter<ItemExportFormat>("format") { description = "Output format of the record" }
+                }
+            }) {
+                val collectionId = call.parameters["collectionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                val recordId = call.parameters["recordId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                val fmtParam = call.request.queryParameters["format"]
+
+                val exporter = create(parseItemExportFormat(fmtParam))
+                val record = recordsService.getRecord(collectionId, recordId)
+                exporter.respondSingle(call, record)
             }
         }
     }

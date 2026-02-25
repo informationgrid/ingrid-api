@@ -9,8 +9,14 @@ class RecordsService(
 ) {
     suspend fun getCollections(): List<JsonObject> = esService.getActiveCatalogs()
 
-    suspend fun getRecords(id: String): SearchResponse.Hits? = esService.getIndexDocuments(id, 10, 0)
+    suspend fun getRecords(
+        id: String,
+        limit: Int = 10,
+        offset: Int = 0,
+    ): SearchResponse? = esService.getIndexDocuments(id, limit, offset)
 
-    fun getRecord() {
-    }
+    suspend fun getRecord(
+        id: String,
+        recordId: String,
+    ): JsonObject? = esService.getIndexDocument(id, recordId)
 }

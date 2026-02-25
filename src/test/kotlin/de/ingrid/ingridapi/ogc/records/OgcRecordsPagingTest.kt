@@ -1,5 +1,6 @@
 package de.ingrid.ingridapi.ogc.records
 
+import com.jillesvangurp.ktsearch.SearchResponse
 import de.ingrid.ingridapi.core.services.ElasticsearchService
 import de.ingrid.ingridapi.ogc.records.services.RecordsService
 import de.ingrid.ingridapi.plugins.configureSerialization
@@ -8,36 +9,16 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
-import io.mockk.mockkClass
+import io.mockk.mockk
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import org.junit.Rule
-import org.koin.dsl.module
-import org.koin.test.KoinTest
-import org.koin.test.KoinTestRule
-import org.koin.test.mock.MockProviderRule
-import org.koin.test.mock.declareMock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class OgcRecordsPagingTest : KoinTest {
-    @get:Rule
-    val koinTestRule =
-        KoinTestRule.create {
-            modules(
-                module {
-                    single { mockkClass(ElasticsearchService::class) }
-                    single { RecordsService(get()) }
-                },
-            )
-        }
-
-    @get:Rule
-    val mockProvider = MockProviderRule.create { mockkClass(it) }
-
+class OgcRecordsPagingTest {
     @Test
     fun testPagingParameters() =
         testApplication {
@@ -47,15 +28,20 @@ class OgcRecordsPagingTest : KoinTest {
                         json()
                     }
                 }
+
+            val esService = mockk<ElasticsearchService>(relaxed = true)
+
             application {
                 configureSerialization()
+                dependencies {
+                    provide<ElasticsearchService> { esService }
+                    provide<RecordsService> { RecordsService(esService) }
+                }
                 configureOgcRecordsRouting()
             }
 
-            declareMock<ElasticsearchService> {
-                coEvery { getIndexDocuments("test-collection", any(), any()) } returns null
-                coEvery { getActiveCatalogs() } returns emptyList()
-            }
+            coEvery { esService.getIndexDocuments("test-collection", any(), any()) } returns null
+            coEvery { esService.getActiveCatalogs() } returns emptyList()
 
             // Test explicit paging
             client.get("/ogc/records/collections/test-collection/items?limit=5&offset=10").apply {
@@ -71,8 +57,14 @@ class OgcRecordsPagingTest : KoinTest {
     @Test
     fun testHtmlPaging() =
         testApplication {
+            val esService = mockk<ElasticsearchService>(relaxed = true)
+
             application {
                 configureSerialization()
+                dependencies {
+                    provide<ElasticsearchService> { esService }
+                    provide<RecordsService> { RecordsService(esService) }
+                }
                 configureOgcRecordsRouting()
             }
 
@@ -115,11 +107,9 @@ class OgcRecordsPagingTest : KoinTest {
                     ignoreUnknownKeys = true
                     coerceInputValues = true
                 }
-            val mockSearchResponse = json.decodeFromString<com.jillesvangurp.ktsearch.SearchResponse>(mockResponseJson)
+            val mockSearchResponse = json.decodeFromString<SearchResponse>(mockResponseJson)
 
-            declareMock<ElasticsearchService> {
-                coEvery { getIndexDocuments("test-collection", 10, 0) } returns mockSearchResponse
-            }
+            coEvery { esService.getIndexDocuments("test-collection", 10, 0) } returns mockSearchResponse
 
             client.get("/ogc/records/collections/test-collection/items?format=html&limit=10&offset=0").apply {
                 assertEquals(HttpStatusCode.OK, status)

@@ -3,44 +3,22 @@ package de.ingrid.ingridapi.ogc.records
 import de.ingrid.ingridapi.core.services.ElasticsearchService
 import de.ingrid.ingridapi.ogc.records.services.RecordsService
 import de.ingrid.ingridapi.plugins.configureSerialization
-import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
-import io.mockk.mockkClass
+import io.mockk.mockk
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import org.junit.Rule
-import org.koin.dsl.module
-import org.koin.test.KoinTest
-import org.koin.test.KoinTestRule
-import org.koin.test.get
-import org.koin.test.mock.MockProviderRule
-import org.koin.test.mock.declareMock
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
-class OgcRecordsGetRecordTest : KoinTest {
-    @get:Rule
-    val koinTestRule =
-        KoinTestRule.create {
-            modules(
-                module {
-                    single { mockkClass(ElasticsearchService::class) }
-                    single { RecordsService(get()) }
-                },
-            )
-        }
-
-    @get:Rule
-    val mockProvider = MockProviderRule.create { mockkClass(it) }
-
+class OgcRecordsGetRecordTest {
     @Test
     fun testGetRecord() =
         testApplication {
@@ -50,15 +28,20 @@ class OgcRecordsGetRecordTest : KoinTest {
                         json()
                     }
                 }
+
+            val esService = mockk<ElasticsearchService>(relaxed = true)
+
             application {
                 configureSerialization()
+                dependencies {
+                    provide<ElasticsearchService> { esService }
+                    provide<RecordsService> { RecordsService(esService) }
+                }
                 configureOgcRecordsRouting()
             }
 
-            declareMock<ElasticsearchService> {
-                coEvery { getIndexDocument("test-collection", "record-1") } returns JsonObject(emptyMap())
-                coEvery { getIndexDocument("test-collection", "non-existent") } returns null
-            }
+            coEvery { esService.getIndexDocument("test-collection", "record-1") } returns JsonObject(emptyMap())
+            coEvery { esService.getIndexDocument("test-collection", "non-existent") } returns null
 
             // Test successful getRecord
             client.get("/ogc/records/collections/test-collection/items/record-1?format=index").apply {
@@ -80,7 +63,6 @@ class OgcRecordsGetRecordTest : KoinTest {
                 </idf:idfMdMetadata>
                 """.trimIndent()
 
-            val esService = get<ElasticsearchService>()
             coEvery {
                 esService.getIndexDocument(
                     "test-collection",
@@ -91,8 +73,8 @@ class OgcRecordsGetRecordTest : KoinTest {
             client.get("/ogc/records/collections/test-collection/items/record-iso?format=iso").apply {
                 assertEquals(HttpStatusCode.OK, status)
                 val body = bodyAsText()
-                assert(body.contains("<gmd:MD_Metadata"))
-                assert(body.contains("uuid=\"test-uuid\""))
+                assertTrue(body.contains("<gmd:MD_Metadata"))
+                assertTrue(body.contains("uuid=\"test-uuid\""))
             }
         }
 }

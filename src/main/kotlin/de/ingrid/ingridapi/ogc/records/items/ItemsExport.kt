@@ -11,11 +11,15 @@ enum class ItemExportFormat {
     INDEX,
 }
 
-fun parseItemExportFormat(param: String?): ItemExportFormat =
-    when (param?.lowercase()) {
-        "html" -> ItemExportFormat.HTML
-        "iso" -> ItemExportFormat.ISO
-        "index" -> ItemExportFormat.INDEX
+fun parseItemExportFormat(
+    param: String?,
+    acceptHeader: String? = null,
+): ItemExportFormat =
+    when {
+        param?.lowercase() == "html" -> ItemExportFormat.HTML
+        param?.lowercase() == "iso" -> ItemExportFormat.ISO
+        param?.lowercase() == "index" -> ItemExportFormat.INDEX
+        param == null && acceptHeader?.contains("text/html") == true -> ItemExportFormat.HTML
         else -> ItemExportFormat.HTML
     }
 

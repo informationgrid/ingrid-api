@@ -14,6 +14,7 @@ import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.openApi
 import io.github.smiley4.ktoropenapi.route
 import io.github.smiley4.ktorswaggerui.swaggerUI
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.plugins.di.dependencies
@@ -64,36 +65,9 @@ fun Application.configureOgcRecordsRouting() {
         // Serve the OpenAPI JSON for OGC Records at '/ogc/records/myApi.json'
         route("ogc/records/myApi.json") { openApi("ogc-records") }
 
-        // Swagger UI for OGC Records is under '/ogc/records' (and '/ogc/records/index.html')
+        // Swagger UI for OGC Records is under '/ogc/records'
         route("ogc/records", { specName = "ogc-records" }) {
             swaggerUI("myApi.json")
-
-            // OGC landing page (simplified)
-            get("", {
-                description = "Landing page for OGC API - Records"
-            }) {
-                call.respond(
-                    LandingPage(
-                        title = "OGC API - Records",
-                        links =
-                            listOf(
-                                Link(rel = "self", href = "/ogc/records", type = "application/json"),
-                                Link(
-                                    rel = "service-desc",
-                                    href = "/ogc/records/myApi.json",
-                                    type = "application/vnd.oai.openapi+json;version=3.0",
-                                ),
-                                Link(rel = "conformance", href = "/ogc/records/conformance", type = "application/json"),
-                                Link(
-                                    rel = "data",
-                                    href = "/ogc/records/collections",
-                                    type = "application/json",
-                                    title = "Collections",
-                                ),
-                            ),
-                    ),
-                )
-            }
 
             // Minimal conformance endpoint (placeholder)
             get("conformance", {
@@ -126,15 +100,14 @@ fun Application.configureOgcRecordsRouting() {
                         .getCollections()
                         .map {
                             val plug = it["plugdescription"] as JsonObject
-                            val name = plug["dataSourceName"].asSafeString()
-                            val description = plug["dataSourceDescription"].asSafeString()
                             CollectionSummary(
-                                id = name,
-                                title = description,
+                                id = plug["dataSourceName"].asSafeString(),
+                                title = plug["description"].asSafeString(),
                             )
                         }.toSet()
                 val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
-                val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam))
+                val accept = call.request.headers[HttpHeaders.Accept]
+                val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam, accept))
                 exporter.respond(call, collections.toList())
             }
 
@@ -177,7 +150,8 @@ fun Application.configureOgcRecordsRouting() {
                             ),
                     )
                 val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
-                val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam))
+                val accept = call.request.headers[HttpHeaders.Accept]
+                val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam, accept))
                 exporter.respond(call, collection)
             }
 
@@ -188,7 +162,9 @@ fun Application.configureOgcRecordsRouting() {
                     pathParameter<String>("collectionId") { description = "Collection identifier" }
                     queryParameter<Int>("limit") { description = "Max number of items to return" }
                     queryParameter<Int>("offset") { description = "Start offset for paging" }
-                    queryParameter<ItemExportFormat>("format") { description = "Output format of the collection items" }
+                    queryParameter<ItemExportFormat>("format") {
+                        description = "Output format of the collection items"
+                    }
                 }
             }) {
                 val recordsService = dependencies.resolve<RecordsService>()
@@ -213,9 +189,10 @@ fun Application.configureOgcRecordsRouting() {
                             ),
                     )
                 val fmtParam = call.request.queryParameters["format"]
+                val accept = call.request.headers[HttpHeaders.Accept]
                 val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 10
                 val offset = call.request.queryParameters["offset"]?.toIntOrNull() ?: 0
-                val exporter = create(parseItemExportFormat(fmtParam))
+                val exporter = create(parseItemExportFormat(fmtParam, accept))
                 val searchResponse = recordsService.getRecords(id, limit, offset)
                 exporter.respond(call, featureCollection, searchResponse, limit, offset)
             }
@@ -230,11 +207,13 @@ fun Application.configureOgcRecordsRouting() {
                 }
             }) {
                 val recordsService = dependencies.resolve<RecordsService>()
-                val collectionId = call.parameters["collectionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                val collectionId =
+                    call.parameters["collectionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                 val recordId = call.parameters["recordId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                 val fmtParam = call.request.queryParameters["format"]
+                val accept = call.request.headers[HttpHeaders.Accept]
 
-                val exporter = create(parseItemExportFormat(fmtParam))
+                val exporter = create(parseItemExportFormat(fmtParam, accept))
                 val record = recordsService.getRecord(collectionId, recordId)
                 exporter.respondSingle(call, record)
             }

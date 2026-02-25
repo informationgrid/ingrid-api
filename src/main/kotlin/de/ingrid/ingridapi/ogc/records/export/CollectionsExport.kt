@@ -9,10 +9,13 @@ import kotlinx.serialization.Serializable
 
 enum class ExportFormat { JSON, HTML }
 
-fun parseExportFormat(param: String?): ExportFormat =
-    when (param?.lowercase()) {
-        "html", "text/html" -> ExportFormat.HTML
-        else -> ExportFormat.JSON
+fun parseExportFormat(
+    param: String?,
+    acceptHeader: String? = null,
+): ExportFormat =
+    when {
+        param?.lowercase() == "json" || acceptHeader?.lowercase() == "application/json" -> ExportFormat.JSON
+        else -> ExportFormat.HTML
     }
 
 @Serializable

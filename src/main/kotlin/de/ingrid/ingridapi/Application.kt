@@ -4,7 +4,7 @@ import de.ingrid.ingridapi.api2.configureRouting2
 import de.ingrid.ingridapi.ogc.records.configureOgcRecordsRouting
 import de.ingrid.ingridapi.plugins.configureCompression
 import de.ingrid.ingridapi.plugins.configureCors
-import de.ingrid.ingridapi.plugins.configureKoin
+import de.ingrid.ingridapi.plugins.configureDi
 import de.ingrid.ingridapi.plugins.configureSerialization
 import de.ingrid.ingridapi.plugins.configureStatusPages
 import de.ingrid.ingridapi.plugins.configureSwagger
@@ -15,7 +15,7 @@ import io.ktor.server.netty.EngineMain
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.base() {
-    configureKoin()
+    configureDi()
     configureSerialization()
     configureCompression()
     configureCors()

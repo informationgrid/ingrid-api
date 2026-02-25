@@ -12,12 +12,10 @@ import io.ktor.server.application.Application
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
 import io.ktor.server.routing.routing
-import org.koin.ktor.ext.inject
+import io.ktor.server.plugins.di.dependencies
+import io.ktor.server.plugins.di.resolve
 
 fun Application.configurePortalRouting() {
-    val elastic by inject<ElasticsearchService>()
-    val catalogService by inject<CatalogService>()
-
     routing {
         route("portal/myApi.json") {
             openApi("portal") // api-spec json is served at '/myApi.json'
@@ -25,12 +23,15 @@ fun Application.configurePortalRouting() {
         route("portal", { specName = "portal" }) {
             swaggerUI("myApi.json") // swagger-ui is available at '/mySwagger' or '/mySwagger/index.html'
             post("search", { request { body<String>() } }) {
+                val elastic = dependencies.resolve<ElasticsearchService>()
                 call.respond(elastic.search(call.receiveText()))
             }
 
             get("catalogs", {
                 description = "Get all connected catalogs which have at least one dataset"
             }) {
+                val elastic = dependencies.resolve<ElasticsearchService>()
+                val catalogService = dependencies.resolve<CatalogService>()
                 val response = elastic.search(getCatalogsQuery)
 
                 val result = catalogService.convertCatalogsResponse(response)
@@ -50,7 +51,8 @@ fun Application.configurePortalRouting() {
             }) {
                 val index = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                 val parentUuid = call.parameters["parent"]
-
+                val elastic = dependencies.resolve<ElasticsearchService>()
+                val catalogService = dependencies.resolve<CatalogService>()
                 val response = elastic.search(getHierarchy(index, parentUuid))
                 val result = catalogService.convertCatalogHierarchyResponse(response)
                 call.respond(result)

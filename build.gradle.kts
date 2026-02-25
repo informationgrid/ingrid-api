@@ -3,7 +3,6 @@ import fr.brouillard.oss.gradle.plugins.JGitverPluginExtensionBranchPolicy
 import io.ktor.plugin.features.DockerImageRegistry
 import org.cyclonedx.Version
 
-val koinVersion: String by project
 val logbackVersion: String by project
 val mockkVersion = "1.14.9"
 
@@ -123,13 +122,9 @@ dependencies {
     // elasticsearch-client
     implementation("com.jillesvangurp:search-client:2.8.4")
 
-    // dependency injection
-    implementation(project.dependencies.platform("io.insert-koin:koin-bom:$koinVersion"))
-    implementation("io.insert-koin:koin-core")
-    implementation("io.insert-koin:koin-ktor")
-    implementation("io.insert-koin:koin-logger-slf4j")
-//    testImplementation("io.insert-koin:koin-test")
-    testImplementation("io.insert-koin:koin-test-junit4")
+    // dependency injection (Ktor DI)
+    implementation("io.ktor:ktor-server-di")
+    // removed Koin dependencies
     testImplementation("io.mockk:mockk:$mockkVersion")
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")

@@ -131,7 +131,7 @@ fun Application.configureOgcRecordsRouting() {
                             CollectionSummary(
                                 id = name,
                                 title = description,
-                            )
+                        )
                         }.toSet()
                 val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
                 val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam))

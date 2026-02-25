@@ -1,9 +1,10 @@
+@file:Suppress("ktlint:standard:no-wildcard-imports")
+
 package de.ingrid.ingridapi.ogc.records
 
 import de.ingrid.ingridapi.core.services.asSafeString
 import de.ingrid.ingridapi.ogc.records.export.CollectionSummary
 import de.ingrid.ingridapi.ogc.records.export.CollectionsExporterFactory
-import de.ingrid.ingridapi.ogc.records.export.ExportFormat
 import de.ingrid.ingridapi.ogc.records.export.parseExportFormat
 import de.ingrid.ingridapi.ogc.records.items.ItemExportFormat
 import de.ingrid.ingridapi.ogc.records.items.ItemsExporterFactory.create
@@ -15,12 +16,12 @@ import io.github.smiley4.ktoropenapi.route
 import io.github.smiley4.ktorswaggerui.swaggerUI
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.response.respond
 import io.ktor.server.routing.routing
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import org.koin.ktor.ext.inject
 
 @Serializable
 data class Link(
@@ -59,8 +60,6 @@ data class FeatureCollection(
 )
 
 fun Application.configureOgcRecordsRouting() {
-    val recordsService by inject<RecordsService>()
-
     routing {
         // Serve the OpenAPI JSON for OGC Records at '/ogc/records/myApi.json'
         route("ogc/records/myApi.json") { openApi("ogc-records") }
@@ -121,6 +120,7 @@ fun Application.configureOgcRecordsRouting() {
                     queryParameter<String>("f") { description = "Alias for 'format'" }
                 }
             }) {
+                val recordsService = dependencies.resolve<RecordsService>()
                 val collections =
                     recordsService
                         .getCollections()
@@ -131,7 +131,7 @@ fun Application.configureOgcRecordsRouting() {
                             CollectionSummary(
                                 id = name,
                                 title = description,
-                        )
+                            )
                         }.toSet()
                 val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
                 val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam))
@@ -191,6 +191,7 @@ fun Application.configureOgcRecordsRouting() {
                     queryParameter<ItemExportFormat>("format") { description = "Output format of the collection items" }
                 }
             }) {
+                val recordsService = dependencies.resolve<RecordsService>()
                 val id = call.parameters["collectionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                 val featureCollection =
                     FeatureCollection(
@@ -228,6 +229,7 @@ fun Application.configureOgcRecordsRouting() {
                     queryParameter<ItemExportFormat>("format") { description = "Output format of the record" }
                 }
             }) {
+                val recordsService = dependencies.resolve<RecordsService>()
                 val collectionId = call.parameters["collectionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                 val recordId = call.parameters["recordId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                 val fmtParam = call.request.queryParameters["format"]

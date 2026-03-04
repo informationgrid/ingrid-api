@@ -1,7 +1,6 @@
 package de.ingrid.ingridapi.ogc.records.items
 
 import com.jillesvangurp.ktsearch.SearchResponse
-import de.ingrid.ingridapi.core.services.asSafeString
 import de.ingrid.ingridapi.ogc.records.FeatureCollection
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall

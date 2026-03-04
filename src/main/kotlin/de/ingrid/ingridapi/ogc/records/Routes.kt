@@ -33,12 +33,6 @@ data class Link(
 )
 
 @Serializable
-data class LandingPage(
-    val title: String,
-    val links: List<Link>,
-)
-
-@Serializable
 data class Conformance(
     val conformsTo: List<String>,
 )
@@ -62,12 +56,12 @@ data class FeatureCollection(
 
 fun Application.configureOgcRecordsRouting() {
     routing {
-        // Serve the OpenAPI JSON for OGC Records at '/ogc/records/myApi.json'
-        route("ogc/records/myApi.json") { openApi("ogc-records") }
+        // Serve the OpenAPI JSON for OGC Records at '/ogc/records/api.json'
+        route("ogc/records/api.json") { openApi("ogc-records") }
 
         // Swagger UI for OGC Records is under '/ogc/records'
         route("ogc/records", { specName = "ogc-records" }) {
-            swaggerUI("myApi.json")
+            swaggerUI("api.json")
 
             // Minimal conformance endpoint (placeholder)
             get("conformance", {

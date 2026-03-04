@@ -56,12 +56,12 @@ data class FeatureCollection(
 
 fun Application.configureOgcRecordsRouting() {
     routing {
-        // Serve the OpenAPI JSON for OGC Records at '/ogc/records/api.json'
-        route("ogc/records/api.json") { openApi("ogc-records") }
+        // Serve the OpenAPI JSON for OGC Records at '/ogc/records/api'
+        route("ogc/records/api") { openApi("ogc-records") }
 
         // Swagger UI for OGC Records is under '/ogc/records'
         route("ogc/records", { specName = "ogc-records" }) {
-            swaggerUI("api.json")
+            swaggerUI("api")
 
             // Minimal conformance endpoint (placeholder)
             get("conformance", {
@@ -106,14 +106,14 @@ fun Application.configureOgcRecordsRouting() {
             }
 
             // Single collection by id (placeholder)
-            get("collections/{collectionId}", {
+            get("collections/{catalogId}", {
                 description = "Describes a single collection"
                 request {
-                    pathParameter<String>("collectionId") { description = "Collection identifier" }
+                    pathParameter<String>("catalogId") { description = "Collection identifier" }
                     queryParameter<String>("format") { description = "Output format of the collection detail" }
                 }
             }) {
-                val id = call.parameters["collectionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                val id = call.parameters["catalogId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
 
                 val collection =
                     CollectionDetail(
@@ -150,10 +150,10 @@ fun Application.configureOgcRecordsRouting() {
             }
 
             // Items of a collection (FeatureCollection placeholder)
-            get("collections/{collectionId}/items", {
+            get("collections/{catalogId}/items", {
                 description = "Lists items of the collection as a FeatureCollection (placeholder)"
                 request {
-                    pathParameter<String>("collectionId") { description = "Collection identifier" }
+                    pathParameter<String>("catalogId") { description = "Collection identifier" }
                     queryParameter<Int>("limit") { description = "Max number of items to return" }
                     queryParameter<Int>("offset") { description = "Start offset for paging" }
                     queryParameter<ItemExportFormat>("format") {
@@ -162,7 +162,7 @@ fun Application.configureOgcRecordsRouting() {
                 }
             }) {
                 val recordsService = dependencies.resolve<RecordsService>()
-                val id = call.parameters["collectionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                val id = call.parameters["catalogId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                 val featureCollection =
                     FeatureCollection(
                         type = "FeatureCollection",
@@ -192,23 +192,23 @@ fun Application.configureOgcRecordsRouting() {
             }
 
             // Single item by id
-            get("collections/{collectionId}/items/{recordId}", {
+            get("collections/{catalogId}/items/{recordId}", {
                 description = "Describes a single item (record) of the collection"
                 request {
-                    pathParameter<String>("collectionId") { description = "Collection identifier" }
+                    pathParameter<String>("catalogId") { description = "Collection identifier" }
                     pathParameter<String>("recordId") { description = "Record identifier" }
                     queryParameter<ItemExportFormat>("format") { description = "Output format of the record" }
                 }
             }) {
                 val recordsService = dependencies.resolve<RecordsService>()
-                val collectionId =
-                    call.parameters["collectionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                val catalogId =
+                    call.parameters["catalogId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                 val recordId = call.parameters["recordId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                 val fmtParam = call.request.queryParameters["format"]
                 val accept = call.request.headers[HttpHeaders.Accept]
 
                 val exporter = create(parseItemExportFormat(fmtParam, accept))
-                val record = recordsService.getRecord(collectionId, recordId)
+                val record = recordsService.getRecord(catalogId, recordId)
                 exporter.respondSingle(call, record)
             }
         }

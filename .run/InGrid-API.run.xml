@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="ApplicationKt" type="KtorApplicationConfigurationType" factoryName="Ktor" nameIsGenerated="true">
+  <configuration default="false" name="InGrid-API" type="KtorApplicationConfigurationType" factoryName="Ktor">
     <option name="ALTERNATIVE_JRE_PATH" value="openjdk-21" />
     <envs>
       <env name="DEVELOPMENT" value="true" />
@@ -15,7 +15,7 @@
     <option name="programParameters" value="" />
     <option name="shortenCommandLine" />
     <option name="vmParameters" value="-Dlogback.configurationFile=src/test/resources/logback-test.xml" />
-    <option name="workingDirectory" value="$PROJECT_DIR$" />
+    <option name="workingDirectory" value="C:\Projects\ingrid\ingrid-api" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

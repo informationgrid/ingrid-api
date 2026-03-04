@@ -2,10 +2,10 @@ package de.ingrid.ingridapi.portal
 
 import de.ingrid.ingridapi.core.services.ElasticsearchService
 import de.ingrid.ingridapi.core.services.SearchResult
-import de.ingrid.ingridapi.plugins.appModule
 import de.ingrid.ingridapi.plugins.configureSerialization
 import de.ingrid.ingridapi.portal.model.Catalog
 import de.ingrid.ingridapi.portal.model.ResponseHierarchy
+import de.ingrid.ingridapi.portal.services.CatalogService
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -13,6 +13,10 @@ import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.install
+import io.ktor.server.plugins.di.DI
+import io.ktor.server.plugins.di.dependencies
+import io.ktor.server.plugins.di.provide
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
@@ -20,26 +24,15 @@ import io.mockk.mockkClass
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import org.junit.Rule
-import org.koin.test.KoinTest
-import org.koin.test.KoinTestRule
-import org.koin.test.mock.MockProviderRule
-import org.koin.test.mock.declareMock
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class RoutesKtTest : KoinTest {
-    @get:Rule
-    val koinTestRule = KoinTestRule.create { modules(appModule) }
-
-    @get:Rule
-    val mockProvider = MockProviderRule.create { mockkClass(it) }
-
+class RoutesKtTest {
     @Ignore
     @Test
     fun testPostPortalSearchEmpty() =
-        appWrapper { client ->
+        appWrapper { client, _ ->
             client.post("/portal/search").apply {
                 assertEquals(HttpStatusCode.OK, status)
             }
@@ -47,9 +40,8 @@ class RoutesKtTest : KoinTest {
 
     @Test
     fun testGetPortalCatalogs() =
-        appWrapper { client ->
-            declareMock<ElasticsearchService> {
-                coEvery { search(any()) } returns
+        appWrapper { client, esMock ->
+            coEvery { esMock.search(any()) } returns
                     createSearchResult(
                         "[]",
                         """{
@@ -71,7 +63,6 @@ class RoutesKtTest : KoinTest {
                   ]
                 } } ] } } } ] } }""",
                     )
-            }
 
             client.get("portal/catalogs").apply {
                 assertEquals(HttpStatusCode.OK, status)
@@ -83,10 +74,8 @@ class RoutesKtTest : KoinTest {
 
     @Test
     fun testGetPortalCatalogsIdHierarchyEmpty() =
-        appWrapper { client ->
-            declareMock<ElasticsearchService> {
-                coEvery { search(any()) } returns createSearchResult("[]")
-            }
+        appWrapper { client, esMock ->
+            coEvery { esMock.search(any()) } returns createSearchResult("[]")
             client.get("/portal/catalogs/test-catalog/hierarchy").apply {
                 assertEquals(HttpStatusCode.OK, status)
                 assertEquals(emptyList<List<ResponseHierarchy>>(), body())
@@ -95,9 +84,8 @@ class RoutesKtTest : KoinTest {
 
     @Test
     fun testGetPortalCatalogsIdHierarchyRoot() =
-        appWrapper { client ->
-            declareMock<ElasticsearchService> {
-                coEvery { search(any()) } returns
+        appWrapper { client, esMock ->
+            coEvery { esMock.search(any()) } returns
                     createSearchResult(
                         """
                             [
@@ -114,7 +102,6 @@ class RoutesKtTest : KoinTest {
                             ]
                             """,
                     )
-            }
             client.get("/portal/catalogs/test-catalog/hierarchy").apply {
                 assertEquals(HttpStatusCode.OK, status)
                 val result = body<List<ResponseHierarchy>>()
@@ -123,8 +110,9 @@ class RoutesKtTest : KoinTest {
             }
         }
 
-    private fun appWrapper(block: suspend ApplicationTestBuilder.(HttpClient) -> Unit) =
+    private fun appWrapper(block: suspend ApplicationTestBuilder.(HttpClient, ElasticsearchService) -> Unit) =
         testApplication {
+            val esMock = mockkClass(ElasticsearchService::class)
             val client =
                 createClient {
                     install(ContentNegotiation) {
@@ -132,11 +120,13 @@ class RoutesKtTest : KoinTest {
                     }
                 }
             application {
+                dependencies.provide<ElasticsearchService> { esMock }
+                dependencies.provide(::CatalogService)
                 configurePortalRouting()
                 configureSerialization()
             }
 
-            block(client)
+            block(client, esMock)
         }
 
     private fun createSearchResult(

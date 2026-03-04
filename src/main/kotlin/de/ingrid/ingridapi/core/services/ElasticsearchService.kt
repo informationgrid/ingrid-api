@@ -2,6 +2,7 @@ package de.ingrid.ingridapi.core.services
 
 import com.jillesvangurp.ktsearch.KtorRestClient
 import com.jillesvangurp.ktsearch.SearchClient
+import com.jillesvangurp.ktsearch.SearchResponse
 import com.jillesvangurp.ktsearch.parseHits
 import com.jillesvangurp.ktsearch.search
 import com.jillesvangurp.ktsearch.total
@@ -70,14 +71,72 @@ class ElasticsearchService(
         }
     }
 
-    // TODO: add caching to this function
-    private suspend fun getActiveIndices(): List<String> =
+    suspend fun getActiveCatalogs(): List<JsonObject> =
         client
             .search("ingrid_meta") {
                 query = term("active", "true")
                 from = 0
                 resultSize = 100
             }.parseHits<JsonObject>()
+
+    suspend fun getIndexDocuments(
+        id: String,
+        size: Int,
+        from: Int,
+    ): SearchResponse? {
+        val filteredCatalogs =
+            getActiveCatalogs()
+                .filter {
+                    it["plugdescription"]
+                        ?.jsonObject["dataSourceName"]
+                        ?.jsonPrimitive
+                        ?.content
+                        .equals(id, ignoreCase = true)
+                }.mapNotNull { it["linkedIndex"]?.jsonPrimitive?.content }
+
+        if (filteredCatalogs.isEmpty()) {
+            return null
+        }
+        val indices =
+            filteredCatalogs.joinToString(",").also { log.debug { "Searching in indices: $it" } }
+        return client.search(indices, size = size, from = from)
+    }
+
+    suspend fun getIndexDocument(
+        id: String,
+        recordId: String,
+    ): JsonObject? {
+        val filteredCatalogs =
+            getActiveCatalogs()
+                .filter {
+                    it["plugdescription"]
+                        ?.jsonObject["dataSourceName"]
+                        ?.jsonPrimitive
+                        ?.content
+                        .equals(id, ignoreCase = true)
+                }.mapNotNull { it["linkedIndex"]?.jsonPrimitive?.content }
+
+        if (filteredCatalogs.isEmpty()) {
+            return null
+        }
+        val indices =
+            filteredCatalogs.joinToString(",").also { log.debug { "Searching in indices: $it" } }
+
+        return try {
+            client
+                .search(indices) {
+                    query = term("_id", recordId)
+                }.parseHits<JsonObject>()
+                .firstOrNull()
+        } catch (ex: Exception) {
+            log.error { "Error while fetching document $recordId from indices $indices: ${ex.message}" }
+            null
+        }
+    }
+
+    // TODO: add caching to this function
+    private suspend fun getActiveIndices(): List<String> =
+        getActiveCatalogs()
             .mapNotNull { it["linkedIndex"]?.jsonPrimitive?.content }
 }
 

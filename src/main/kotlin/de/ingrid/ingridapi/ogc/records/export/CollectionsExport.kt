@@ -1,6 +1,7 @@
 package de.ingrid.ingridapi.ogc.records.export
 
 import de.ingrid.ingridapi.ogc.records.CollectionDetail
+import de.ingrid.ingridapi.ogc.records.Conformance
 import io.ktor.http.ContentType
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
@@ -40,6 +41,11 @@ interface CollectionsExporter {
         call: ApplicationCall,
         collection: CollectionDetail,
     )
+
+    suspend fun respondConformance(
+        call: ApplicationCall,
+        conformance: Conformance,
+    )
 }
 
 class JsonCollectionsExporter : CollectionsExporter {
@@ -55,6 +61,13 @@ class JsonCollectionsExporter : CollectionsExporter {
         collection: CollectionDetail,
     ) {
         call.respond(collection)
+    }
+
+    override suspend fun respondConformance(
+        call: ApplicationCall,
+        conformance: Conformance,
+    ) {
+        call.respond(conformance)
     }
 }
 
@@ -166,6 +179,47 @@ class HtmlCollectionsExporter : CollectionsExporter {
                         append(" (<code>").append(escapeHtml(link.type)).append("</code>)")
                     }
                     append("</li>")
+                }
+                append(
+                    """
+                      </ul>
+                    </body>
+                    </html>
+                    """.trimIndent(),
+                )
+            }
+        call.respondText(html, ContentType.Text.Html)
+    }
+
+    override suspend fun respondConformance(
+        call: ApplicationCall,
+        conformance: Conformance,
+    ) {
+        val html =
+            buildString {
+                append(
+                    """
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                      <meta charset="utf-8"/>
+                      <title>OGC API - Records: Conformance</title>
+                      <style>
+                        body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif; margin:20px}
+                        ul{list-style:none; padding:0}
+                        li{margin-bottom:8px; background:#f6f8fa; padding:8px; border-radius:4px; border:1px solid #ddd}
+                        code{background:#fff; padding:2px 4px; border-radius:4px}
+                      </style>
+                    </head>
+                    <body>
+                      <nav><a href="/ogc/records">Home</a></nav>
+                      <h1>Conformance</h1>
+                      <p>This implementation conforms to the following OGC API conformance classes:</p>
+                      <ul>
+                    """.trimIndent(),
+                )
+                for (c in conformance.conformsTo) {
+                    append("<li><code>").append(escapeHtml(c)).append("</code></li>")
                 }
                 append(
                     """

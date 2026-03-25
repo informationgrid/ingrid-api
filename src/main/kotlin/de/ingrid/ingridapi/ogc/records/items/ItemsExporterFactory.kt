@@ -6,5 +6,6 @@ object ItemsExporterFactory {
             ItemExportFormat.HTML -> HtmlItemsExporter()
             ItemExportFormat.ISO -> IsoItemsExporter()
             ItemExportFormat.INDEX -> IndexItemsExporter()
+            ItemExportFormat.GEOJSON -> GeoJsonItemsExporter()
         }
 }

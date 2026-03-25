@@ -9,6 +9,7 @@ enum class ItemExportFormat {
     HTML,
     ISO,
     INDEX,
+    GEOJSON,
 }
 
 fun parseItemExportFormat(
@@ -19,7 +20,10 @@ fun parseItemExportFormat(
         param?.lowercase() == "html" -> ItemExportFormat.HTML
         param?.lowercase() == "iso" -> ItemExportFormat.ISO
         param?.lowercase() == "index" -> ItemExportFormat.INDEX
+        param?.lowercase() == "json" || param?.lowercase() == "geojson" -> ItemExportFormat.GEOJSON
         param == null && acceptHeader?.contains("text/html") == true -> ItemExportFormat.HTML
+        param == null && acceptHeader?.contains("application/geo+json") == true -> ItemExportFormat.GEOJSON
+        param == null && acceptHeader?.contains("application/json") == true -> ItemExportFormat.GEOJSON
         else -> ItemExportFormat.HTML
     }
 

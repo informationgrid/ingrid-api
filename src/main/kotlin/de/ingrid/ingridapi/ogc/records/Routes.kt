@@ -63,18 +63,25 @@ fun Application.configureOgcRecordsRouting() {
         route("ogc/records", { specName = "ogc-records" }) {
             swaggerUI("api")
 
-            // Minimal conformance endpoint (placeholder)
+            // Minimal conformance endpoint
             get("conformance", {
                 description = "Reports the conformance classes supported by this implementation"
+                request {
+                    queryParameter<String>("format") { description = "Output format: json (default) or html" }
+                }
             }) {
-                call.respond(
+                val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
+                val accept = call.request.headers[HttpHeaders.Accept]
+                val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam, accept))
+                exporter.respondConformance(
+                    call,
                     Conformance(
                         conformsTo =
                             listOf(
-                                // Minimal placeholder conformance classes
                                 "http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core",
-                                // Collections from OGC API - Common
                                 "http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections",
+                                "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson",
+                                "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html",
                             ),
                     ),
                 )

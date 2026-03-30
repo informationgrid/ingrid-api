@@ -2,6 +2,7 @@ package de.ingrid.ingridapi.ogc.records.export
 
 import de.ingrid.ingridapi.ogc.records.CollectionDetail
 import de.ingrid.ingridapi.ogc.records.Conformance
+import de.ingrid.ingridapi.ogc.records.Link
 import io.ktor.http.ContentType
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
@@ -24,10 +25,12 @@ data class CollectionSummary(
     val id: String,
     val title: String,
     val description: String? = null,
+    val links: List<Link>,
 )
 
 @Serializable
 data class CollectionsResponse(
+    val links: List<Link>,
     val collections: List<CollectionSummary>,
 )
 
@@ -35,6 +38,7 @@ interface CollectionsExporter {
     suspend fun respond(
         call: ApplicationCall,
         collections: List<CollectionSummary>,
+        links: List<Link> = emptyList(),
     )
 
     suspend fun respond(
@@ -52,8 +56,9 @@ class JsonCollectionsExporter : CollectionsExporter {
     override suspend fun respond(
         call: ApplicationCall,
         collections: List<CollectionSummary>,
+        links: List<Link>,
     ) {
-        call.respond(CollectionsResponse(collections))
+        call.respond(CollectionsResponse(links, collections))
     }
 
     override suspend fun respond(
@@ -75,6 +80,7 @@ class HtmlCollectionsExporter : CollectionsExporter {
     override suspend fun respond(
         call: ApplicationCall,
         collections: List<CollectionSummary>,
+        links: List<Link>,
     ) {
         val html =
             buildString {
@@ -123,8 +129,27 @@ class HtmlCollectionsExporter : CollectionsExporter {
                 }
                 append(
                     """
-                        </tbody>
-                      </table>
+                      </tbody>
+                    </table>
+
+                    <h2>Links</h2>
+                    <ul>
+                    """.trimIndent(),
+                )
+                for (link in links) {
+                    append("<li>")
+                    append("<span class=\"link-rel\">").append(escapeHtml(link.rel)).append("</span>")
+                    append("<a href=\"").append(escapeHtml(link.href)).append("\">")
+                    append(escapeHtml(link.title ?: link.href))
+                    append("</a>")
+                    if (link.type != null) {
+                        append(" (<code>").append(escapeHtml(link.type)).append("</code>)")
+                    }
+                    append("</li>")
+                }
+                append(
+                    """
+                      </ul>
                     </body>
                     </html>
                     """.trimIndent(),

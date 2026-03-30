@@ -1,5 +1,6 @@
 package de.ingrid.ingridapi.ogc.records
 
+import com.jillesvangurp.ktsearch.SearchResponse
 import de.ingrid.ingridapi.core.services.ElasticsearchService
 import de.ingrid.ingridapi.ogc.records.services.RecordsService
 import de.ingrid.ingridapi.plugins.configureSerialization
@@ -216,7 +217,20 @@ class OgcRecordsCoreRequirementsTest {
                     val collection = collections[0].jsonObject
                     assertEquals("test-catalog", collection["id"]?.jsonPrimitive?.content)
                     // Requirement 15: /req/core/fc-md-items-links
-                    assertNotNull(collection["links"], "Collection must have links")
+                    val links = collection["links"]?.jsonArray
+                    assertNotNull(links, "Collection must have links")
+                    val rels = links.map { it.jsonObject["rel"]?.jsonPrimitive?.content }
+                    assertTrue(rels.contains("self"), "Collection should have a self link")
+                    assertTrue(rels.contains("items"), "Collection should have an items link")
+
+                    val itemsLink = links.find { it.jsonObject["rel"]?.jsonPrimitive?.content == "items" }?.jsonObject
+                    assertEquals("application/geo+json", itemsLink?.get("type")?.jsonPrimitive?.content)
+
+                    // Requirement 13: /req/core/fc-md-links
+                    val topLinks = body["links"]?.jsonArray
+                    assertNotNull(topLinks, "Top-level response must have links")
+                    val topRels = topLinks.map { it.jsonObject["rel"]?.jsonPrimitive?.content }
+                    assertTrue(topRels.contains("self"), "Top-level response should have a self link")
                 }
         }
 
@@ -315,12 +329,22 @@ class OgcRecordsCoreRequirementsTest {
     @Test
     fun testItemsQuery() =
         testApplication {
-            val recordsService = mockk<RecordsService>(relaxed = true)
+            val elasticsearchService = mockk<ElasticsearchService>(relaxed = true)
+            val recordsService = RecordsService(elasticsearchService)
+            val mockSearchResponse = mockk<SearchResponse>(relaxed = true)
+            val mockHits = mockk<SearchResponse.Hits>(relaxed = true)
+            val mockHit = mockk<SearchResponse.Hit>(relaxed = true)
+
+            coEvery { mockHit.source } returns JsonObject(mapOf("type" to JsonPrimitive("FeatureCollection")))
+            coEvery { mockHits.hits } returns listOf(mockHit)
+            coEvery { mockSearchResponse.hits } returns mockHits
+            coEvery { elasticsearchService.getIndexDocuments(any(), any(), any()) } returns mockSearchResponse
+
             application {
                 configureSerialization()
                 configureSwagger()
                 dependencies {
-                    provide<ElasticsearchService> { mockk(relaxed = true) }
+                    provide<ElasticsearchService> { elasticsearchService }
                     provide<RecordsService> { recordsService }
                 }
                 configureOgcRecordsRouting()
@@ -336,12 +360,29 @@ class OgcRecordsCoreRequirementsTest {
             // Requirement 27: /req/core/fc-response
             client
                 .get("/ogc/records/collections/test-catalog/items") {
-                    url { parameters.append("format", "index") }
+                    url { parameters.append("format", "geojson") }
                 }.apply {
                     assertEquals(HttpStatusCode.OK, status)
                     val body = body<JsonObject>()
-                    assertEquals("FeatureCollection", body["type"]?.jsonPrimitive?.content)
+                    assertEquals(
+                        "FeatureCollection",
+                        body["type"]
+                            ?.jsonPrimitive
+                            ?.content,
+                    )
                     assertNotNull(body["features"], "Items response must have features array")
+                    val features = body["features"] as JsonArray
+                    assertEquals(1, features.size)
+                    val feature = features[0].jsonObject
+                    assertEquals("Feature", feature["type"]?.jsonPrimitive?.content)
+                    assertEquals(
+                        "FeatureCollection",
+                        feature["properties"]
+                            ?.jsonObject
+                            ?.get("type")
+                            ?.jsonPrimitive
+                            ?.content,
+                    )
                 }
         }
 

@@ -101,15 +101,44 @@ fun Application.configureOgcRecordsRouting() {
                         .getCollections()
                         .map {
                             val plug = it["plugdescription"] as JsonObject
+                            val id = plug["dataSourceName"].asSafeString()
                             CollectionSummary(
-                                id = plug["dataSourceName"].asSafeString(),
+                                id = id,
                                 title = plug["description"].asSafeString(),
+                                links =
+                                    listOf(
+                                        Link(
+                                            rel = "self",
+                                            href = "/ogc/records/collections/$id",
+                                            type = "application/json",
+                                        ),
+                                        Link(
+                                            rel = "items",
+                                            href = "/ogc/records/collections/$id/items",
+                                            type = "application/geo+json",
+                                        ),
+                                    ),
                             )
                         }.toSet()
                 val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
                 val accept = call.request.headers[HttpHeaders.Accept]
                 val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam, accept))
-                exporter.respond(call, collections.toList())
+                val links =
+                    listOf(
+                        Link(
+                            rel = "self",
+                            href = "/ogc/records/collections",
+                            type = "application/json",
+                            title = "This document as JSON",
+                        ),
+                        Link(
+                            rel = "alternate",
+                            href = "/ogc/records/collections?f=html",
+                            type = "text/html",
+                            title = "This document as HTML",
+                        ),
+                    )
+                exporter.respond(call, collections.toList(), links)
             }
 
             // Single collection by id (placeholder)

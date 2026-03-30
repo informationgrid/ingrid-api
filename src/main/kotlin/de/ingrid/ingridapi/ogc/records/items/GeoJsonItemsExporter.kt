@@ -6,6 +6,7 @@ import de.ingrid.ingridapi.ogc.records.FeatureCollection
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondText
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -34,10 +35,15 @@ class GeoJsonItemsExporter : ItemsExporter {
             buildJsonObject {
                 put("type", "FeatureCollection")
                 put("features", kotlinx.serialization.json.JsonArray(features))
+                val total = searchResponse?.total ?: 0L
+                val selfLink = featureCollection.links.find { it.rel == "self" }
+                val baseUrl = selfLink?.href ?: ""
+                val pagingLinks = createPagingLinks(baseUrl, total, limit, offset, "json")
+                val combinedLinks = featureCollection.links + pagingLinks
                 put(
                     "links",
                     kotlinx.serialization.json.JsonArray(
-                        featureCollection.links.map {
+                        combinedLinks.map {
                             buildJsonObject {
                                 put("rel", it.rel)
                                 put("href", it.href)
@@ -48,12 +54,15 @@ class GeoJsonItemsExporter : ItemsExporter {
                     ),
                 )
                 // Add other mandatory fields like numberMatched if available
-                val total = searchResponse?.total ?: 0L
                 put("numberMatched", total)
                 put("numberReturned", features.size)
             }
 
-        call.respond(geoJson)
+        call.respondText(
+            geoJson.toString(),
+            io.ktor.http.ContentType
+                .parse("application/geo+json"),
+        )
     }
 
     override suspend fun respondSingle(
@@ -68,9 +77,13 @@ class GeoJsonItemsExporter : ItemsExporter {
                     put("geometry", record["geometry"] ?: JsonPrimitive(null as String?))
                     put("properties", record)
                 }
-            call.respond(feature)
+            call.respondText(
+                feature.toString(),
+                io.ktor.http.ContentType
+                    .parse("application/geo+json"),
+            )
         } else {
-            io.ktor.http.HttpStatusCode.NotFound
+            call.respond(io.ktor.http.HttpStatusCode.NotFound)
         }
     }
 }

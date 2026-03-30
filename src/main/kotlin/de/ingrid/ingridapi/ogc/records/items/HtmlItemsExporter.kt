@@ -85,19 +85,21 @@ class HtmlItemsExporter : ItemsExporter {
                 }
                 append("</tbody></table>")
 
-                // Paging
+                val selfLink = featureCollection.links.find { it.rel == "self" }
+                val baseUrl = selfLink?.href ?: ""
+                val pagingLinks = createPagingLinks(baseUrl, total, limit, offset, "html")
+
+                // Paging UI in the body
                 if (total > limit) {
                     append("<div class=\"paging\">")
-                    if (offset > 0) {
-                        val prevOffset = max(0, offset - limit)
-                        append("<a href=\"?limit=$limit&offset=$prevOffset&format=html\">&laquo; Previous</a>")
+                    pagingLinks.find { it.rel == "prev" }?.let {
+                        append("<a href=\"${it.href}\">&laquo; Previous</a>")
                     }
                     val currentPage = (offset / limit) + 1
                     val totalPages = (total + limit - 1) / limit
                     append("<span class=\"current\">Page $currentPage of $totalPages</span>")
-                    if (offset + limit < total) {
-                        val nextOffset = offset + limit
-                        append("<a href=\"?limit=$limit&offset=$nextOffset&format=html\">Next &raquo;</a>")
+                    pagingLinks.find { it.rel == "next" }?.let {
+                        append("<a href=\"${it.href}\">Next &raquo;</a>")
                     }
                     append("</div>")
                 }

@@ -5,9 +5,11 @@ package de.ingrid.ingridapi.ogc.records
 import de.ingrid.ingridapi.core.services.asSafeString
 import de.ingrid.ingridapi.ogc.records.export.CollectionSummary
 import de.ingrid.ingridapi.ogc.records.export.CollectionsExporterFactory
+import de.ingrid.ingridapi.ogc.records.export.LandingPage
 import de.ingrid.ingridapi.ogc.records.export.parseExportFormat
 import de.ingrid.ingridapi.ogc.records.items.ItemExportFormat
 import de.ingrid.ingridapi.ogc.records.items.ItemsExporterFactory.create
+import de.ingrid.ingridapi.ogc.records.items.parseBboxParam
 import de.ingrid.ingridapi.ogc.records.items.parseItemExportFormat
 import de.ingrid.ingridapi.ogc.records.services.RecordsService
 import io.github.smiley4.ktoropenapi.get
@@ -17,6 +19,7 @@ import io.github.smiley4.ktorswaggerui.swaggerUI
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.response.respond
 import io.ktor.server.routing.routing
@@ -54,20 +57,97 @@ data class FeatureCollection(
     val links: List<Link>,
 )
 
+private suspend fun handleLandingPage(call: ApplicationCall) {
+    val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
+    val accept = call.request.headers[HttpHeaders.Accept]
+    val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam, accept))
+    exporter.respondLandingPage(
+        call,
+        LandingPage(
+            title = "OGC API - Records",
+            description = "This is the landing page of the OGC API - Records service.",
+            links =
+                listOf(
+                    Link(
+                        rel = "self",
+                        href = "/ogc/records/?f=json",
+                        type = "application/json",
+                        title = "This landing page as JSON",
+                    ),
+                    Link(
+                        rel = "alternate",
+                        href = "/ogc/records/?f=html",
+                        type = "text/html",
+                        title = "This landing page as HTML",
+                    ),
+                    Link(
+                        rel = "service-desc",
+                        href = "/ogc/records/api",
+                        type = "application/vnd.oai.openapi+json;version=3.0",
+                        title = "The OpenAPI definition for this API",
+                    ),
+                    Link(
+                        rel = "service-doc",
+                        href = "/ogc/records/swagger",
+                        type = "text/html",
+                        title = "The Swagger UI for this API",
+                    ),
+                    Link(
+                        rel = "conformance",
+                        href = "/ogc/records/conformance",
+                        type = "application/json",
+                        title = "Conformance classes supported by this API",
+                    ),
+                    Link(
+                        rel = "data",
+                        href = "/ogc/records/collections",
+                        type = "application/json",
+                        title = "Collections provided by this API",
+                    ),
+                ),
+        ),
+    )
+}
+
 fun Application.configureOgcRecordsRouting() {
     routing {
-        // Serve the OpenAPI JSON for OGC Records at '/ogc/records/api'
-        route("ogc/records/api") { openApi("ogc-records") }
-
-        // Swagger UI for OGC Records is under '/ogc/records'
+        // Landing page at '/ogc/records' and '/ogc/records/'
         route("ogc/records", { specName = "ogc-records" }) {
-            swaggerUI("api")
+            get {
+                handleLandingPage(call)
+            }
+            get("/") {
+                handleLandingPage(call)
+            }
+            get("", {
+                description = "The landing page of this OGC API."
+                hidden = true
+                request {
+                    queryParameter<String>("format") { description = "Output format: json (default) or html" }
+                }
+            }) {}
+
+            // Serve the OpenAPI JSON for OGC Records at '/ogc/records/api'
+            route("api") { openApi("ogc-records") }
+
+            // Swagger UI for OGC Records at '/ogc/records/swagger'
+            route("swagger") {
+                swaggerUI("/ogc/records/api")
+            }
 
             // Minimal conformance endpoint
             get("conformance", {
                 description = "Reports the conformance classes supported by this implementation"
                 request {
                     queryParameter<String>("format") { description = "Output format: json (default) or html" }
+                }
+                response {
+                    HttpStatusCode.OK to {
+                        description = "Successful response"
+                    }
+                    HttpStatusCode.BadRequest to {
+                        description = "Invalid parameter"
+                    }
                 }
             }) {
                 val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
@@ -94,7 +174,22 @@ fun Application.configureOgcRecordsRouting() {
                     queryParameter<String>("format") { description = "Output format: json (default) or html" }
                     queryParameter<String>("f") { description = "Alias for 'format'" }
                 }
+                response {
+                    HttpStatusCode.OK to {
+                        description = "Successful response"
+                    }
+                    HttpStatusCode.BadRequest to {
+                        description = "Invalid parameter"
+                    }
+                }
             }) {
+                val knownParams = listOf("format", "f")
+                if (call.request.queryParameters
+                        .names()
+                        .any { it !in knownParams }
+                ) {
+                    return@get call.respond(HttpStatusCode.BadRequest)
+                }
                 val recordsService = dependencies.resolve<RecordsService>()
                 val collections =
                     recordsService
@@ -114,8 +209,27 @@ fun Application.configureOgcRecordsRouting() {
                                         ),
                                         Link(
                                             rel = "items",
-                                            href = "/ogc/records/collections/$id/items",
+                                            href = "/ogc/records/collections/$id/items?f=json",
                                             type = "application/geo+json",
+                                            title = "Items of this collection as GeoJSON",
+                                        ),
+                                        Link(
+                                            rel = "alternate",
+                                            href = "/ogc/records/collections/$id/items?f=html",
+                                            type = "text/html",
+                                            title = "Items of this collection as HTML",
+                                        ),
+                                        Link(
+                                            rel = "alternate",
+                                            href = "/ogc/records/collections/$id/items?f=iso",
+                                            type = "application/xml",
+                                            title = "Items of this collection as ISO 19139 XML",
+                                        ),
+                                        Link(
+                                            rel = "alternate",
+                                            href = "/ogc/records/collections/$id/items?f=index",
+                                            type = "application/json",
+                                            title = "Items of this collection as Elasticsearch documents",
                                         ),
                                     ),
                             )
@@ -127,7 +241,7 @@ fun Application.configureOgcRecordsRouting() {
                     listOf(
                         Link(
                             rel = "self",
-                            href = "/ogc/records/collections",
+                            href = "/ogc/records/collections?f=json",
                             type = "application/json",
                             title = "This document as JSON",
                         ),
@@ -161,21 +275,39 @@ fun Application.configureOgcRecordsRouting() {
                             listOf(
                                 Link(
                                     rel = "self",
-                                    href = "/ogc/records/collections/$id",
+                                    href = "/ogc/records/collections/$id?f=json",
                                     type = "application/json",
                                     title = "This collection as JSON",
                                 ),
                                 Link(
-                                    rel = "self",
+                                    rel = "alternate",
                                     href = "/ogc/records/collections/$id?f=html",
                                     type = "text/html",
                                     title = "This collection as HTML",
                                 ),
                                 Link(
                                     rel = "items",
-                                    href = "/ogc/records/collections/$id/items",
+                                    href = "/ogc/records/collections/$id/items?f=json",
                                     type = "application/geo+json",
-                                    title = "Items of this collection",
+                                    title = "Items of this collection as GeoJSON",
+                                ),
+                                Link(
+                                    rel = "alternate",
+                                    href = "/ogc/records/collections/$id/items?f=html",
+                                    type = "text/html",
+                                    title = "Items of this collection as HTML",
+                                ),
+                                Link(
+                                    rel = "alternate",
+                                    href = "/ogc/records/collections/$id/items?f=iso",
+                                    type = "application/xml",
+                                    title = "Items of this collection as ISO 19139 XML",
+                                ),
+                                Link(
+                                    rel = "alternate",
+                                    href = "/ogc/records/collections/$id/items?f=index",
+                                    type = "application/json",
+                                    title = "Items of this collection as Elasticsearch documents",
                                 ),
                             ),
                     )
@@ -192,11 +324,37 @@ fun Application.configureOgcRecordsRouting() {
                     pathParameter<String>("catalogId") { description = "Collection identifier" }
                     queryParameter<Int>("limit") { description = "Max number of items to return" }
                     queryParameter<Int>("offset") { description = "Start offset for paging" }
+                    queryParameter<String>("bbox") { description = "Bounding box: minLon,minLat,maxLon,maxLat" }
                     queryParameter<ItemExportFormat>("format") {
                         description = "Output format of the collection items"
                     }
                 }
+                response {
+                    HttpStatusCode.OK to {
+                        description = "Successful response"
+                    }
+                    HttpStatusCode.BadRequest to {
+                        description = "Invalid parameter"
+                    }
+                }
             }) {
+                val knownParams = listOf("limit", "offset", "format", "f", "bbox")
+                if (call.request.queryParameters
+                        .names()
+                        .any { it !in knownParams }
+                ) {
+                    return@get call.respond(HttpStatusCode.BadRequest)
+                }
+                val limit = call.request.queryParameters["limit"]?.toIntOrNull()
+                if (call.request.queryParameters["limit"] != null && limit == null) {
+                    return@get call.respond(HttpStatusCode.BadRequest)
+                }
+                val bboxParam = call.request.queryParameters["bbox"]
+                val bbox = parseBboxParam(bboxParam)
+                if (bboxParam != null && bbox == null) {
+                    return@get call.respond(HttpStatusCode.BadRequest)
+                }
+
                 val recordsService = dependencies.resolve<RecordsService>()
                 val id = call.parameters["catalogId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                 val featureCollection =
@@ -208,23 +366,43 @@ fun Application.configureOgcRecordsRouting() {
                             listOf(
                                 Link(
                                     rel = "self",
-                                    href = "/ogc/records/collections/$id/items",
+                                    href = "/ogc/records/collections/$id/items?f=json",
                                     type = "application/geo+json",
+                                    title = "Items of this collection as GeoJSON",
+                                ),
+                                Link(
+                                    rel = "alternate",
+                                    href = "/ogc/records/collections/$id/items?f=html",
+                                    type = "text/html",
+                                    title = "Items of this collection as HTML",
+                                ),
+                                Link(
+                                    rel = "alternate",
+                                    href = "/ogc/records/collections/$id/items?f=iso",
+                                    type = "application/xml",
+                                    title = "Items of this collection as ISO 19139 XML",
+                                ),
+                                Link(
+                                    rel = "alternate",
+                                    href = "/ogc/records/collections/$id/items?f=index",
+                                    type = "application/json",
+                                    title = "Items of this collection as Elasticsearch documents",
                                 ),
                                 Link(
                                     rel = "collection",
-                                    href = "/ogc/records/collections/$id",
+                                    href = "/ogc/records/collections/$id?f=json",
                                     type = "application/json",
+                                    title = "The collection description",
                                 ),
                             ),
                     )
-                val fmtParam = call.request.queryParameters["format"]
+                val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
                 val accept = call.request.headers[HttpHeaders.Accept]
-                val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 10
+                val limitValue = limit ?: 10
                 val offset = call.request.queryParameters["offset"]?.toIntOrNull() ?: 0
                 val exporter = create(parseItemExportFormat(fmtParam, accept))
-                val searchResponse = recordsService.getRecords(id, limit, offset)
-                exporter.respond(call, featureCollection, searchResponse, limit, offset)
+                val searchResponse = recordsService.getRecords(id, limitValue, offset, bbox)
+                exporter.respond(call, featureCollection, searchResponse, limitValue, offset, bboxParam)
             }
 
             // Single item by id
@@ -245,7 +423,7 @@ fun Application.configureOgcRecordsRouting() {
 
                 val exporter = create(parseItemExportFormat(fmtParam, accept))
                 val record = recordsService.getRecord(catalogId, recordId)
-                exporter.respondSingle(call, record)
+                exporter.respondSingle(call, record, catalogId, recordId)
             }
         }
     }

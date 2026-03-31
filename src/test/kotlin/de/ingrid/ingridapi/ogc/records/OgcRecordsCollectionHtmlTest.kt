@@ -36,7 +36,7 @@ class OgcRecordsCollectionHtmlTest {
                 assertTrue(body.contains("<code>test-id</code>"), "Should contain collection id")
                 assertTrue(body.contains("Description for collection &#39;test-id&#39;"), "Should contain description")
                 assertTrue(
-                    body.contains("href=\"/ogc/records/collections/test-id/items\""),
+                    body.contains("href=\"/ogc/records/collections/test-id/items?f=json\""),
                     "Should contain link to items",
                 )
                 assertTrue(

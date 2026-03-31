@@ -21,9 +21,9 @@ fun parseItemExportFormat(
         param?.lowercase() == "iso" -> ItemExportFormat.ISO
         param?.lowercase() == "index" -> ItemExportFormat.INDEX
         param?.lowercase() == "json" || param?.lowercase() == "geojson" -> ItemExportFormat.GEOJSON
-        param == null && acceptHeader?.contains("text/html") == true -> ItemExportFormat.HTML
         param == null && acceptHeader?.contains("application/geo+json") == true -> ItemExportFormat.GEOJSON
-        param == null && acceptHeader?.contains("application/json") == true -> ItemExportFormat.GEOJSON
+        param == null && acceptHeader?.contains("application/json") == true -> ItemExportFormat.INDEX
+        param == null && acceptHeader?.contains("text/html") == true -> ItemExportFormat.HTML
         else -> ItemExportFormat.HTML
     }
 
@@ -34,10 +34,13 @@ interface ItemsExporter {
         searchResponse: SearchResponse?,
         limit: Int,
         offset: Int,
+        bbox: String? = null,
     )
 
     suspend fun respondSingle(
         call: ApplicationCall,
         record: JsonObject?,
+        catalogId: String,
+        recordId: String,
     )
 }

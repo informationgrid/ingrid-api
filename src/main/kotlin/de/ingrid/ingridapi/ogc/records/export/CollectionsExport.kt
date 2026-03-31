@@ -34,7 +34,19 @@ data class CollectionsResponse(
     val collections: List<CollectionSummary>,
 )
 
+@Serializable
+data class LandingPage(
+    val title: String,
+    val description: String? = null,
+    val links: List<Link>,
+)
+
 interface CollectionsExporter {
+    suspend fun respondLandingPage(
+        call: ApplicationCall,
+        landingPage: LandingPage,
+    )
+
     suspend fun respond(
         call: ApplicationCall,
         collections: List<CollectionSummary>,
@@ -53,6 +65,13 @@ interface CollectionsExporter {
 }
 
 class JsonCollectionsExporter : CollectionsExporter {
+    override suspend fun respondLandingPage(
+        call: ApplicationCall,
+        landingPage: LandingPage,
+    ) {
+        call.respond(landingPage)
+    }
+
     override suspend fun respond(
         call: ApplicationCall,
         collections: List<CollectionSummary>,
@@ -77,6 +96,56 @@ class JsonCollectionsExporter : CollectionsExporter {
 }
 
 class HtmlCollectionsExporter : CollectionsExporter {
+    override suspend fun respondLandingPage(
+        call: ApplicationCall,
+        landingPage: LandingPage,
+    ) {
+        val html =
+            buildString {
+                append(
+                    """
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                      <meta charset="utf-8"/>
+                      <title>${landingPage.title}</title>
+                      <style>
+                        body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif; margin:20px}
+                        ul{list-style:none; padding:0}
+                        li{margin-bottom:8px}
+                        .link-rel{font-weight:bold; display:inline-block; width:100px}
+                        code{background:#f6f8fa; padding:2px 4px; border-radius:4px}
+                      </style>
+                    </head>
+                    <body>
+                      <h1>${landingPage.title}</h1>
+                      <p>${landingPage.description.orEmpty()}</p>
+                      <h2>Links</h2>
+                      <ul>
+                    """.trimIndent(),
+                )
+                for (link in landingPage.links) {
+                    append("<li>")
+                    append("<span class=\"link-rel\">").append(escapeHtml(link.rel)).append("</span>")
+                    append("<a href=\"").append(escapeHtml(link.href)).append("\">")
+                    append(escapeHtml(link.title ?: link.href))
+                    append("</a>")
+                    if (link.type != null) {
+                        append(" (<code>").append(escapeHtml(link.type)).append("</code>)")
+                    }
+                    append("</li>")
+                }
+                append(
+                    """
+                      </ul>
+                    </body>
+                    </html>
+                    """.trimIndent(),
+                )
+            }
+        call.respondText(html, ContentType.Text.Html)
+    }
+
     override suspend fun respond(
         call: ApplicationCall,
         collections: List<CollectionSummary>,
@@ -99,7 +168,8 @@ class HtmlCollectionsExporter : CollectionsExporter {
                         caption{font-weight:600; margin-bottom:8px}
                         code{background:#f6f8fa; padding:2px 4px; border-radius:4px}
                         ul{list-style:none; padding:0}
-                        li{margin-bottom:4px}
+                        li{margin-bottom:8px}
+                        .link-rel{font-weight:bold; display:inline-block; width:100px}
                       </style>
                     </head>
                     <body>
@@ -232,8 +302,9 @@ class HtmlCollectionsExporter : CollectionsExporter {
                       <style>
                         body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif; margin:20px}
                         ul{list-style:none; padding:0}
-                        li{margin-bottom:8px; background:#f6f8fa; padding:8px; border-radius:4px; border:1px solid #ddd}
-                        code{background:#fff; padding:2px 4px; border-radius:4px}
+                        li{margin-bottom:8px}
+                        .link-rel{font-weight:bold; display:inline-block; width:100px}
+                        code{background:#f6f8fa; padding:2px 4px; border-radius:4px}
                       </style>
                     </head>
                     <body>
@@ -244,7 +315,10 @@ class HtmlCollectionsExporter : CollectionsExporter {
                     """.trimIndent(),
                 )
                 for (c in conformance.conformsTo) {
-                    append("<li><code>").append(escapeHtml(c)).append("</code></li>")
+                    append("<li>")
+                    append("<span class=\"link-rel\">conformsTo</span>")
+                    append("<code>").append(escapeHtml(c)).append("</code>")
+                    append("</li>")
                 }
                 append(
                     """

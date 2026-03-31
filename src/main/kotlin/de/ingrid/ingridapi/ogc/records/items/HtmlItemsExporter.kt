@@ -20,6 +20,7 @@ class HtmlItemsExporter : ItemsExporter {
         searchResponse: SearchResponse?,
         limit: Int,
         offset: Int,
+        bbox: String?,
     ) {
         val total = searchResponse?.total ?: 0L
         val html =
@@ -42,6 +43,9 @@ class HtmlItemsExporter : ItemsExporter {
                         .paging a{padding:5px 10px; border:1px solid #ddd; text-decoration:none; color:#333; border-radius:4px}
                         .paging a:hover{background:#f5f5f5}
                         .paging .current{font-weight:bold}
+                        ul{list-style:none; padding:0}
+                        li{margin-bottom:8px}
+                        .link-rel{font-weight:bold; display:inline-block; width:80px}
                       </style>
                     </head>
                     <body>
@@ -87,7 +91,7 @@ class HtmlItemsExporter : ItemsExporter {
 
                 val selfLink = featureCollection.links.find { it.rel == "self" }
                 val baseUrl = selfLink?.href ?: ""
-                val pagingLinks = createPagingLinks(baseUrl, total, limit, offset, "html")
+                val pagingLinks = createPagingLinks(baseUrl, total, limit, offset, "html", bbox)
 
                 // Paging UI in the body
                 if (total > limit) {
@@ -104,6 +108,20 @@ class HtmlItemsExporter : ItemsExporter {
                     append("</div>")
                 }
 
+                append("<h2>Links</h2><ul>")
+                for (link in featureCollection.links) {
+                    append("<li>")
+                    append("<span class=\"link-rel\">").append(escapeHtml(link.rel)).append("</span>")
+                    append("<a href=\"").append(escapeHtml(link.href)).append("\">")
+                    append(escapeHtml(link.title ?: link.href))
+                    append("</a>")
+                    if (link.type != null) {
+                        append(" (<code>").append(escapeHtml(link.type)).append("</code>)")
+                    }
+                    append("</li>")
+                }
+                append("</ul>")
+
                 append("</body></html>")
             }
         call.respondText(html, ContentType.Text.Html)
@@ -112,6 +130,8 @@ class HtmlItemsExporter : ItemsExporter {
     override suspend fun respondSingle(
         call: ApplicationCall,
         record: JsonObject?,
+        catalogId: String,
+        recordId: String,
     ) {
         if (record == null) {
             call.respond(HttpStatusCode.NotFound)
@@ -132,16 +152,61 @@ class HtmlItemsExporter : ItemsExporter {
                         body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif; margin:20px}
                         th,td{padding:8px; text-align:left; vertical-align:top}
                         th{background:#f5f5f5; width:150px}
+                        ul{list-style:none; padding:0}
+                        li{margin-bottom:8px}
+                        .link-rel{font-weight:bold; display:inline-block; width:80px}
+                        code{background:#f6f8fa; padding:2px 4px; border-radius:4px}
                       </style>
                     </head>
                     <body>
-                      <nav><a href="/ogc/records">Home</a> / <a href="/ogc/records/collections?format=html">Collections</a></nav>
+                    <nav>
+                      <a href="/ogc/records">Home</a> / 
+                      <a href="/ogc/records/collections?format=html">Collections</a> / 
+                      <a href="/ogc/records/collections/${escapeHtml(catalogId)}?format=html">${escapeHtml(catalogId)}</a>
+                    </nav>
                       <h1>Record: ${escapeHtml(title)}</h1>
                       <p>${escapeHtml(description)}</p>
                       <table>
                         <tr><th>Title</th><td>${escapeHtml(title)}</td></tr>
                         <tr><th>Description</th><td>${escapeHtml(description)}</td></tr>
                       </table>
+
+                      <h2>Links</h2>
+                      <ul>
+                        <li>
+                          <span class="link-rel">self</span>
+                          <a href="/ogc/records/collections/${escapeHtml(
+                        catalogId,
+                    )}/items/${escapeHtml(recordId)}?format=html">This record as HTML</a>
+                          (<code>text/html</code>)
+                        </li>
+                        <li>
+                          <span class="link-rel">alternate</span>
+                          <a href="/ogc/records/collections/${escapeHtml(
+                        catalogId,
+                    )}/items/${escapeHtml(recordId)}?format=json">This record as GeoJSON</a>
+                          (<code>application/geo+json</code>)
+                        </li>
+                        <li>
+                          <span class="link-rel">alternate</span>
+                          <a href="/ogc/records/collections/${escapeHtml(
+                        catalogId,
+                    )}/items/${escapeHtml(recordId)}?format=iso">This record as ISO 19139 XML</a>
+                          (<code>application/xml</code>)
+                        </li>
+                        <li>
+                          <span class="link-rel">alternate</span>
+                          <a href="/ogc/records/collections/${escapeHtml(
+                        catalogId,
+                    )}/items/${escapeHtml(recordId)}?format=index">This record as Elasticsearch document</a>
+                          (<code>application/json</code>)
+                        </li>
+                        <li>
+                          <span class="link-rel">collection</span>
+                          <a href="/ogc/records/collections/${escapeHtml(catalogId)}?format=html">The collection description</a>
+                          (<code>text/html</code>)
+                        </li>
+                      </ul>
                     </body>
                     </html>
                     """.trimIndent(),

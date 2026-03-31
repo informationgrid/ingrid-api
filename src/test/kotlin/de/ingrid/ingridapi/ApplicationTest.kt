@@ -17,11 +17,11 @@ class ApplicationTest {
             }
             client.get("/").apply {
                 assertEquals(HttpStatusCode.OK, status)
-                assertContains(bodyAsText(), "Available APIs:")
+                assertContains(bodyAsText(), "Available APIs: portal, ogc/records")
             }
             client.get("").apply {
                 assertEquals(HttpStatusCode.OK, status)
-                assertContains(bodyAsText(), "Available APIs:")
+                assertContains(bodyAsText(), "Available APIs: portal, ogc/records")
             }
         }
 }

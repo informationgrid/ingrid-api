@@ -13,7 +13,8 @@ class RecordsService(
         id: String,
         limit: Int = 10,
         offset: Int = 0,
-    ): SearchResponse? = esService.getIndexDocuments(id, limit, offset)
+        bbox: List<Double>? = null,
+    ): SearchResponse? = esService.getIndexDocuments(id, limit, offset, bbox)
 
     suspend fun getRecord(
         id: String,

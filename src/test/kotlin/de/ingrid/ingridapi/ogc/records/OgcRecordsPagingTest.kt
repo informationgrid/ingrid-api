@@ -111,10 +111,11 @@ class OgcRecordsPagingTest {
 
             coEvery { esService.getIndexDocuments("test-collection", 10, 0) } returns mockSearchResponse
 
-            client.get("/ogc/records/collections/test-collection/items?format=json&limit=10&offset=0").apply {
+            client.get("/ogc/records/collections/test-collection/items?format=geojson&limit=10&offset=0").apply {
                 assertEquals(HttpStatusCode.OK, status)
                 val body = bodyAsText()
-                assertTrue(body.contains("\"rel\": \"next\""), "Should contain next link")
+                println("[DEBUG_LOG] Body: $body")
+                assertTrue(body.contains("\"rel\":\"next\""), "Should contain next link")
                 assertTrue(body.contains("offset=10"), "Next link should have offset 10")
                 assertTrue(body.contains("limit=10"), "Next link should have limit 10")
             }

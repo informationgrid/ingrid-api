@@ -71,7 +71,7 @@ class OgcRecordsAcceptHeaderTest {
                     assertEquals(ContentType.Text.Html, contentType()?.withoutParameters())
                     println(bodyAsText())
                     assertTrue(
-                        bodyAsText().contains("<title>Swagger UI</title>"),
+                        bodyAsText().contains("<title>OGC API - Records</title>"),
                         "Should contain landing page title",
                     )
                 }

@@ -546,6 +546,9 @@ class OgcRecordsCoreRequirementsTest {
                 .get("/ogc/records/collections/test-id/items") {
                     header(HttpHeaders.Accept, "application/geo+json")
                 }.apply {
+                    println("[DEBUG_LOG] Status: $status")
+                    println("[DEBUG_LOG] Content-Type: ${contentType()}")
+                    println("[DEBUG_LOG] Body: ${bodyAsText()}")
                     assertEquals(HttpStatusCode.OK, status)
                     assertTrue(
                         contentType()?.toString()?.contains("application/geo+json") == true,

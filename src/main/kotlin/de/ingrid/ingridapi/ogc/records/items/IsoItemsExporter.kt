@@ -33,6 +33,7 @@ class IsoItemsExporter : ItemsExporter {
         searchResponse: SearchResponse?,
         limit: Int,
         offset: Int,
+        bbox: String?,
     ) {
         // Convert each hit's idf to ISO and return an aggregated XML document
         val transformed =
@@ -61,6 +62,8 @@ class IsoItemsExporter : ItemsExporter {
     override suspend fun respondSingle(
         call: ApplicationCall,
         record: JsonObject?,
+        catalogId: String,
+        recordId: String,
     ) {
         if (record == null) {
             call.respond(HttpStatusCode.NotFound)

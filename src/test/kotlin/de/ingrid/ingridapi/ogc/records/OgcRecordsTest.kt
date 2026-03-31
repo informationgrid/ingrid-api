@@ -30,7 +30,7 @@ class OgcRecordsTest {
     @Test
     fun testSwaggerUi() =
         addWrapper { client, _ ->
-            client.get("/ogc/records").apply {
+            client.get("/ogc/records/swagger").apply {
                 assertEquals(HttpStatusCode.OK, status)
                 assertContains(bodyAsText(), "<title>Swagger UI</title>")
             }

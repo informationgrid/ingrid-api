@@ -20,6 +20,7 @@ class GeoJsonItemsExporter : ItemsExporter {
         searchResponse: SearchResponse?,
         limit: Int,
         offset: Int,
+        bbox: String?,
     ) {
         val features =
             searchResponse?.hits?.hits?.map { hit ->
@@ -38,7 +39,7 @@ class GeoJsonItemsExporter : ItemsExporter {
                 val total = searchResponse?.total ?: 0L
                 val selfLink = featureCollection.links.find { it.rel == "self" }
                 val baseUrl = selfLink?.href ?: ""
-                val pagingLinks = createPagingLinks(baseUrl, total, limit, offset, "json")
+                val pagingLinks = createPagingLinks(baseUrl, total, limit, offset, "json", bbox)
                 val combinedLinks = featureCollection.links + pagingLinks
                 put(
                     "links",
@@ -68,14 +69,35 @@ class GeoJsonItemsExporter : ItemsExporter {
     override suspend fun respondSingle(
         call: ApplicationCall,
         record: JsonObject?,
+        catalogId: String,
+        recordId: String,
     ) {
         if (record != null) {
             val feature =
                 buildJsonObject {
                     put("type", "Feature")
-                    put("id", record["id"] ?: JsonPrimitive("unknown"))
+                    put("id", record["id"] ?: JsonPrimitive(recordId))
                     put("geometry", record["geometry"] ?: JsonPrimitive(null as String?))
                     put("properties", record)
+                    put(
+                        "links",
+                        kotlinx.serialization.json.buildJsonArray {
+                            add(
+                                buildJsonObject {
+                                    put("rel", "self")
+                                    put("href", "/ogc/records/collections/$catalogId/items/$recordId")
+                                    put("type", "application/geo+json")
+                                },
+                            )
+                            add(
+                                buildJsonObject {
+                                    put("rel", "collection")
+                                    put("href", "/ogc/records/collections/$catalogId")
+                                    put("type", "application/json")
+                                },
+                            )
+                        },
+                    )
                 }
             call.respondText(
                 feature.toString(),

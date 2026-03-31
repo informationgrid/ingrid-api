@@ -13,6 +13,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -83,6 +86,7 @@ class ElasticsearchService(
         id: String,
         size: Int,
         from: Int,
+        bbox: List<Double>? = null,
     ): SearchResponse? {
         val filteredCatalogs =
             getActiveCatalogs()
@@ -99,7 +103,83 @@ class ElasticsearchService(
         }
         val indices =
             filteredCatalogs.joinToString(",").also { log.debug { "Searching in indices: $it" } }
-        return client.search(indices, size = size, from = from)
+
+        val queryJson =
+            if (bbox != null && bbox.size >= 4) {
+                buildJsonObject {
+                    put(
+                        "query",
+                        buildJsonObject {
+                            put(
+                                "bool",
+                                buildJsonObject {
+                                    put(
+                                        "must",
+                                        buildJsonArray {
+                                            add(
+                                                buildJsonObject {
+                                                    put("match_all", buildJsonObject { })
+                                                },
+                                            )
+                                        },
+                                    )
+                                    put(
+                                        "filter",
+                                        buildJsonArray {
+                                            add(
+                                                buildJsonObject {
+                                                    put(
+                                                        "geo_shape",
+                                                        buildJsonObject {
+                                                            put(
+                                                                "spatial.geometries",
+                                                                buildJsonObject {
+                                                                    put(
+                                                                        "shape",
+                                                                        buildJsonObject {
+                                                                            put("type", JsonPrimitive("envelope"))
+                                                                            put(
+                                                                                "coordinates",
+                                                                                buildJsonArray {
+                                                                                    add(
+                                                                                        buildJsonArray {
+                                                                                            add(JsonPrimitive(bbox[0]))
+                                                                                            add(JsonPrimitive(bbox[3]))
+                                                                                        },
+                                                                                    )
+                                                                                    add(
+                                                                                        buildJsonArray {
+                                                                                            add(JsonPrimitive(bbox[2]))
+                                                                                            add(JsonPrimitive(bbox[1]))
+                                                                                        },
+                                                                                    )
+                                                                                },
+                                                                            )
+                                                                        },
+                                                                    )
+                                                                    put("relation", JsonPrimitive("intersects"))
+                                                                },
+                                                            )
+                                                        },
+                                                    )
+                                                },
+                                            )
+                                        },
+                                    )
+                                },
+                            )
+                        },
+                    )
+                }.toString()
+            } else {
+                null
+            }
+
+        return if (queryJson != null) {
+            client.search(indices, rawJson = queryJson, size = size, from = from)
+        } else {
+            client.search(indices, size = size, from = from)
+        }
     }
 
     suspend fun getIndexDocument(

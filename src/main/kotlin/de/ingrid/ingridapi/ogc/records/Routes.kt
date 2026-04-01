@@ -160,7 +160,7 @@ fun Application.configureOgcRecordsRouting() {
                             listOf(
                                 "http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core",
                                 "http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections",
-                                "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson",
+//                                "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson",
                                 "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html",
                             ),
                     ),
@@ -209,9 +209,9 @@ fun Application.configureOgcRecordsRouting() {
                                         ),
                                         Link(
                                             rel = "items",
-                                            href = "/ogc/records/collections/$id/items?f=json",
-                                            type = "application/geo+json",
-                                            title = "Items of this collection as GeoJSON",
+                                            href = "/ogc/records/collections/$id/items?f=index",
+                                            type = "application/json",
+                                            title = "Items of this collection as Elasticsearch document",
                                         ),
                                         Link(
                                             rel = "alternate",
@@ -219,12 +219,12 @@ fun Application.configureOgcRecordsRouting() {
                                             type = "text/html",
                                             title = "Items of this collection as HTML",
                                         ),
-                                        Link(
+                                        /*Link(
                                             rel = "alternate",
                                             href = "/ogc/records/collections/$id/items?f=iso",
                                             type = "application/xml",
                                             title = "Items of this collection as ISO 19139 XML",
-                                        ),
+                                        ),*/
                                         Link(
                                             rel = "alternate",
                                             href = "/ogc/records/collections/$id/items?f=index",
@@ -287,9 +287,9 @@ fun Application.configureOgcRecordsRouting() {
                                 ),
                                 Link(
                                     rel = "items",
-                                    href = "/ogc/records/collections/$id/items?f=json",
-                                    type = "application/geo+json",
-                                    title = "Items of this collection as GeoJSON",
+                                    href = "/ogc/records/collections/$id/items?f=index",
+                                    type = "application/json",
+                                    title = "Items of this collection as Elasticsearch document",
                                 ),
                                 Link(
                                     rel = "alternate",
@@ -297,7 +297,7 @@ fun Application.configureOgcRecordsRouting() {
                                     type = "text/html",
                                     title = "Items of this collection as HTML",
                                 ),
-                                Link(
+                                /*Link(
                                     rel = "alternate",
                                     href = "/ogc/records/collections/$id/items?f=iso",
                                     type = "application/xml",
@@ -305,10 +305,10 @@ fun Application.configureOgcRecordsRouting() {
                                 ),
                                 Link(
                                     rel = "alternate",
-                                    href = "/ogc/records/collections/$id/items?f=index",
-                                    type = "application/json",
-                                    title = "Items of this collection as Elasticsearch documents",
-                                ),
+                                    href = "/ogc/records/collections/$id/items?f=geojson",
+                                    type = "application/geo+json",
+                                    title = "Items of this collection as GeoJSON documents",
+                                ),*/
                             ),
                     )
                 val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
@@ -364,27 +364,27 @@ fun Application.configureOgcRecordsRouting() {
                         features = emptyList(),
                         links =
                             listOf(
-                                Link(
+                                /*Link(
                                     rel = "self",
-                                    href = "/ogc/records/collections/$id/items?f=json",
+                                    href = "/ogc/records/collections/$id/items?f=json${if (bboxParam != null) "&bbox=$bboxParam" else ""}",
                                     type = "application/geo+json",
                                     title = "Items of this collection as GeoJSON",
-                                ),
+                                ),*/
                                 Link(
                                     rel = "alternate",
-                                    href = "/ogc/records/collections/$id/items?f=html",
+                                    href = "/ogc/records/collections/$id/items?f=html${if (bboxParam != null) "&bbox=$bboxParam" else ""}",
                                     type = "text/html",
                                     title = "Items of this collection as HTML",
                                 ),
-                                Link(
+                                /*Link(
                                     rel = "alternate",
-                                    href = "/ogc/records/collections/$id/items?f=iso",
+                                    href = "/ogc/records/collections/$id/items?f=iso${if (bboxParam != null) "&bbox=$bboxParam" else ""}",
                                     type = "application/xml",
                                     title = "Items of this collection as ISO 19139 XML",
-                                ),
+                                ),*/
                                 Link(
                                     rel = "alternate",
-                                    href = "/ogc/records/collections/$id/items?f=index",
+                                    href = "/ogc/records/collections/$id/items?f=index${if (bboxParam != null) "&bbox=$bboxParam" else ""}",
                                     type = "application/json",
                                     title = "Items of this collection as Elasticsearch documents",
                                 ),

@@ -10,7 +10,6 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import kotlinx.serialization.json.JsonObject
-import kotlin.math.max
 import kotlin.math.min
 
 class HtmlItemsExporter : ItemsExporter {
@@ -75,7 +74,7 @@ class HtmlItemsExporter : ItemsExporter {
                 searchResponse?.hits?.hits?.forEach {
                     val id = it.id
                     val title = it.source!!["title"].asSafeString().ifEmpty { id }
-                    val description = it.source!!["description"].asSafeString()
+                    val description = it.source?.get("description")?.asSafeString() ?: it.source?.get("summary").asSafeString()
                     append("<tr>")
                     append("<td><a href=\"/ogc/records/collections/")
                         .append(escapeHtml(featureCollection.name))
@@ -138,7 +137,7 @@ class HtmlItemsExporter : ItemsExporter {
             return
         }
         val title = record["title"].asSafeString()
-        val description = record["description"].asSafeString()
+        val description = record["description"]?.asSafeString() ?: record["summary"]?.asSafeString() ?: ""
         val html =
             buildString {
                 append(
@@ -166,39 +165,47 @@ class HtmlItemsExporter : ItemsExporter {
                     </nav>
                       <h1>Record: ${escapeHtml(title)}</h1>
                       <p>${escapeHtml(description)}</p>
-                      <table>
+                      <!--<table>
                         <tr><th>Title</th><td>${escapeHtml(title)}</td></tr>
                         <tr><th>Description</th><td>${escapeHtml(description)}</td></tr>
-                      </table>
+                      </table>-->
 
                       <h2>Links</h2>
                       <ul>
                         <li>
                           <span class="link-rel">self</span>
-                          <a href="/ogc/records/collections/${escapeHtml(
-                        catalogId,
-                    )}/items/${escapeHtml(recordId)}?format=html">This record as HTML</a>
+                          <a href="/ogc/records/collections/${
+                        escapeHtml(
+                            catalogId,
+                        )
+                    }/items/${escapeHtml(recordId)}?format=html">This record as HTML</a>
                           (<code>text/html</code>)
                         </li>
-                        <li>
+                        <!--<li>
                           <span class="link-rel">alternate</span>
-                          <a href="/ogc/records/collections/${escapeHtml(
-                        catalogId,
-                    )}/items/${escapeHtml(recordId)}?format=json">This record as GeoJSON</a>
+                          <a href="/ogc/records/collections/${
+                        escapeHtml(
+                            catalogId,
+                        )
+                    }/items/${escapeHtml(recordId)}?format=json">This record as GeoJSON</a>
                           (<code>application/geo+json</code>)
-                        </li>
-                        <li>
+                        </li>-->
+                        <!--<li>
                           <span class="link-rel">alternate</span>
-                          <a href="/ogc/records/collections/${escapeHtml(
-                        catalogId,
-                    )}/items/${escapeHtml(recordId)}?format=iso">This record as ISO 19139 XML</a>
+                          <a href="/ogc/records/collections/${
+                        escapeHtml(
+                            catalogId,
+                        )
+                    }/items/${escapeHtml(recordId)}?format=iso">This record as ISO 19139 XML</a>
                           (<code>application/xml</code>)
-                        </li>
+                        </li>-->
                         <li>
                           <span class="link-rel">alternate</span>
-                          <a href="/ogc/records/collections/${escapeHtml(
-                        catalogId,
-                    )}/items/${escapeHtml(recordId)}?format=index">This record as Elasticsearch document</a>
+                          <a href="/ogc/records/collections/${
+                        escapeHtml(
+                            catalogId,
+                        )
+                    }/items/${escapeHtml(recordId)}?format=index">This record as Elasticsearch document</a>
                           (<code>application/json</code>)
                         </li>
                         <li>

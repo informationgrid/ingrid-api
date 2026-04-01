@@ -4,8 +4,9 @@ object ItemsExporterFactory {
     fun create(format: ItemExportFormat): ItemsExporter =
         when (format) {
             ItemExportFormat.HTML -> HtmlItemsExporter()
-            ItemExportFormat.ISO -> IsoItemsExporter()
+
+            //            ItemExportFormat.ISO -> IsoItemsExporter()
             ItemExportFormat.INDEX -> IndexItemsExporter()
-            ItemExportFormat.GEOJSON -> GeoJsonItemsExporter()
+//            ItemExportFormat.GEOJSON -> GeoJsonItemsExporter()
         }
 }

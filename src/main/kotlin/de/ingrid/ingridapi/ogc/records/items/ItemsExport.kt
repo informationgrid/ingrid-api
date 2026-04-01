@@ -7,9 +7,10 @@ import kotlinx.serialization.json.JsonObject
 
 enum class ItemExportFormat {
     HTML,
-    ISO,
+
+//    ISO,
     INDEX,
-    GEOJSON,
+//    GEOJSON,
 }
 
 fun parseItemExportFormat(
@@ -18,12 +19,17 @@ fun parseItemExportFormat(
 ): ItemExportFormat =
     when {
         param?.lowercase() == "html" -> ItemExportFormat.HTML
-        param?.lowercase() == "iso" -> ItemExportFormat.ISO
+
+//        param?.lowercase() == "iso" -> ItemExportFormat.ISO
+
         param?.lowercase() == "index" -> ItemExportFormat.INDEX
-        param?.lowercase() == "json" || param?.lowercase() == "geojson" -> ItemExportFormat.GEOJSON
-        param == null && acceptHeader?.contains("application/geo+json") == true -> ItemExportFormat.GEOJSON
+
+        //        param?.lowercase() == "json" || param?.lowercase() == "geojson" -> ItemExportFormat.GEOJSON
+//        param == null && acceptHeader?.contains("application/geo+json") == true -> ItemExportFormat.GEOJSON
         param == null && acceptHeader?.contains("application/json") == true -> ItemExportFormat.INDEX
+
         param == null && acceptHeader?.contains("text/html") == true -> ItemExportFormat.HTML
+
         else -> ItemExportFormat.HTML
     }
 

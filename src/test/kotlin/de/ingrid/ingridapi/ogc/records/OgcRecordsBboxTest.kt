@@ -6,6 +6,7 @@ import de.ingrid.ingridapi.plugins.configureSerialization
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.plugins.di.dependencies
@@ -17,6 +18,7 @@ import io.mockk.mockkClass
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 
 class OgcRecordsBboxTest {
@@ -42,6 +44,67 @@ class OgcRecordsBboxTest {
             }
 
             coVerify { esMock.getIndexDocuments(catalogId, 10, 0, listOf(10.0, 20.0, 30.0, 40.0)) }
+        }
+
+    @Test
+    fun testBboxParameterPassedToServiceHtml() =
+        addWrapper { client, esMock ->
+            val catalogId = "test-catalog"
+            val bbox = "10,20,30,40"
+
+            coEvery { esMock.getActiveCatalogs() } returns
+                listOf(
+                    JsonObject(
+                        mapOf(
+                            "plugdescription" to
+                                JsonObject(
+                                    mapOf(
+                                        "dataSourceName" to JsonPrimitive(catalogId),
+                                        "description" to JsonPrimitive("Test catalog"),
+                                    ),
+                                ),
+                            "linkedIndex" to JsonPrimitive("test-index"),
+                        ),
+                    ),
+                )
+            coEvery { esMock.getIndexDocuments(any(), any(), any(), any()) } returns null
+
+            client.get("/ogc/records/collections/$catalogId/items?bbox=$bbox&f=html").apply {
+                assertEquals(HttpStatusCode.OK, status)
+            }
+
+            coVerify { esMock.getIndexDocuments(catalogId, 10, 0, listOf(10.0, 20.0, 30.0, 40.0)) }
+        }
+
+    @Test
+    fun testBboxParameterInHtmlLinks() =
+        addWrapper { client, esMock ->
+            val catalogId = "test-catalog"
+            val bbox = "10,20,30,40"
+
+            coEvery { esMock.getActiveCatalogs() } returns
+                listOf(
+                    JsonObject(
+                        mapOf(
+                            "plugdescription" to
+                                JsonObject(
+                                    mapOf(
+                                        "dataSourceName" to JsonPrimitive(catalogId),
+                                        "description" to JsonPrimitive("Test catalog"),
+                                    ),
+                                ),
+                            "linkedIndex" to JsonPrimitive("test-index"),
+                        ),
+                    ),
+                )
+            coEvery { esMock.getIndexDocuments(any(), any(), any(), any()) } returns null
+
+            client.get("/ogc/records/collections/$catalogId/items?bbox=$bbox&f=html").apply {
+                assertEquals(HttpStatusCode.OK, status)
+                val body = bodyAsText()
+                // Check if bbox is preserved in links in the HTML body
+                assertContains(body, "bbox=$bbox")
+            }
         }
 
     @Test

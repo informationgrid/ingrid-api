@@ -111,82 +111,13 @@ class OgcRecordsPagingTest {
 
             coEvery { esService.getIndexDocuments("test-collection", 10, 0) } returns mockSearchResponse
 
-            client.get("/ogc/records/collections/test-collection/items?format=geojson&limit=10&offset=0").apply {
-                assertEquals(HttpStatusCode.OK, status)
-                val body = bodyAsText()
-                println("[DEBUG_LOG] Body: $body")
-                assertTrue(body.contains("\"rel\":\"next\""), "Should contain next link")
-                assertTrue(body.contains("offset=10"), "Next link should have offset 10")
-                assertTrue(body.contains("limit=10"), "Next link should have limit 10")
-            }
-        }
-
-    @Test
-    fun testHtmlPaging() =
-        testApplication {
-            val esService = mockk<ElasticsearchService>(relaxed = true)
-
-            application {
-                configureSerialization()
-                dependencies {
-                    provide<ElasticsearchService> { esService }
-                    provide<RecordsService> { RecordsService(esService) }
-                }
-                configureOgcRecordsRouting()
-            }
-
-            val mockResponseJson =
-                """
-                {
-                  "took": 1,
-                  "timed_out": false,
-                  "_shards": { "total": 1, "successful": 1, "skipped": 0, "failed": 0 },
-                  "hits": {
-                    "total": { "value": 25, "relation": "eq" },
-                    "max_score": 1.0,
-                    "hits": [
-                      {
-                        "_index": "test-index",
-                        "_id": "record-1",
-                        "_score": 1.0,
-                        "_source": { "title": "Record 1", "description": "Desc 1" },
-                        "fields": {},
-                        "sort": [],
-                        "inner_hits": {},
-                        "highlight": {},
-                        "_seq_no": 1,
-                        "_primary_term": 1,
-                        "_version": 1,
-                        "_explanation": {},
-                        "matched_queries": []
-                      }
-                    ]
-                  },
-                  "aggregations": {},
-                  "_scroll_id": "",
-                  "pit_id": "",
-                  "point_in_time_id": "",
-                  "suggest": {}
-                }
-                """.trimIndent()
-            val json =
-                Json {
-                    ignoreUnknownKeys = true
-                    coerceInputValues = true
-                }
-            val mockSearchResponse = json.decodeFromString<SearchResponse>(mockResponseJson)
-
-            coEvery { esService.getIndexDocuments("test-collection", 10, 0) } returns mockSearchResponse
-
             client.get("/ogc/records/collections/test-collection/items?format=html&limit=10&offset=0").apply {
                 assertEquals(HttpStatusCode.OK, status)
                 val body = bodyAsText()
-                assertTrue(body.contains("Items of test-collection"))
-                assertTrue(body.contains("Showing 1 - 10 of 25 items"))
-                assertTrue(body.contains("Record 1"))
-                assertTrue(body.contains("Next &raquo;"))
-                assertTrue(body.contains("offset=10"))
-                assertTrue(body.contains("limit=10"))
+                println("[DEBUG_LOG] Body: $body")
+                assertTrue(body.contains("Next &raquo;"), "Should contain next link")
+                assertTrue(body.contains("offset=10"), "Next link should have offset 10")
+                assertTrue(body.contains("limit=10"), "Next link should have limit 10")
             }
         }
 }

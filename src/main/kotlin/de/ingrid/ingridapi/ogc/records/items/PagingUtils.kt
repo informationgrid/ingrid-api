@@ -34,7 +34,7 @@ fun createPagingLinks(
             Link(
                 rel = "next",
                 href = "$baseUrl?limit=$limit&offset=$nextOffset$formatParam$bboxParam",
-                type = if (format == "html") "text/html" else "application/geo+json",
+                type = if (format == "html") "text/html" else "application/json",
                 title = "Next page",
             ),
         )
@@ -47,7 +47,7 @@ fun createPagingLinks(
             Link(
                 rel = "prev",
                 href = "$baseUrl?limit=$limit&offset=$prevOffset$formatParam$bboxParam",
-                type = if (format == "html") "text/html" else "application/geo+json",
+                type = if (format == "html") "text/html" else "application/json",
                 title = "Previous page",
             ),
         )
@@ -58,7 +58,7 @@ fun createPagingLinks(
         Link(
             rel = "first",
             href = "$baseUrl?limit=$limit&offset=0$formatParam$bboxParam",
-            type = if (format == "html") "text/html" else "application/geo+json",
+            type = if (format == "html") "text/html" else "application/json",
             title = "First page",
         ),
     )
@@ -70,7 +70,7 @@ fun createPagingLinks(
             Link(
                 rel = "last",
                 href = "$baseUrl?limit=$limit&offset=$lastOffset$formatParam$bboxParam",
-                type = if (format == "html") "text/html" else "application/geo+json",
+                type = if (format == "html") "text/html" else "application/json",
                 title = "Last page",
             ),
         )

@@ -14,13 +14,15 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class OgcRecordsGetRecordTest {
+class OgcRecordsIsoTest {
     @Test
-    fun testGetRecord() =
+    @Ignore
+    fun testGetRecordIso() =
         testApplication {
             val client =
                 createClient {

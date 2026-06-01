@@ -47,6 +47,8 @@ class ElasticsearchService(
     suspend fun search(rawQuery: String): SearchResult {
         val indices =
             getActiveIndices().joinToString(",").also { log.debug { "Searching in indices: $it" } }
+        if (indices.isEmpty()) return SearchResult(0, JsonArray(emptyList()))
+
         try {
             val response = client.search(indices, rawJson = rawQuery, ignoreUnavailable = true)
 

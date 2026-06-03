@@ -36,6 +36,8 @@ import io.ktor.util.hex
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -128,17 +130,27 @@ fun Application.security() {
             validate { session ->
                 val entry = SessionTokenStore.get(session.sid) ?: return@validate null
                 val now = System.currentTimeMillis() / 1000
-                if (entry.expiresAtEpochSec - 30 > now) {
-                    return@validate session
-                }
-                // Token expired (or close to expiring) — try to refresh server-side.
-                val refreshed = entry.refreshToken?.let { refreshAccessToken(cfg, it) }
-                if (refreshed != null) {
-                    SessionTokenStore.put(session.sid, refreshed)
-                    session
+                val currentEntry = if (entry.expiresAtEpochSec - 30 > now) {
+                    entry
                 } else {
+                    // Token expired (or close to expiring) — try to refresh server-side.
+                    val refreshed = entry.refreshToken?.let { refreshAccessToken(cfg, it) }
+                    if (refreshed != null) {
+                        SessionTokenStore.put(session.sid, refreshed)
+                        refreshed
+                    } else {
+                        SessionTokenStore.remove(session.sid)
+                        null
+                    }
+                } ?: return@validate null
+
+                // Ensure the user still has the required "admin" role.
+                if (!hasAdminRole(currentEntry.accessToken, cfg.keycloakClientId)) {
+                    log.warn { "User '${currentEntry.preferredUsername ?: currentEntry.subject}' lost admin role (sid=${session.sid.take(8)}…)" }
                     SessionTokenStore.remove(session.sid)
                     null
+                } else {
+                    session
                 }
             }
             challenge {
@@ -160,7 +172,7 @@ fun Application.security() {
                     val principal = call.principal<OAuthAccessTokenResponse.OAuth2>()
                     if (principal == null) {
                         call.respondRedirect(
-                            "/admin?err=${
+                            "/admin/error?err=${
                                 java.net.URLEncoder.encode(
                                     "Anmeldung fehlgeschlagen.",
                                     Charsets.UTF_8,
@@ -170,6 +182,21 @@ fun Application.security() {
                         return@get
                     }
                     val (sub, username) = parseIdToken(principal.extraParameters["id_token"])
+
+                    // Verify the "admin" client-role from Keycloak before creating a session.
+                    if (!hasAdminRole(principal.accessToken, cfg.keycloakClientId)) {
+                        log.warn { "User '${username ?: sub ?: "?"}' denied access: missing 'admin' role for client '${cfg.keycloakClientId}'" }
+                        call.respondRedirect(
+                            "/admin/error?err=${
+                                java.net.URLEncoder.encode(
+                                    "Zugriff verweigert: Sie verfügen nicht über die erforderliche Administrator-Rolle.",
+                                    Charsets.UTF_8,
+                                )
+                            }",
+                        )
+                        return@get
+                    }
+
                     val sid = UUID.randomUUID().toString()
                     val now = System.currentTimeMillis() / 1000
                     SessionTokenStore.put(
@@ -251,24 +278,55 @@ private suspend fun refreshAccessToken(
 
 /** Decode the (unverified) JWT payload to read user identity claims. */
 private fun parseIdToken(idToken: String?): Pair<String?, String?> {
-    if (idToken.isNullOrBlank()) return null to null
+    val payload = parseJwtPayload(idToken) ?: return null to null
     return try {
-        val parts = idToken.split(".")
-        if (parts.size < 2) return null to null
-        val payload =
+        val sub = payload["sub"]?.jsonPrimitive?.content
+        val username =
+            payload["preferred_username"]?.jsonPrimitive?.content
+                ?: payload["email"]?.jsonPrimitive?.content
+        sub to username
+    } catch (_: Exception) {
+        null to null
+    }
+}
+
+/**
+ * Checks if the access token contains the "admin" role for the specified client.
+ * Keycloak structure: resource_access.<client_id>.roles = ["admin", ...]
+ */
+private fun hasAdminRole(
+    accessToken: String,
+    clientId: String,
+): Boolean {
+    val payload = parseJwtPayload(accessToken) ?: return false
+    return try {
+        payload["resource_access"]
+            ?.jsonObject
+            ?.get(clientId)
+            ?.jsonObject
+            ?.get("roles")
+            ?.jsonArray
+            ?.any { it.jsonPrimitive.content == "admin" }
+            ?: false
+    } catch (_: Exception) {
+        false
+    }
+}
+
+private fun parseJwtPayload(token: String?): JsonObject? {
+    if (token.isNullOrBlank()) return null
+    return try {
+        val parts = token.split(".")
+        if (parts.size < 2) return null
+        val decoded =
             String(
                 Base64
                     .getUrlDecoder()
                     .decode(parts[1]),
             )
-        val obj = json.parseToJsonElement(payload) as JsonObject
-        val sub = obj["sub"]?.jsonPrimitive?.content
-        val username =
-            obj["preferred_username"]?.jsonPrimitive?.content
-                ?: obj["email"]?.jsonPrimitive?.content
-        sub to username
+        json.parseToJsonElement(decoded).jsonObject
     } catch (_: Exception) {
-        null to null
+        null
     }
 }
 

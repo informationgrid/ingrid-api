@@ -16,6 +16,7 @@ import io.ktor.server.routing.routing
 import kotlinx.html.ButtonType
 import kotlinx.html.FlowContent
 import kotlinx.html.FormMethod
+import kotlinx.html.a
 import kotlinx.html.body
 import kotlinx.html.button
 import kotlinx.html.code
@@ -44,6 +45,34 @@ import kotlinx.html.unsafe
  */
 fun Application.configureAdminRouting() {
     routing {
+        get("admin/error") {
+            val error = call.request.queryParameters["err"]
+            call.respondHtml(HttpStatusCode.Forbidden) {
+                head {
+                    meta(charset = "utf-8")
+                    title("InGrid API – Administration (Fehler)")
+                    styleLink("https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css")
+                    style {
+                        unsafe { +CSS }
+                    }
+                }
+                body {
+                    h1 { +"InGrid API – Administration" }
+                    if (!error.isNullOrBlank()) {
+                        div(classes = "msg err") { +error }
+                    }
+                    p {
+                        +"Sie haben keine Berechtigung für diesen Bereich oder ein Sitzungsfehler ist aufgetreten."
+                    }
+                    div {
+                        a(href = "/auth/login", classes = "btn-retry") {
+                            +"Erneut versuchen"
+                        }
+                    }
+                }
+            }
+        }
+
         authenticate("admin-session") {
             route("admin") {
                 get {
@@ -341,6 +370,17 @@ private val CSS =
         cursor: pointer;
     }
     button.btn-delete:hover { background: #8c1d18; }
+    
+    a.btn-retry {
+        text-decoration: none;
+        display: inline-block;
+        background-color: #1565c0;
+        color: white !important;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    a.btn-retry:hover { background-color: #0d47a1; }
 
     .compact-list {
         display: flex;

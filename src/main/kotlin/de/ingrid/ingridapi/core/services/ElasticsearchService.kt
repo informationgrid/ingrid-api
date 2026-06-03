@@ -1,11 +1,18 @@
 package de.ingrid.ingridapi.core.services
 
 import com.jillesvangurp.ktsearch.KtorRestClient
+import com.jillesvangurp.ktsearch.Refresh
 import com.jillesvangurp.ktsearch.SearchClient
 import com.jillesvangurp.ktsearch.SearchResponse
+import com.jillesvangurp.ktsearch.count
+import com.jillesvangurp.ktsearch.deleteIndex
+import com.jillesvangurp.ktsearch.getAliases
+import com.jillesvangurp.ktsearch.parseHit
 import com.jillesvangurp.ktsearch.parseHits
 import com.jillesvangurp.ktsearch.search
+import com.jillesvangurp.ktsearch.searchHits
 import com.jillesvangurp.ktsearch.total
+import com.jillesvangurp.ktsearch.updateDocument
 import com.jillesvangurp.searchdsls.querydsl.term
 import de.ingrid.ingridapi.config.AppConfig
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
@@ -220,7 +227,92 @@ class ElasticsearchService(
     private suspend fun getActiveIndices(): List<String> =
         getActiveCatalogs()
             .mapNotNull { it["linkedIndex"]?.jsonPrimitive?.content }
+
+    // ---------------------------------------------------------------------
+    // Admin API: index management and ingrid_meta administration
+    // ---------------------------------------------------------------------
+
+    /** The name of the meta index that describes all managed iPlug indices. */
+    val metaIndexName: String = "ingrid_meta"
+
+    /** All indices on the cluster together with their aliases. */
+    suspend fun listIndicesWithAliases(): Map<String, Set<String>> =
+        client
+            .getAliases()
+            .mapValues { it.value.aliases.keys }
+
+    /** Number of documents in the given index (or 0 if not available). */
+    suspend fun countDocuments(index: String): Long =
+        try {
+            client.count(target = index).count
+        } catch (ex: Exception) {
+            log.warn { "Could not count documents for index '$index': ${ex.message}" }
+            0L
+        }
+
+    /** Delete an index by name. */
+    suspend fun deleteIndex(index: String) {
+        log.info { "Deleting index '$index'" }
+        client.deleteIndex(index)
+    }
+
+    /**
+     * Returns the meta entries from the `ingrid_meta` index together with the document `_id`
+     * so that they can be updated individually.
+     */
+    suspend fun getMetaEntries(): List<IngridMetaEntry> {
+        val response =
+            try {
+                client.search(metaIndexName) {
+                    from = 0
+                    resultSize = 1000
+                }
+            } catch (ex: Exception) {
+                log.warn { "Could not load '$metaIndexName' entries: ${ex.message}" }
+                return emptyList()
+            }
+        return response.searchHits.map { hit ->
+            val source = hit.parseHit<JsonObject>()
+            IngridMetaEntry(
+                docId = hit.id,
+                indexId = source["indexId"]?.jsonPrimitive?.content,
+                linkedIndex = source["linkedIndex"]?.jsonPrimitive?.content,
+                active = source["active"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false,
+                dataSourceName =
+                    source["plugdescription"]
+                        ?.jsonObject
+                        ?.get("dataSourceName")
+                        ?.jsonPrimitive
+                        ?.content,
+                lastIndexed = source["lastIndexed"]?.jsonPrimitive?.content,
+            )
+        }
+    }
+
+    /** Set the `active` flag on an `ingrid_meta` document. */
+    suspend fun setMetaActive(
+        docId: String,
+        active: Boolean,
+    ) {
+        log.info { "Setting active=$active on ingrid_meta document '$docId'" }
+        client.updateDocument(
+            target = metaIndexName,
+            id = docId,
+            docJson = """{"active": $active}""",
+            refresh = Refresh.True,
+        )
+    }
 }
+
+/** Represents one document of the `ingrid_meta` index needed by the admin GUI. */
+data class IngridMetaEntry(
+    val docId: String,
+    val indexId: String?,
+    val linkedIndex: String?,
+    val active: Boolean,
+    val dataSourceName: String?,
+    val lastIndexed: String? = null,
+)
 
 @Serializable
 data class SearchResult(

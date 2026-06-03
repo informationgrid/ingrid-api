@@ -4,17 +4,17 @@ import de.ingrid.ingridapi.core.services.ElasticsearchService
 import de.ingrid.ingridapi.core.services.IngridMetaEntry
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.auth.authenticate
 import io.ktor.server.html.respondHtml
 import io.ktor.server.plugins.di.dependencies
-import io.ktor.server.plugins.di.resolve
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import kotlinx.html.FlowContent
 import kotlinx.html.ButtonType
+import kotlinx.html.FlowContent
 import kotlinx.html.FormMethod
 import kotlinx.html.body
 import kotlinx.html.button
@@ -44,114 +44,115 @@ import kotlinx.html.unsafe
  */
 fun Application.configureAdminRouting() {
     routing {
-        route("admin") {
-            get {
-                val elastic = call.application.dependencies.resolve<ElasticsearchService>()
-                val indices = runCatchingOrEmptyMap { elastic.listIndicesWithAliases() }
-                val metaEntries = runCatchingOrEmptyList { elastic.getMetaEntries() }
-                val message = call.request.queryParameters["msg"]
-                val error = call.request.queryParameters["err"]
+        authenticate("admin-session") {
+            route("admin") {
+                get {
+                    val elastic = call.application.dependencies.resolve<ElasticsearchService>()
+                    val indices = runCatchingOrEmptyMap { elastic.listIndicesWithAliases() }
+                    val metaEntries = runCatchingOrEmptyList { elastic.getMetaEntries() }
+                    val message = call.request.queryParameters["msg"]
+                    val error = call.request.queryParameters["err"]
 
-                // Pre-fetch document counts (kotlinx.html DSL is non-suspending).
-                val counts: Map<String, Long> =
-                    indices.keys.associateWith { elastic.countDocuments(it) }
+                    // Pre-fetch document counts (kotlinx.html DSL is non-suspending).
+                    val counts: Map<String, Long> =
+                        indices.keys.associateWith { elastic.countDocuments(it) }
 
-                // Each ingrid_meta entry is shown separately (do NOT group by index/alias).
-                val managedEntries: List<IngridMetaEntry> =
-                    metaEntries.filter { !it.linkedIndex.isNullOrBlank() && it.linkedIndex in indices }
+                    // Each ingrid_meta entry is shown separately (do NOT group by index/alias).
+                    val managedEntries: List<IngridMetaEntry> =
+                        metaEntries.filter { !it.linkedIndex.isNullOrBlank() && it.linkedIndex in indices }
 
-                val managedIndexNames = managedEntries.mapNotNull { it.linkedIndex }.toSet()
-                val others = indices.filterKeys { it !in managedIndexNames }
+                    val managedIndexNames = managedEntries.mapNotNull { it.linkedIndex }.toSet()
+                    val others = indices.filterKeys { it !in managedIndexNames }
 
-                call.respondHtml(HttpStatusCode.OK) {
-                    head {
-                        meta(charset = "utf-8")
-                        title("InGrid API – Administration")
-                        styleLink("https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css")
-                        style {
-                            unsafe { +CSS }
-                        }
-                    }
-                    body {
-                        h1 { +"InGrid API – Administration" }
-                        p {
-                            +"Verwaltung der Elasticsearch-Indizes. Indizes, die in "
-                            code { +"ingrid_meta" }
-                            +" referenziert sind, werden als Karten hervorgehoben."
-                        }
-                        if (!message.isNullOrBlank()) {
-                            div(classes = "msg ok") { +message }
-                        }
-                        if (!error.isNullOrBlank()) {
-                            div(classes = "msg err") { +error }
-                        }
-
-                        h2 { +"Verwaltete Indizes" }
-                        if (managedEntries.isEmpty()) {
-                            p { +"Keine Indizes in 'ingrid_meta' referenziert." }
-                        } else {
-                            div(classes = "cards") {
-                                managedEntries
-                                    .sortedBy { entry ->
-                                        (entry.dataSourceName ?: entry.indexId ?: entry.linkedIndex ?: "").lowercase()
-                                    }
-                                    .forEach { entry ->
-                                        val idx = entry.linkedIndex!!
-                                        renderManagedCard(idx, entry, counts[idx])
-                                    }
+                    call.respondHtml(HttpStatusCode.OK) {
+                        head {
+                            meta(charset = "utf-8")
+                            title("InGrid API – Administration")
+                            styleLink("https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css")
+                            style {
+                                unsafe { +CSS }
                             }
                         }
+                        body {
+                            h1 { +"InGrid API – Administration" }
+                            p {
+                                +"Verwaltung der Elasticsearch-Indizes. Indizes, die in "
+                                code { +"ingrid_meta" }
+                                +" referenziert sind, werden als Karten hervorgehoben."
+                            }
+                            if (!message.isNullOrBlank()) {
+                                div(classes = "msg ok") { +message }
+                            }
+                            if (!error.isNullOrBlank()) {
+                                div(classes = "msg err") { +error }
+                            }
 
-                        h2 { +"Weitere Indizes" }
-                        if (others.isEmpty()) {
-                            p { +"Keine weiteren Indizes vorhanden." }
-                        } else {
-                            div(classes = "compact-list") {
-                                others.entries.sortedBy { it.key }.forEach { (index, _) ->
-                                    renderCompactRow(index, counts[index])
+                            h2 { +"Verwaltete Indizes" }
+                            if (managedEntries.isEmpty()) {
+                                p { +"Keine Indizes in 'ingrid_meta' referenziert." }
+                            } else {
+                                div(classes = "cards") {
+                                    managedEntries
+                                        .sortedBy { entry ->
+                                            (entry.dataSourceName ?: entry.indexId ?: entry.linkedIndex ?: "").lowercase()
+                                        }.forEach { entry ->
+                                            val idx = entry.linkedIndex!!
+                                            renderManagedCard(idx, entry, counts[idx])
+                                        }
+                                }
+                            }
+
+                            h2 { +"Weitere Indizes" }
+                            if (others.isEmpty()) {
+                                p { +"Keine weiteren Indizes vorhanden." }
+                            } else {
+                                div(classes = "compact-list") {
+                                    others.entries.sortedBy { it.key }.forEach { (index, _) ->
+                                        renderCompactRow(index, counts[index])
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            post("indices/{name}/delete") {
-                val name = call.parameters["name"].orEmpty()
-                val elastic = call.application.dependencies.resolve<ElasticsearchService>()
-                try {
-                    elastic.deleteIndex(name)
-                    call.respondRedirect("/admin?msg=${urlEncode("Index '$name' wurde gelöscht.")}")
-                } catch (ex: Exception) {
-                    call.respondRedirect(
-                        "/admin?err=${urlEncode("Index '$name' konnte nicht gelöscht werden: ${ex.message}")}",
-                    )
+                post("indices/{name}/delete") {
+                    val name = call.parameters["name"].orEmpty()
+                    val elastic = call.application.dependencies.resolve<ElasticsearchService>()
+                    try {
+                        elastic.deleteIndex(name)
+                        call.respondRedirect("/admin?msg=${urlEncode("Index '$name' wurde gelöscht.")}")
+                    } catch (ex: Exception) {
+                        call.respondRedirect(
+                            "/admin?err=${urlEncode("Index '$name' konnte nicht gelöscht werden: ${ex.message}")}",
+                        )
+                    }
                 }
-            }
 
-            post("meta/{docId}/active") {
-                val docId = call.parameters["docId"].orEmpty()
-                val params = call.receiveParameters()
-                val active = params["active"]?.toBooleanStrictOrNull() ?: false
-                val elastic = call.application.dependencies.resolve<ElasticsearchService>()
-                try {
-                    // dataSourceName VOR dem Update auflösen, damit wir ihn in der Nachricht
-                    // anzeigen können (statt der internen ID des ingrid_meta-Dokuments).
-                    val displayName =
-                        runCatching { elastic.getMetaEntries() }
-                            .getOrNull()
-                            ?.firstOrNull { it.docId == docId }
-                            ?.let { it.dataSourceName ?: it.indexId ?: it.linkedIndex }
-                            ?: docId
-                    elastic.setMetaActive(docId, active)
-                    val state = if (active) "aktiviert" else "deaktiviert"
-                    call.respondRedirect(
-                        "/admin?msg=${urlEncode("'$displayName' wurde $state.")}",
-                    )
-                } catch (ex: Exception) {
-                    call.respondRedirect(
-                        "/admin?err=${urlEncode("'$docId' konnte nicht aktualisiert werden: ${ex.message}")}",
-                    )
+                post("meta/{docId}/active") {
+                    val docId = call.parameters["docId"].orEmpty()
+                    val params = call.receiveParameters()
+                    val active = params["active"]?.toBooleanStrictOrNull() ?: false
+                    val elastic = call.application.dependencies.resolve<ElasticsearchService>()
+                    try {
+                        // dataSourceName VOR dem Update auflösen, damit wir ihn in der Nachricht
+                        // anzeigen können (statt der internen ID des ingrid_meta-Dokuments).
+                        val displayName =
+                            runCatching { elastic.getMetaEntries() }
+                                .getOrNull()
+                                ?.firstOrNull { it.docId == docId }
+                                ?.let { it.dataSourceName ?: it.indexId ?: it.linkedIndex }
+                                ?: docId
+                        elastic.setMetaActive(docId, active)
+                        val state = if (active) "aktiviert" else "deaktiviert"
+                        call.respondRedirect(
+                            "/admin?msg=${urlEncode("'$displayName' wurde $state.")}",
+                        )
+                    } catch (ex: Exception) {
+                        call.respondRedirect(
+                            "/admin?err=${urlEncode("'$docId' konnte nicht aktualisiert werden: ${ex.message}")}",
+                        )
+                    }
                 }
             }
         }
@@ -223,22 +224,21 @@ private fun FlowContent.renderCompactRow(
 
 // --- helpers ---------------------------------------------------------------
 
-private suspend inline fun <K, V> runCatchingOrEmptyMap(block: () -> Map<K, V>): Map<K, V> =
+private inline fun <K, V> runCatchingOrEmptyMap(block: () -> Map<K, V>): Map<K, V> =
     try {
         block()
-    } catch (ex: Exception) {
+    } catch (_: Exception) {
         emptyMap()
     }
 
-private suspend inline fun <T> runCatchingOrEmptyList(block: () -> List<T>): List<T> =
+private inline fun <T> runCatchingOrEmptyList(block: () -> List<T>): List<T> =
     try {
         block()
-    } catch (ex: Exception) {
+    } catch (_: Exception) {
         emptyList()
     }
 
-private fun urlEncode(value: String): String =
-    java.net.URLEncoder.encode(value, Charsets.UTF_8)
+private fun urlEncode(value: String): String = java.net.URLEncoder.encode(value, Charsets.UTF_8)
 
 /**
  * Wandelt den `lastIndexed`-Wert aus dem ingrid_meta-Index in ein lesbares
@@ -274,7 +274,8 @@ private fun formatTimestamp(value: String?): String? {
     }
 }
 
-private val CSS = """
+private val CSS =
+    """
     /* Force a light, high-contrast theme so colors stay readable
        regardless of the user's OS dark-mode preference. */
     body { background: #f7f8fa !important; color: #1a1a1a !important; }
@@ -366,4 +367,4 @@ private val CSS = """
     }
     .compact-row .compact-count { flex: 0 0 auto; font-size: 0.92em; color: #1a1a1a; }
     .compact-row .label { color: #5a6470; font-weight: 500; }
-""".trimIndent()
+    """.trimIndent()

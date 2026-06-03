@@ -9,6 +9,7 @@ import de.ingrid.ingridapi.plugins.configureDi
 import de.ingrid.ingridapi.plugins.configureSerialization
 import de.ingrid.ingridapi.plugins.configureStatusPages
 import de.ingrid.ingridapi.plugins.configureSwagger
+import de.ingrid.ingridapi.plugins.security as configureSecurity
 import de.ingrid.ingridapi.portal.configurePortalRouting
 import io.ktor.server.application.Application
 import io.ktor.server.netty.EngineMain
@@ -44,4 +45,8 @@ fun Application.ogcRecords() {
 
 fun Application.admin() {
     configureAdminRouting()
+}
+
+fun Application.security() {
+    configureSecurity()
 }

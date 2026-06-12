@@ -95,10 +95,11 @@ fun Application.security() {
     // because dependencies.resolve<T>() is `suspend` and cannot be invoked from a regular
     // application module function.
     val cfg = AppConfig()
+    val root = cfg.rootPath.trimEnd('/')
 
     install(Sessions) {
         cookie<UserSession>("INGRID_ADMIN_SESSION") {
-            cookie.path = cfg.rootPath.ifBlank { "/" }
+            cookie.path = "/"
             cookie.httpOnly = true
             // Keep this disabled for local HTTP-only development; enable in production behind TLS.
             cookie.secure = cfg.sessionSecure
@@ -177,7 +178,7 @@ fun Application.security() {
                     val principal = call.principal<OAuthAccessTokenResponse.OAuth2>()
                     if (principal == null) {
                         call.respondRedirect(
-                            "/admin/error?err=${
+                            "$root/admin/error?err=${
                                 java.net.URLEncoder.encode(
                                     "Anmeldung fehlgeschlagen.",
                                     Charsets.UTF_8,
@@ -194,7 +195,7 @@ fun Application.security() {
                             "User '${username ?: sub ?: "?"}' denied access: missing 'admin' role for client '${cfg.keycloakClientId}'"
                         }
                         call.respondRedirect(
-                            "/admin/error?err=${
+                            "$root/admin/error?err=${
                                 java.net.URLEncoder.encode(
                                     "Zugriff verweigert: Sie verfügen nicht über die erforderliche Administrator-Rolle.",
                                     Charsets.UTF_8,
@@ -218,7 +219,7 @@ fun Application.security() {
                     )
                     call.sessions.set(UserSession(sid))
                     log.info { "User '${username ?: sub ?: "?"}' logged in (sid=${sid.take(8)}…)" }
-                    val target = call.request.queryParameters["return"]?.takeIf { it.startsWith("/") } ?: "/admin"
+                    val target = call.request.queryParameters["return"]?.takeIf { it.startsWith("/") } ?: "$root/admin"
                     call.respondRedirect(target)
                 }
             }

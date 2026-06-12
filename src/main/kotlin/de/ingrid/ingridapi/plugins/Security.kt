@@ -130,23 +130,28 @@ fun Application.security() {
             validate { session ->
                 val entry = SessionTokenStore.get(session.sid) ?: return@validate null
                 val now = System.currentTimeMillis() / 1000
-                val currentEntry = if (entry.expiresAtEpochSec - 30 > now) {
-                    entry
-                } else {
-                    // Token expired (or close to expiring) — try to refresh server-side.
-                    val refreshed = entry.refreshToken?.let { refreshAccessToken(cfg, it) }
-                    if (refreshed != null) {
-                        SessionTokenStore.put(session.sid, refreshed)
-                        refreshed
+                val currentEntry =
+                    if (entry.expiresAtEpochSec - 30 > now) {
+                        entry
                     } else {
-                        SessionTokenStore.remove(session.sid)
-                        null
-                    }
-                } ?: return@validate null
+                        // Token expired (or close to expiring) — try to refresh server-side.
+                        val refreshed = entry.refreshToken?.let { refreshAccessToken(cfg, it) }
+                        if (refreshed != null) {
+                            SessionTokenStore.put(session.sid, refreshed)
+                            refreshed
+                        } else {
+                            SessionTokenStore.remove(session.sid)
+                            null
+                        }
+                    } ?: return@validate null
 
                 // Ensure the user still has the required "admin" role.
                 if (!hasAdminRole(currentEntry.accessToken, cfg.keycloakClientId)) {
-                    log.warn { "User '${currentEntry.preferredUsername ?: currentEntry.subject}' lost admin role (sid=${session.sid.take(8)}…)" }
+                    log.warn {
+                        "User '${currentEntry.preferredUsername ?: currentEntry.subject}' lost admin role (sid=${session.sid.take(
+                            8,
+                        )}…)"
+                    }
                     SessionTokenStore.remove(session.sid)
                     null
                 } else {
@@ -156,7 +161,7 @@ fun Application.security() {
             challenge {
                 // Remember where the user wanted to go, then send them to login.
                 val original = call.request.local.uri
-                call.respondRedirect("/auth/login?return=${java.net.URLEncoder.encode(original, Charsets.UTF_8)}")
+                call.respondRedirect(cfg.keycloakRedirectUrl + "?return=${java.net.URLEncoder.encode(original, Charsets.UTF_8)}")
             }
         }
     }
@@ -185,7 +190,9 @@ fun Application.security() {
 
                     // Verify the "admin" client-role from Keycloak before creating a session.
                     if (!hasAdminRole(principal.accessToken, cfg.keycloakClientId)) {
-                        log.warn { "User '${username ?: sub ?: "?"}' denied access: missing 'admin' role for client '${cfg.keycloakClientId}'" }
+                        log.warn {
+                            "User '${username ?: sub ?: "?"}' denied access: missing 'admin' role for client '${cfg.keycloakClientId}'"
+                        }
                         call.respondRedirect(
                             "/admin/error?err=${
                                 java.net.URLEncoder.encode(

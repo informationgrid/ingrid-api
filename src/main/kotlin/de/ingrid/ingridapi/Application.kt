@@ -9,10 +9,12 @@ import de.ingrid.ingridapi.plugins.configureDi
 import de.ingrid.ingridapi.plugins.configureSerialization
 import de.ingrid.ingridapi.plugins.configureStatusPages
 import de.ingrid.ingridapi.plugins.configureSwagger
-import de.ingrid.ingridapi.plugins.security as configureSecurity
 import de.ingrid.ingridapi.portal.configurePortalRouting
 import io.ktor.server.application.Application
+import io.ktor.server.application.install
 import io.ktor.server.netty.EngineMain
+import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
+import de.ingrid.ingridapi.plugins.security as configureSecurity
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
@@ -24,7 +26,7 @@ fun Application.base() {
 
     // WARNING: for security, do not include this if not behind a reverse proxy
 //    install(ForwardedHeaders)
-//    install(XForwardedHeaders)
+    install(XForwardedHeaders)
 
     configureStatusPages()
     configureSwagger()

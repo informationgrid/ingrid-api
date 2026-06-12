@@ -98,10 +98,10 @@ fun Application.security() {
 
     install(Sessions) {
         cookie<UserSession>("INGRID_ADMIN_SESSION") {
-            cookie.path = "/"
+            cookie.path = cfg.rootPath.ifBlank { "/" }
             cookie.httpOnly = true
             // Keep this disabled for local HTTP-only development; enable in production behind TLS.
-            cookie.secure = true
+            cookie.secure = cfg.sessionSecure
             cookie.extensions["SameSite"] = "Lax"
             transform(SessionTransportTransformerMessageAuthentication(hex(cfg.sessionSignKey)))
         }

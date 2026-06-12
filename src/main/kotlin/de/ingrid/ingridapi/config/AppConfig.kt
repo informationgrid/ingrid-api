@@ -7,7 +7,7 @@ class AppConfig {
 
     val elasticHost: String = applicationConfiguration.property("ktor.elasticsearch.host").getString()
     val elasticPort: Int = applicationConfiguration.property("ktor.elasticsearch.port").getString().toInt()
-    val elasticHttps: Boolean = applicationConfiguration.property("ktor.elasticsearch.https").toString().toBoolean()
+    val elasticHttps: Boolean = applicationConfiguration.property("ktor.elasticsearch.https").getString().toBoolean()
     val elasticUsername: String = applicationConfiguration.property("ktor.elasticsearch.username").getString()
     val elasticPassword: String = applicationConfiguration.property("ktor.elasticsearch.password").getString()
 
@@ -23,6 +23,9 @@ class AppConfig {
      * restarts in production, otherwise existing sessions are invalidated.
      */
     val sessionSignKey: String = applicationConfiguration.property("ktor.session.signKey").getString()
+    val sessionSecure: Boolean = applicationConfiguration.property("ktor.session.secure").getString().toBoolean()
+
+    val rootPath: String = applicationConfiguration.property("ktor.deployment.rootPath").getString()
 
     val keycloakIssuer: String
         get() = "${keycloakServerUrl.trimEnd('/')}/realms/$keycloakRealm"

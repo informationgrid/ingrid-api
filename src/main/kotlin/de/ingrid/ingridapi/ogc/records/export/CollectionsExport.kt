@@ -151,6 +151,7 @@ class HtmlCollectionsExporter : CollectionsExporter {
         collections: List<CollectionSummary>,
         links: List<Link>,
     ) {
+        val root = call.application.environment.config.propertyOrNull("ktor.deployment.rootPath")?.getString()?.trimEnd('/') ?: ""
         val html =
             buildString {
                 append(
@@ -173,7 +174,7 @@ class HtmlCollectionsExporter : CollectionsExporter {
                       </style>
                     </head>
                     <body>
-                      <nav><a href="/ogc/records">Home</a></nav>
+                      <nav><a href="$root/ogc/records">Home</a></nav>
                       <h1>Collections</h1>
                       <table>
                         <caption>Available record collections</caption>
@@ -188,7 +189,7 @@ class HtmlCollectionsExporter : CollectionsExporter {
                     val title = c.title.ifEmpty { id }
                     val desc = c.description.orEmpty()
                     append("<tr>")
-                    append("<td><a href=\"/ogc/records/collections/")
+                    append("<td><a href=\"$root/ogc/records/collections/")
                         .append(escapeHtml(id))
                         .append("?format=html\"><code>")
                         .append(escapeHtml(id))
@@ -232,6 +233,7 @@ class HtmlCollectionsExporter : CollectionsExporter {
         call: ApplicationCall,
         collection: CollectionDetail,
     ) {
+        val root = call.application.environment.config.propertyOrNull("ktor.deployment.rootPath")?.getString()?.trimEnd('/') ?: ""
         val html =
             buildString {
                 append(
@@ -252,7 +254,7 @@ class HtmlCollectionsExporter : CollectionsExporter {
                       </style>
                     </head>
                     <body>
-                      <nav><a href="/ogc/records">Home</a> / <a href="/ogc/records/collections">Collections</a></nav>
+                      <nav><a href="$root/ogc/records">Home</a> / <a href="$root/ogc/records/collections">Collections</a></nav>
                       <h1>${escapeHtml(collection.title)}</h1>
                       <p>${escapeHtml(collection.description)}</p>
                       <table>
@@ -290,6 +292,7 @@ class HtmlCollectionsExporter : CollectionsExporter {
         call: ApplicationCall,
         conformance: Conformance,
     ) {
+        val root = call.application.environment.config.propertyOrNull("ktor.deployment.rootPath")?.getString()?.trimEnd('/') ?: ""
         val html =
             buildString {
                 append(
@@ -308,7 +311,7 @@ class HtmlCollectionsExporter : CollectionsExporter {
                       </style>
                     </head>
                     <body>
-                      <nav><a href="/ogc/records">Home</a></nav>
+                      <nav><a href="$root/ogc/records">Home</a></nav>
                       <h1>Conformance</h1>
                       <p>This implementation conforms to the following OGC API conformance classes:</p>
                       <ul>

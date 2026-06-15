@@ -44,6 +44,7 @@ import kotlinx.html.unsafe
  * - Every index can be deleted; managed ones can additionally be enabled/disabled.
  */
 fun Application.configureAdminRouting() {
+    val root = environment.config.propertyOrNull("ktor.deployment.rootPath")?.getString()?.trimEnd('/') ?: ""
     routing {
         get("admin/error") {
             val error = call.request.queryParameters["err"]
@@ -65,7 +66,7 @@ fun Application.configureAdminRouting() {
                         +"Sie haben keine Berechtigung für diesen Bereich oder ein Sitzungsfehler ist aufgetreten."
                     }
                     div {
-                        a(href = "/auth/login", classes = "btn-retry") {
+                        a(href = "$root/auth/login", classes = "btn-retry") {
                             +"Erneut versuchen"
                         }
                     }
@@ -126,7 +127,7 @@ fun Application.configureAdminRouting() {
                                             (entry.dataSourceName ?: entry.indexId ?: entry.linkedIndex ?: "").lowercase()
                                         }.forEach { entry ->
                                             val idx = entry.linkedIndex!!
-                                            renderManagedCard(idx, entry, counts[idx])
+                                            renderManagedCard(idx, entry, counts[idx], root)
                                         }
                                 }
                             }
@@ -137,7 +138,7 @@ fun Application.configureAdminRouting() {
                             } else {
                                 div(classes = "compact-list") {
                                     others.entries.sortedBy { it.key }.forEach { (index, _) ->
-                                        renderCompactRow(index, counts[index])
+                                        renderCompactRow(index, counts[index], root)
                                     }
                                 }
                             }
@@ -150,10 +151,10 @@ fun Application.configureAdminRouting() {
                     val elastic = call.application.dependencies.resolve<ElasticsearchService>()
                     try {
                         elastic.deleteIndex(name)
-                        call.respondRedirect("/admin?msg=${urlEncode("Index '$name' wurde gelöscht.")}")
+                        call.respondRedirect("$root/admin?msg=${urlEncode("Index '$name' wurde gelöscht.")}")
                     } catch (ex: Exception) {
                         call.respondRedirect(
-                            "/admin?err=${urlEncode("Index '$name' konnte nicht gelöscht werden: ${ex.message}")}",
+                            "$root/admin?err=${urlEncode("Index '$name' konnte nicht gelöscht werden: ${ex.message}")}",
                         )
                     }
                 }
@@ -175,11 +176,11 @@ fun Application.configureAdminRouting() {
                         elastic.setMetaActive(docId, active)
                         val state = if (active) "aktiviert" else "deaktiviert"
                         call.respondRedirect(
-                            "/admin?msg=${urlEncode("'$displayName' wurde $state.")}",
+                            "$root/admin?msg=${urlEncode("'$displayName' wurde $state.")}",
                         )
                     } catch (ex: Exception) {
                         call.respondRedirect(
-                            "/admin?err=${urlEncode("'$docId' konnte nicht aktualisiert werden: ${ex.message}")}",
+                            "$root/admin?err=${urlEncode("'$docId' konnte nicht aktualisiert werden: ${ex.message}")}",
                         )
                     }
                 }
@@ -192,13 +193,14 @@ private fun FlowContent.renderManagedCard(
     index: String,
     entry: IngridMetaEntry,
     docCount: Long?,
+    root: String,
 ) {
     val displayName = entry.dataSourceName ?: entry.indexId ?: index
 
     div(classes = "card") {
         // LEFT: Aktivierungs-Umschalter
         div(classes = "toggle") {
-            form(action = "/admin/meta/${entry.docId}/active", method = FormMethod.post) {
+            form(action = "$root/admin/meta/${entry.docId}/active", method = FormMethod.post) {
                 hiddenInput(name = "active") { value = (!entry.active).toString() }
                 button(type = ButtonType.submit, classes = if (entry.active) "btn-on" else "btn-off") {
                     +(if (entry.active) "AN" else "AUS")
@@ -224,7 +226,7 @@ private fun FlowContent.renderManagedCard(
 
         // RIGHT: Löschen
         div(classes = "delete") {
-            form(action = "/admin/indices/$index/delete", method = FormMethod.post) {
+            form(action = "$root/admin/indices/$index/delete", method = FormMethod.post) {
                 onClick = "return confirm('Index \\'$index\\' wirklich löschen? Dies kann nicht rückgängig gemacht werden.');"
                 button(type = ButtonType.submit, classes = "btn-delete") { +"Löschen" }
             }
@@ -235,6 +237,7 @@ private fun FlowContent.renderManagedCard(
 private fun FlowContent.renderCompactRow(
     index: String,
     docCount: Long?,
+    root: String,
 ) {
     div(classes = "compact-row") {
         div(classes = "compact-name") { +index }
@@ -243,7 +246,7 @@ private fun FlowContent.renderCompactRow(
             +(docCount?.toString() ?: "?")
         }
         div(classes = "delete") {
-            form(action = "/admin/indices/$index/delete", method = FormMethod.post) {
+            form(action = "$root/admin/indices/$index/delete", method = FormMethod.post) {
                 onClick = "return confirm('Index \\'$index\\' wirklich löschen? Dies kann nicht rückgängig gemacht werden.');"
                 button(type = ButtonType.submit, classes = "btn-delete") { +"Löschen" }
             }

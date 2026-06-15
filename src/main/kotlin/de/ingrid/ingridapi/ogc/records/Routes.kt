@@ -57,7 +57,7 @@ data class FeatureCollection(
     val links: List<Link>,
 )
 
-private suspend fun handleLandingPage(call: ApplicationCall) {
+private suspend fun handleLandingPage(call: ApplicationCall, root: String) {
     val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
     val accept = call.request.headers[HttpHeaders.Accept]
     val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam, accept))
@@ -70,37 +70,37 @@ private suspend fun handleLandingPage(call: ApplicationCall) {
                 listOf(
                     Link(
                         rel = "self",
-                        href = "/ogc/records/?f=json",
+                        href = "$root/ogc/records/?f=json",
                         type = "application/json",
                         title = "This landing page as JSON",
                     ),
                     Link(
                         rel = "alternate",
-                        href = "/ogc/records/?f=html",
+                        href = "$root/ogc/records/?f=html",
                         type = "text/html",
                         title = "This landing page as HTML",
                     ),
                     Link(
                         rel = "service-desc",
-                        href = "/ogc/records/api",
+                        href = "$root/ogc/records/api",
                         type = "application/vnd.oai.openapi+json;version=3.0",
                         title = "The OpenAPI definition for this API",
                     ),
                     Link(
                         rel = "service-doc",
-                        href = "/ogc/records/swagger",
+                        href = "$root/ogc/records/swagger",
                         type = "text/html",
                         title = "The Swagger UI for this API",
                     ),
                     Link(
                         rel = "conformance",
-                        href = "/ogc/records/conformance",
+                        href = "$root/ogc/records/conformance",
                         type = "application/json",
                         title = "Conformance classes supported by this API",
                     ),
                     Link(
                         rel = "data",
-                        href = "/ogc/records/collections",
+                        href = "$root/ogc/records/collections",
                         type = "application/json",
                         title = "Collections provided by this API",
                     ),
@@ -110,14 +110,15 @@ private suspend fun handleLandingPage(call: ApplicationCall) {
 }
 
 fun Application.configureOgcRecordsRouting() {
+    val root = environment.config.propertyOrNull("ktor.deployment.rootPath")?.getString()?.trimEnd('/') ?: ""
     routing {
         // Landing page at '/ogc/records' and '/ogc/records/'
         route("ogc/records", { specName = "ogc-records" }) {
             get {
-                handleLandingPage(call)
+                handleLandingPage(call, root)
             }
             get("/") {
-                handleLandingPage(call)
+                handleLandingPage(call, root)
             }
             get("", {
                 description = "The landing page of this OGC API."
@@ -132,7 +133,7 @@ fun Application.configureOgcRecordsRouting() {
 
             // Swagger UI for OGC Records at '/ogc/records/swagger'
             route("swagger") {
-                swaggerUI("/ogc/records/api")
+                swaggerUI("$root/ogc/records/api")
             }
 
             // Minimal conformance endpoint
@@ -204,30 +205,30 @@ fun Application.configureOgcRecordsRouting() {
                                     listOf(
                                         Link(
                                             rel = "self",
-                                            href = "/ogc/records/collections/$id",
+                                            href = "$root/ogc/records/collections/$id",
                                             type = "application/json",
                                         ),
                                         Link(
                                             rel = "items",
-                                            href = "/ogc/records/collections/$id/items?f=index",
+                                            href = "$root/ogc/records/collections/$id/items?f=index",
                                             type = "application/json",
                                             title = "Items of this collection as Elasticsearch document",
                                         ),
                                         Link(
                                             rel = "alternate",
-                                            href = "/ogc/records/collections/$id/items?f=html",
+                                            href = "$root/ogc/records/collections/$id/items?f=html",
                                             type = "text/html",
                                             title = "Items of this collection as HTML",
                                         ),
                                         /*Link(
                                             rel = "alternate",
-                                            href = "/ogc/records/collections/$id/items?f=iso",
+                                            href = "$root/ogc/records/collections/$id/items?f=iso",
                                             type = "application/xml",
                                             title = "Items of this collection as ISO 19139 XML",
                                         ),*/
                                         Link(
                                             rel = "alternate",
-                                            href = "/ogc/records/collections/$id/items?f=index",
+                                            href = "$root/ogc/records/collections/$id/items?f=index",
                                             type = "application/json",
                                             title = "Items of this collection as Elasticsearch documents",
                                         ),
@@ -241,13 +242,13 @@ fun Application.configureOgcRecordsRouting() {
                     listOf(
                         Link(
                             rel = "self",
-                            href = "/ogc/records/collections?f=json",
+                            href = "$root/ogc/records/collections?f=json",
                             type = "application/json",
                             title = "This document as JSON",
                         ),
                         Link(
                             rel = "alternate",
-                            href = "/ogc/records/collections?f=html",
+                            href = "$root/ogc/records/collections?f=html",
                             type = "text/html",
                             title = "This document as HTML",
                         ),
@@ -275,37 +276,37 @@ fun Application.configureOgcRecordsRouting() {
                             listOf(
                                 Link(
                                     rel = "self",
-                                    href = "/ogc/records/collections/$id?f=json",
+                                    href = "$root/ogc/records/collections/$id?f=json",
                                     type = "application/json",
                                     title = "This collection as JSON",
                                 ),
                                 Link(
                                     rel = "alternate",
-                                    href = "/ogc/records/collections/$id?f=html",
+                                    href = "$root/ogc/records/collections/$id?f=html",
                                     type = "text/html",
                                     title = "This collection as HTML",
                                 ),
                                 Link(
                                     rel = "items",
-                                    href = "/ogc/records/collections/$id/items?f=index",
+                                    href = "$root/ogc/records/collections/$id/items?f=index",
                                     type = "application/json",
                                     title = "Items of this collection as Elasticsearch document",
                                 ),
                                 Link(
                                     rel = "alternate",
-                                    href = "/ogc/records/collections/$id/items?f=html",
+                                    href = "$root/ogc/records/collections/$id/items?f=html",
                                     type = "text/html",
                                     title = "Items of this collection as HTML",
                                 ),
                                 /*Link(
                                     rel = "alternate",
-                                    href = "/ogc/records/collections/$id/items?f=iso",
+                                    href = "$root/ogc/records/collections/$id/items?f=iso",
                                     type = "application/xml",
                                     title = "Items of this collection as ISO 19139 XML",
                                 ),
                                 Link(
                                     rel = "alternate",
-                                    href = "/ogc/records/collections/$id/items?f=geojson",
+                                    href = "$root/ogc/records/collections/$id/items?f=geojson",
                                     type = "application/geo+json",
                                     title = "Items of this collection as GeoJSON documents",
                                 ),*/
@@ -366,31 +367,31 @@ fun Application.configureOgcRecordsRouting() {
                             listOf(
                                 /*Link(
                                     rel = "self",
-                                    href = "/ogc/records/collections/$id/items?f=json${if (bboxParam != null) "&bbox=$bboxParam" else ""}",
+                                    href = "$root/ogc/records/collections/$id/items?f=json${if (bboxParam != null) "&bbox=$bboxParam" else ""}",
                                     type = "application/geo+json",
                                     title = "Items of this collection as GeoJSON",
                                 ),*/
                                 Link(
                                     rel = "alternate",
-                                    href = "/ogc/records/collections/$id/items?f=html${if (bboxParam != null) "&bbox=$bboxParam" else ""}",
+                                    href = "$root/ogc/records/collections/$id/items?f=html${if (bboxParam != null) "&bbox=$bboxParam" else ""}",
                                     type = "text/html",
                                     title = "Items of this collection as HTML",
                                 ),
                                 /*Link(
                                     rel = "alternate",
-                                    href = "/ogc/records/collections/$id/items?f=iso${if (bboxParam != null) "&bbox=$bboxParam" else ""}",
+                                    href = "$root/ogc/records/collections/$id/items?f=iso${if (bboxParam != null) "&bbox=$bboxParam" else ""}",
                                     type = "application/xml",
                                     title = "Items of this collection as ISO 19139 XML",
                                 ),*/
                                 Link(
                                     rel = "alternate",
-                                    href = "/ogc/records/collections/$id/items?f=index${if (bboxParam != null) "&bbox=$bboxParam" else ""}",
+                                    href = "$root/ogc/records/collections/$id/items?f=index${if (bboxParam != null) "&bbox=$bboxParam" else ""}",
                                     type = "application/json",
                                     title = "Items of this collection as Elasticsearch documents",
                                 ),
                                 Link(
                                     rel = "collection",
-                                    href = "/ogc/records/collections/$id?f=json",
+                                    href = "$root/ogc/records/collections/$id?f=json",
                                     type = "application/json",
                                     title = "The collection description",
                                 ),

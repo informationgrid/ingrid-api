@@ -21,6 +21,7 @@ class HtmlItemsExporter : ItemsExporter {
         offset: Int,
         bbox: String?,
     ) {
+        val root = call.application.environment.config.propertyOrNull("ktor.deployment.rootPath")?.getString()?.trimEnd('/') ?: ""
         val total = searchResponse?.total ?: 0L
         val html =
             buildString {
@@ -49,9 +50,9 @@ class HtmlItemsExporter : ItemsExporter {
                     </head>
                     <body>
                       <nav>
-                        <a href="/ogc/records">Home</a> / 
-                        <a href="/ogc/records/collections?format=html">Collections</a> / 
-                        <a href="/ogc/records/collections/${escapeHtml(featureCollection.name)}?format=html">${
+                        <a href="$root/ogc/records">Home</a> / 
+                        <a href="$root/ogc/records/collections?format=html">Collections</a> / 
+                        <a href="$root/ogc/records/collections/${escapeHtml(featureCollection.name)}?format=html">${
                         escapeHtml(
                             featureCollection.name,
                         )
@@ -76,7 +77,7 @@ class HtmlItemsExporter : ItemsExporter {
                     val title = it.source!!["title"].asSafeString().ifEmpty { id }
                     val description = it.source?.get("description")?.asSafeString() ?: it.source?.get("summary").asSafeString()
                     append("<tr>")
-                    append("<td><a href=\"/ogc/records/collections/")
+                    append("<td><a href=\"$root/ogc/records/collections/")
                         .append(escapeHtml(featureCollection.name))
                         .append("/items/")
                         .append(escapeHtml(id))
@@ -132,6 +133,7 @@ class HtmlItemsExporter : ItemsExporter {
         catalogId: String,
         recordId: String,
     ) {
+        val root = call.application.environment.config.propertyOrNull("ktor.deployment.rootPath")?.getString()?.trimEnd('/') ?: ""
         if (record == null) {
             call.respond(HttpStatusCode.NotFound)
             return
@@ -159,9 +161,9 @@ class HtmlItemsExporter : ItemsExporter {
                     </head>
                     <body>
                     <nav>
-                      <a href="/ogc/records">Home</a> / 
-                      <a href="/ogc/records/collections?format=html">Collections</a> / 
-                      <a href="/ogc/records/collections/${escapeHtml(catalogId)}?format=html">${escapeHtml(catalogId)}</a>
+                      <a href="$root/ogc/records">Home</a> / 
+                      <a href="$root/ogc/records/collections?format=html">Collections</a> / 
+                      <a href="$root/ogc/records/collections/${escapeHtml(catalogId)}?format=html">${escapeHtml(catalogId)}</a>
                     </nav>
                       <h1>Record: ${escapeHtml(title)}</h1>
                       <p>${escapeHtml(description)}</p>
@@ -174,7 +176,7 @@ class HtmlItemsExporter : ItemsExporter {
                       <ul>
                         <li>
                           <span class="link-rel">self</span>
-                          <a href="/ogc/records/collections/${
+                          <a href="$root/ogc/records/collections/${
                         escapeHtml(
                             catalogId,
                         )
@@ -183,7 +185,7 @@ class HtmlItemsExporter : ItemsExporter {
                         </li>
                         <!--<li>
                           <span class="link-rel">alternate</span>
-                          <a href="/ogc/records/collections/${
+                          <a href="$root/ogc/records/collections/${
                         escapeHtml(
                             catalogId,
                         )
@@ -192,7 +194,7 @@ class HtmlItemsExporter : ItemsExporter {
                         </li>-->
                         <!--<li>
                           <span class="link-rel">alternate</span>
-                          <a href="/ogc/records/collections/${
+                          <a href="$root/ogc/records/collections/${
                         escapeHtml(
                             catalogId,
                         )
@@ -201,7 +203,7 @@ class HtmlItemsExporter : ItemsExporter {
                         </li>-->
                         <li>
                           <span class="link-rel">alternate</span>
-                          <a href="/ogc/records/collections/${
+                          <a href="$root/ogc/records/collections/${
                         escapeHtml(
                             catalogId,
                         )
@@ -210,7 +212,7 @@ class HtmlItemsExporter : ItemsExporter {
                         </li>
                         <li>
                           <span class="link-rel">collection</span>
-                          <a href="/ogc/records/collections/${escapeHtml(catalogId)}?format=html">The collection description</a>
+                          <a href="$root/ogc/records/collections/${escapeHtml(catalogId)}?format=html">The collection description</a>
                           (<code>text/html</code>)
                         </li>
                       </ul>

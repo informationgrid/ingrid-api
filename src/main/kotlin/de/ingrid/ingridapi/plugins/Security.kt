@@ -21,6 +21,7 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.oauth
 import io.ktor.server.auth.principal
 import io.ktor.server.auth.session
+import io.ktor.server.plugins.origin
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
@@ -111,7 +112,11 @@ fun Application.security() {
     install(Authentication) {
         // ---- OAuth2 Authorization Code flow with Keycloak --------------------
         oauth("keycloak-oauth") {
-            urlProvider = { cfg.keycloakRedirectUrl }
+            urlProvider = {
+                val scheme = this.request.origin.scheme
+                val host = this.request.origin.serverHost
+                "$scheme://$host$root/auth/login"
+            }
             providerLookup = {
                 OAuthServerSettings.OAuth2ServerSettings(
                     name = "keycloak",
@@ -162,7 +167,7 @@ fun Application.security() {
             challenge {
                 // Remember where the user wanted to go, then send them to login.
                 val original = call.request.local.uri
-                call.respondRedirect(cfg.keycloakRedirectUrl + "?return=${java.net.URLEncoder.encode(original, Charsets.UTF_8)}")
+                call.respondRedirect("$root/auth/login" + "?return=${java.net.URLEncoder.encode(original, Charsets.UTF_8)}")
             }
         }
     }
@@ -232,12 +237,14 @@ fun Application.security() {
                 call.sessions.clear<UserSession>()
             }
             // Trigger Keycloak RP-initiated logout so the SSO session is killed too.
-            val baseOrigin = cfg.keycloakRedirectUrl.substringBefore("/auth/")
             val redirect =
                 URLBuilder(cfg.keycloakLogoutUrl)
                     .apply {
                         parameters.append("client_id", cfg.keycloakClientId)
-                        parameters.append("post_logout_redirect_uri", "$baseOrigin/admin")
+                        val scheme = call.request.origin.scheme
+                        val host = call.request.origin.serverHost
+                        val externalBaseUrl = "$scheme://$host"
+                        parameters.append("post_logout_redirect_uri", "$externalBaseUrl$root/admin")
                     }.buildString()
             call.respondRedirect(redirect)
         }

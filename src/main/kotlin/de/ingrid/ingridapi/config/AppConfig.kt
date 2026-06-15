@@ -16,7 +16,6 @@ class AppConfig {
     val keycloakRealm: String = applicationConfiguration.property("ktor.keycloak.realm").getString()
     val keycloakClientId: String = applicationConfiguration.property("ktor.keycloak.clientId").getString()
     val keycloakClientSecret: String = applicationConfiguration.property("ktor.keycloak.clientSecret").getString()
-    val keycloakRedirectUrl: String = applicationConfiguration.property("ktor.keycloak.redirectUrl").getString()
 
     /**
      * Hex string used to sign the session cookie (HMAC-SHA256). Must remain stable across

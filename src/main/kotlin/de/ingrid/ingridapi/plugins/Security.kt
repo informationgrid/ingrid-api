@@ -4,36 +4,20 @@ package de.ingrid.ingridapi.plugins
 
 import de.ingrid.ingridapi.config.AppConfig
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.apache5.Apache5
-import io.ktor.client.request.forms.submitForm
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.URLBuilder
-import io.ktor.http.parameters
+import io.ktor.client.*
+import io.ktor.client.engine.apache5.*
+import io.ktor.client.request.forms.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.install
-import io.ktor.server.auth.Authentication
-import io.ktor.server.auth.OAuthAccessTokenResponse
-import io.ktor.server.auth.OAuthServerSettings
-import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.oauth
-import io.ktor.server.auth.principal
-import io.ktor.server.auth.session
-import io.ktor.server.plugins.origin
-import io.ktor.server.response.respondRedirect
-import io.ktor.server.routing.get
-import io.ktor.server.routing.route
-import io.ktor.server.routing.routing
-import io.ktor.server.sessions.SessionTransportTransformerMessageAuthentication
-import io.ktor.server.sessions.Sessions
-import io.ktor.server.sessions.clear
-import io.ktor.server.sessions.cookie
-import io.ktor.server.sessions.get
-import io.ktor.server.sessions.sessions
-import io.ktor.server.sessions.set
-import io.ktor.util.hex
+import io.ktor.server.auth.*
+import io.ktor.server.plugins.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import io.ktor.server.sessions.*
+import io.ktor.util.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -129,6 +113,23 @@ fun Application.security() {
                 )
             }
             client = httpClient
+            fallback = { call, cause ->
+                log.warn { "Authentication failed: ${cause.message}" }
+                val msg =
+                    if (cause.message.contains("401") || cause.message.contains("400")) {
+                        "Authentifizierung beim Identity-Provider fehlgeschlagen (evtl. ungültige Client-Credentials)."
+                    } else {
+                        "Anmeldung fehlgeschlagen: ${cause.message}"
+                    }
+                call.respondRedirect(
+                    "$root/admin/error?err=${
+                        java.net.URLEncoder.encode(
+                            msg,
+                            Charsets.UTF_8,
+                        )
+                    }",
+                )
+            }
         }
 
         // ---- Session-based guard used to protect the admin routes ------------
@@ -154,9 +155,11 @@ fun Application.security() {
                 // Ensure the user still has the required "admin" role.
                 if (!hasAdminRole(currentEntry.accessToken, cfg.keycloakClientId)) {
                     log.warn {
-                        "User '${currentEntry.preferredUsername ?: currentEntry.subject}' lost admin role (sid=${session.sid.take(
-                            8,
-                        )}…)"
+                        "User '${currentEntry.preferredUsername ?: currentEntry.subject}' lost admin role (sid=${
+                            session.sid.take(
+                                8,
+                            )
+                        }…)"
                     }
                     SessionTokenStore.remove(session.sid)
                     null
@@ -167,7 +170,14 @@ fun Application.security() {
             challenge {
                 // Remember where the user wanted to go, then send them to login.
                 val original = call.request.local.uri
-                call.respondRedirect("$root/auth/login" + "?return=${java.net.URLEncoder.encode(original, Charsets.UTF_8)}")
+                call.respondRedirect(
+                    "$root/auth/login" + "?return=${
+                        java.net.URLEncoder.encode(
+                            original,
+                            Charsets.UTF_8
+                        )
+                    }"
+                )
             }
         }
     }
@@ -176,22 +186,11 @@ fun Application.security() {
         // /auth/login starts the OAuth2 flow. The `oauth` provider intercepts the
         // request, redirects the browser to Keycloak, and (on callback) re-enters
         // this handler with a populated principal.
-        authenticate("keycloak-oauth") {
-            route("/auth/login") {
+        route("/auth/login") {
+            authenticate("keycloak-oauth") {
                 get {
                     // Reached only after a successful round-trip to Keycloak.
-                    val principal = call.principal<OAuthAccessTokenResponse.OAuth2>()
-                    if (principal == null) {
-                        call.respondRedirect(
-                            "$root/admin/error?err=${
-                                java.net.URLEncoder.encode(
-                                    "Anmeldung fehlgeschlagen.",
-                                    Charsets.UTF_8,
-                                )
-                            }",
-                        )
-                        return@get
-                    }
+                    val principal = call.principal<OAuthAccessTokenResponse.OAuth2>() ?: return@get
                     val (sub, username) = parseIdToken(principal.extraParameters["id_token"])
 
                     // Verify the "admin" client-role from Keycloak before creating a session.

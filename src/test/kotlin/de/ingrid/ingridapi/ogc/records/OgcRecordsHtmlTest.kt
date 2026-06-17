@@ -166,7 +166,7 @@ class OgcRecordsHtmlTest {
                     "Should contain link to json representation",
                 )
                 assertTrue(
-                    body.contains("href=\"/ogc/records/collections/test-id/items?f=index\""),
+                    body.contains("href=\"/ogc/records/collections/test-id/items?f=ingrid-index-json\""),
                     "Should contain link to items",
                 )
                 assertTrue(
@@ -216,7 +216,7 @@ class OgcRecordsHtmlTest {
                     "Should contain HTML link",
                 )
                 assertTrue(
-                    body.contains("href=\"/ogc/records/collections/test-id/items?f=index\""),
+                    body.contains("href=\"/ogc/records/collections/test-id/items?f=ingrid-index-json\""),
                     "Should contain JSON link",
                 )
                 /*

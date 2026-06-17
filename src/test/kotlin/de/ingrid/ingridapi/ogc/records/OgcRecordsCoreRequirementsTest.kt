@@ -225,7 +225,10 @@ class OgcRecordsCoreRequirementsTest {
                     assertTrue(rels.contains("items"), "Collection should have an items link")
 
                     val itemsLink = links.find { it.jsonObject["rel"]?.jsonPrimitive?.content == "items" }?.jsonObject
-                    assertEquals("application/json", itemsLink?.get("type")?.jsonPrimitive?.content)
+                    assertEquals(
+                        "application/vnd.ingrid.index+json",
+                        itemsLink?.get("type")?.jsonPrimitive?.content,
+                    )
 
                     // Requirement 13: /req/core/fc-md-links
                     val topLinks = body["links"]?.jsonArray

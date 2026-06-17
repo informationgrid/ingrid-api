@@ -5,12 +5,17 @@ package de.ingrid.ingridapi.ogc.records
 import de.ingrid.ingridapi.core.services.asSafeString
 import de.ingrid.ingridapi.ogc.records.export.CollectionSummary
 import de.ingrid.ingridapi.ogc.records.export.CollectionsExporterFactory
+import de.ingrid.ingridapi.ogc.records.export.ExportFormat
+import de.ingrid.ingridapi.ogc.records.export.ExportFormatResult
 import de.ingrid.ingridapi.ogc.records.export.LandingPage
-import de.ingrid.ingridapi.ogc.records.export.parseExportFormat
+import de.ingrid.ingridapi.ogc.records.export.SUPPORTED_COLLECTION_FORMATS
+import de.ingrid.ingridapi.ogc.records.export.parseExportFormatResult
 import de.ingrid.ingridapi.ogc.records.items.ItemExportFormat
+import de.ingrid.ingridapi.ogc.records.items.ItemExportFormatResult
 import de.ingrid.ingridapi.ogc.records.items.ItemsExporterFactory.create
+import de.ingrid.ingridapi.ogc.records.items.SUPPORTED_ITEM_FORMATS
 import de.ingrid.ingridapi.ogc.records.items.parseBboxParam
-import de.ingrid.ingridapi.ogc.records.items.parseItemExportFormat
+import de.ingrid.ingridapi.ogc.records.items.parseItemExportFormatResult
 import de.ingrid.ingridapi.ogc.records.services.RecordsService
 import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.openApi
@@ -57,10 +62,76 @@ data class FeatureCollection(
     val links: List<Link>,
 )
 
-private suspend fun handleLandingPage(call: ApplicationCall, root: String) {
+/**
+ * Build alternate-format links for a given resource path, used in 406 responses
+ * to point clients to representations the server can actually produce.
+ */
+private fun collectionAlternateLinks(resourcePath: String): List<Link> =
+    ExportFormat.entries.map {
+        Link(
+            rel = "alternate",
+            type = it.mediaType,
+            href = "$resourcePath?f=${it.paramValue}",
+        )
+    }
+
+private fun itemAlternateLinks(resourcePath: String): List<Link> =
+    ItemExportFormat.entries.map {
+        Link(
+            rel = "alternate",
+            type = it.mediaType,
+            href = "$resourcePath?f=${it.paramValue}",
+        )
+    }
+
+/**
+ * Resolves the collection export format from query/header inputs.
+ * On invalid `f` parameter responds with HTTP 400 (InvalidParameterValue) and returns null.
+ * On unsupported Accept header responds with HTTP 406 (NotAcceptable) and returns null.
+ */
+private suspend fun resolveCollectionFormat(
+    call: ApplicationCall,
+    root: String,
+    resourcePathSuffix: String,
+): ExportFormat? {
     val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
     val accept = call.request.headers[HttpHeaders.Accept]
-    val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam, accept))
+    return when (val r = parseExportFormatResult(fmtParam, accept)) {
+        is ExportFormatResult.Ok -> r.format
+        is ExportFormatResult.InvalidParam -> {
+            respondInvalidFormatParameter(call, r.value, SUPPORTED_COLLECTION_FORMATS)
+            null
+        }
+        is ExportFormatResult.NotAcceptable -> {
+            respondNotAcceptable(call, r.acceptHeader, collectionAlternateLinks("$root$resourcePathSuffix"))
+            null
+        }
+    }
+}
+
+private suspend fun resolveItemFormat(
+    call: ApplicationCall,
+    root: String,
+    resourcePathSuffix: String,
+): ItemExportFormat? {
+    val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
+    val accept = call.request.headers[HttpHeaders.Accept]
+    return when (val r = parseItemExportFormatResult(fmtParam, accept)) {
+        is ItemExportFormatResult.Ok -> r.format
+        is ItemExportFormatResult.InvalidParam -> {
+            respondInvalidFormatParameter(call, r.value, SUPPORTED_ITEM_FORMATS)
+            null
+        }
+        is ItemExportFormatResult.NotAcceptable -> {
+            respondNotAcceptable(call, r.acceptHeader, itemAlternateLinks("$root$resourcePathSuffix"))
+            null
+        }
+    }
+}
+
+private suspend fun handleLandingPage(call: ApplicationCall, root: String) {
+    val format = resolveCollectionFormat(call, root, "/ogc/records") ?: return
+    val exporter = CollectionsExporterFactory.create(format)
     exporter.respondLandingPage(
         call,
         LandingPage(
@@ -151,9 +222,8 @@ fun Application.configureOgcRecordsRouting() {
                     }
                 }
             }) {
-                val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
-                val accept = call.request.headers[HttpHeaders.Accept]
-                val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam, accept))
+                val format = resolveCollectionFormat(call, root, "/ogc/records/conformance") ?: return@get
+                val exporter = CollectionsExporterFactory.create(format)
                 exporter.respondConformance(
                     call,
                     Conformance(
@@ -191,6 +261,7 @@ fun Application.configureOgcRecordsRouting() {
                 ) {
                     return@get call.respond(HttpStatusCode.BadRequest)
                 }
+                val format = resolveCollectionFormat(call, root, "/ogc/records/collections") ?: return@get
                 val recordsService = dependencies.resolve<RecordsService>()
                 val collections =
                     recordsService
@@ -210,9 +281,9 @@ fun Application.configureOgcRecordsRouting() {
                                         ),
                                         Link(
                                             rel = "items",
-                                            href = "$root/ogc/records/collections/$id/items?f=index",
-                                            type = "application/json",
-                                            title = "Items of this collection as Elasticsearch document",
+                                            href = "$root/ogc/records/collections/$id/items?f=ingrid-index-json",
+                                            type = "application/vnd.ingrid.index+json",
+                                            title = "Items of this collection as INGRID index documents",
                                         ),
                                         Link(
                                             rel = "alternate",
@@ -220,24 +291,16 @@ fun Application.configureOgcRecordsRouting() {
                                             type = "text/html",
                                             title = "Items of this collection as HTML",
                                         ),
-                                        /*Link(
-                                            rel = "alternate",
-                                            href = "$root/ogc/records/collections/$id/items?f=iso",
-                                            type = "application/xml",
-                                            title = "Items of this collection as ISO 19139 XML",
-                                        ),*/
                                         Link(
                                             rel = "alternate",
-                                            href = "$root/ogc/records/collections/$id/items?f=index",
-                                            type = "application/json",
-                                            title = "Items of this collection as Elasticsearch documents",
+                                            href = "$root/ogc/records/collections/$id/items?f=ingrid-index-json",
+                                            type = "application/vnd.ingrid.index+json",
+                                            title = "Items of this collection as INGRID index documents",
                                         ),
                                     ),
                             )
                         }.toSet()
-                val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
-                val accept = call.request.headers[HttpHeaders.Accept]
-                val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam, accept))
+                val exporter = CollectionsExporterFactory.create(format)
                 val links =
                     listOf(
                         Link(
@@ -265,6 +328,7 @@ fun Application.configureOgcRecordsRouting() {
                 }
             }) {
                 val id = call.parameters["catalogId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                val format = resolveCollectionFormat(call, root, "/ogc/records/collections/$id") ?: return@get
 
                 val collection =
                     CollectionDetail(
@@ -288,9 +352,9 @@ fun Application.configureOgcRecordsRouting() {
                                 ),
                                 Link(
                                     rel = "items",
-                                    href = "$root/ogc/records/collections/$id/items?f=index",
-                                    type = "application/json",
-                                    title = "Items of this collection as Elasticsearch document",
+                                    href = "$root/ogc/records/collections/$id/items?f=ingrid-index-json",
+                                    type = "application/vnd.ingrid.index+json",
+                                    title = "Items of this collection as INGRID index documents",
                                 ),
                                 Link(
                                     rel = "alternate",
@@ -312,9 +376,7 @@ fun Application.configureOgcRecordsRouting() {
                                 ),*/
                             ),
                     )
-                val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
-                val accept = call.request.headers[HttpHeaders.Accept]
-                val exporter = CollectionsExporterFactory.create(parseExportFormat(fmtParam, accept))
+                val exporter = CollectionsExporterFactory.create(format)
                 exporter.respond(call, collection)
             }
 
@@ -358,6 +420,7 @@ fun Application.configureOgcRecordsRouting() {
 
                 val recordsService = dependencies.resolve<RecordsService>()
                 val id = call.parameters["catalogId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                val itemFormat = resolveItemFormat(call, root, "/ogc/records/collections/$id/items") ?: return@get
                 val featureCollection =
                     FeatureCollection(
                         type = "FeatureCollection",
@@ -385,9 +448,9 @@ fun Application.configureOgcRecordsRouting() {
                                 ),*/
                                 Link(
                                     rel = "alternate",
-                                    href = "$root/ogc/records/collections/$id/items?f=index${if (bboxParam != null) "&bbox=$bboxParam" else ""}",
-                                    type = "application/json",
-                                    title = "Items of this collection as Elasticsearch documents",
+                                    href = "$root/ogc/records/collections/$id/items?f=ingrid-index-json${if (bboxParam != null) "&bbox=$bboxParam" else ""}",
+                                    type = "application/vnd.ingrid.index+json",
+                                    title = "Items of this collection as INGRID index documents",
                                 ),
                                 Link(
                                     rel = "collection",
@@ -397,11 +460,9 @@ fun Application.configureOgcRecordsRouting() {
                                 ),
                             ),
                     )
-                val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
-                val accept = call.request.headers[HttpHeaders.Accept]
                 val limitValue = limit ?: 10
                 val offset = call.request.queryParameters["offset"]?.toIntOrNull() ?: 0
-                val exporter = create(parseItemExportFormat(fmtParam, accept))
+                val exporter = create(itemFormat)
                 val searchResponse = recordsService.getRecords(id, limitValue, offset, bbox)
                 exporter.respond(call, featureCollection, searchResponse, limitValue, offset, bboxParam)
             }
@@ -419,10 +480,10 @@ fun Application.configureOgcRecordsRouting() {
                 val catalogId =
                     call.parameters["catalogId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                 val recordId = call.parameters["recordId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
-                val fmtParam = call.request.queryParameters["format"]
-                val accept = call.request.headers[HttpHeaders.Accept]
+                val itemFormat =
+                    resolveItemFormat(call, root, "/ogc/records/collections/$catalogId/items/$recordId") ?: return@get
 
-                val exporter = create(parseItemExportFormat(fmtParam, accept))
+                val exporter = create(itemFormat)
                 val record = recordsService.getRecord(catalogId, recordId)
                 exporter.respondSingle(call, record, catalogId, recordId)
             }

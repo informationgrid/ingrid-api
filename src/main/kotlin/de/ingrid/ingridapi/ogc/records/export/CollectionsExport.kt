@@ -9,16 +9,53 @@ import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import kotlinx.serialization.Serializable
 
-enum class ExportFormat { JSON, HTML }
+enum class ExportFormat(
+    val paramValue: String,
+    val mediaType: String,
+) {
+    JSON("json", "application/json"),
+    HTML("html", "text/html"),
+}
+
+val SUPPORTED_COLLECTION_FORMATS: List<String> = ExportFormat.entries.map { it.paramValue }
+
+sealed class ExportFormatResult {
+    data class Ok(val format: ExportFormat) : ExportFormatResult()
+
+    /** The `f` query parameter was provided but unknown. */
+    data class InvalidParam(val value: String) : ExportFormatResult()
+
+    /** No `f` was given and the Accept header is not satisfiable. */
+    data class NotAcceptable(val acceptHeader: String) : ExportFormatResult()
+}
 
 fun parseExportFormat(
     param: String?,
     acceptHeader: String? = null,
 ): ExportFormat =
-    when {
-        param?.lowercase() == "json" || acceptHeader?.lowercase() == "application/json" -> ExportFormat.JSON
+    when (val r = parseExportFormatResult(param, acceptHeader)) {
+        is ExportFormatResult.Ok -> r.format
         else -> ExportFormat.HTML
     }
+
+fun parseExportFormatResult(
+    param: String?,
+    acceptHeader: String? = null,
+): ExportFormatResult {
+    if (param != null) {
+        val match = ExportFormat.entries.firstOrNull { it.paramValue.equals(param, ignoreCase = true) }
+        return if (match != null) ExportFormatResult.Ok(match) else ExportFormatResult.InvalidParam(param)
+    }
+    if (acceptHeader.isNullOrBlank()) {
+        return ExportFormatResult.Ok(ExportFormat.JSON)
+    }
+    val lower = acceptHeader.lowercase()
+    // Exact known media types
+    ExportFormat.entries.firstOrNull { lower.contains(it.mediaType) }?.let { return ExportFormatResult.Ok(it) }
+    // Browser-style wildcards fall back to HTML (best practice for user agents)
+    if (lower.contains("*/*")) return ExportFormatResult.Ok(ExportFormat.HTML)
+    return ExportFormatResult.NotAcceptable(acceptHeader)
+}
 
 @Serializable
 data class CollectionSummary(

@@ -30,24 +30,41 @@ class IndexItemsExporter : ItemsExporter {
         recordId: String,
     ) {
         if (record != null) {
+            val root =
+                call.application.environment.config
+                    .propertyOrNull("ktor.deployment.rootPath")
+                    ?.getString()
+                    ?.trimEnd('/') ?: ""
+            val resourcePath = "$root/ogc/records/collections/$catalogId/items/$recordId"
             val recordWithLinks =
                 buildJsonObject {
                     record.forEach { (key, value) -> put(key, value) }
                     put(
                         "links",
                         kotlinx.serialization.json.buildJsonArray {
-                            add(
-                                buildJsonObject {
-                                    put("rel", "self")
-                                    put("href", "/ogc/records/collections/$catalogId/items/$recordId")
-                                    put("type", "application/json")
-                                },
-                            )
+                            // self + alternates for every supported item format
+                            ItemExportFormat.entries.forEach { fmt ->
+                                add(
+                                    buildJsonObject {
+                                        put("rel", if (fmt == ItemExportFormat.INDEX) "self" else "alternate")
+                                        put("href", "$resourcePath?f=${fmt.paramValue}")
+                                        put("type", fmt.mediaType)
+                                        put(
+                                            "title",
+                                            when (fmt) {
+                                                ItemExportFormat.HTML -> "This record as HTML"
+                                                ItemExportFormat.INDEX -> "This record as INGRID index document"
+                                            },
+                                        )
+                                    },
+                                )
+                            }
                             add(
                                 buildJsonObject {
                                     put("rel", "collection")
-                                    put("href", "/ogc/records/collections/$catalogId")
+                                    put("href", "$root/ogc/records/collections/$catalogId?f=json")
                                     put("type", "application/json")
+                                    put("title", "The collection description")
                                 },
                             )
                         },

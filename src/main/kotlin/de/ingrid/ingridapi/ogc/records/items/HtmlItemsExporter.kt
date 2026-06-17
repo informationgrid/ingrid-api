@@ -180,39 +180,21 @@ class HtmlItemsExporter : ItemsExporter {
                         escapeHtml(
                             catalogId,
                         )
-                    }/items/${escapeHtml(recordId)}?format=html">This record as HTML</a>
+                    }/items/${escapeHtml(recordId)}?f=html">This record as HTML</a>
                           (<code>text/html</code>)
                         </li>
-                        <!--<li>
-                          <span class="link-rel">alternate</span>
-                          <a href="$root/ogc/records/collections/${
-                        escapeHtml(
-                            catalogId,
-                        )
-                    }/items/${escapeHtml(recordId)}?format=json">This record as GeoJSON</a>
-                          (<code>application/geo+json</code>)
-                        </li>-->
-                        <!--<li>
-                          <span class="link-rel">alternate</span>
-                          <a href="$root/ogc/records/collections/${
-                        escapeHtml(
-                            catalogId,
-                        )
-                    }/items/${escapeHtml(recordId)}?format=iso">This record as ISO 19139 XML</a>
-                          (<code>application/xml</code>)
-                        </li>-->
                         <li>
                           <span class="link-rel">alternate</span>
                           <a href="$root/ogc/records/collections/${
                         escapeHtml(
                             catalogId,
                         )
-                    }/items/${escapeHtml(recordId)}?format=index">This record as Elasticsearch document</a>
-                          (<code>application/json</code>)
+                    }/items/${escapeHtml(recordId)}?f=ingrid-index-json">This record as INGRID index document</a>
+                          (<code>application/vnd.ingrid.index+json</code>)
                         </li>
                         <li>
                           <span class="link-rel">collection</span>
-                          <a href="$root/ogc/records/collections/${escapeHtml(catalogId)}?format=html">The collection description</a>
+                          <a href="$root/ogc/records/collections/${escapeHtml(catalogId)}?f=html">The collection description</a>
                           (<code>text/html</code>)
                         </li>
                       </ul>

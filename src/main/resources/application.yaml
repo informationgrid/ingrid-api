@@ -4,8 +4,10 @@ ktor:
   application:
     modules:
       - de.ingrid.ingridapi.ApplicationKt.base
+      - de.ingrid.ingridapi.ApplicationKt.security
       - de.ingrid.ingridapi.ApplicationKt.portal
       - de.ingrid.ingridapi.ApplicationKt.ogcRecords
+      - de.ingrid.ingridapi.ApplicationKt.admin
   deployment:
     port: 8080
     watch:
@@ -18,3 +20,11 @@ ktor:
     https: "$ES_HTTPS:false"
     username: "$ES_USERNAME:"
     password: "$ES_PASSWORD:"
+  keycloak:
+    serverUrl: "$KEYCLOAK_SERVER_URL:http://localhost:8080"
+    realm: "$KEYCLOAK_REALM:InGrid"
+    clientId: "$KEYCLOAK_CLIENT_ID:ingrid-api"
+    clientSecret: "$KEYCLOAK_CLIENT_SECRET:B8L4SgFXeRcLazRgPp0HAN24HvFHltKv"
+  session:
+    signKey: "$SESSION_SIGN_KEY:000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+    secure: "$SESSION_SECURE:true"

@@ -119,6 +119,16 @@ dependencies {
     implementation("io.github.smiley4:ktor-swagger-ui:5.4.0")
     implementation("io.github.smiley4:ktor-openapi:5.4.0")
 
+    // Admin GUI: server-side HTML via kotlinx.html DSL (no separate template files)
+    implementation("io.ktor:ktor-server-html-builder")
+
+    // OAuth2 / BFF for the admin GUI (Keycloak)
+    implementation("io.ktor:ktor-server-auth")
+    implementation("io.ktor:ktor-server-sessions")
+    implementation("io.ktor:ktor-client-core")
+    implementation("io.ktor:ktor-client-cio")
+    implementation("io.ktor:ktor-client-apache5")
+
     // elasticsearch-client
     implementation("com.jillesvangurp:search-client:2.8.4")
 

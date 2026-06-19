@@ -24,8 +24,21 @@ fun createPagingLinks(
 ): List<Link> {
     val links = mutableListOf<Link>()
 
-    val formatParam = if (format != null) "&format=$format" else ""
+    val formatParam = if (format != null) "&f=$format" else ""
     val bboxParam = if (bbox != null) "&bbox=$bbox" else ""
+
+    fun getContentType(fmt: String?): String = 
+        when (fmt?.lowercase()) {
+            "html" -> "text/html"
+            "json", "geojson" -> "application/geo+json"
+            "index" -> "application/json"
+            "xml", "iso" -> "application/xml"
+            "ingrid-index-json" -> "application/vnd.ingrid.index+json"
+            "geodcat-xml" -> "application/rdf+xml"
+            else -> "application/json"
+        }
+
+    val contentType = getContentType(format)
 
     // Next link
     if (offset + limit < total) {
@@ -34,7 +47,7 @@ fun createPagingLinks(
             Link(
                 rel = "next",
                 href = "$baseUrl?limit=$limit&offset=$nextOffset$formatParam$bboxParam",
-                type = if (format == "html") "text/html" else "application/json",
+                type = contentType,
                 title = "Next page",
             ),
         )
@@ -47,7 +60,7 @@ fun createPagingLinks(
             Link(
                 rel = "prev",
                 href = "$baseUrl?limit=$limit&offset=$prevOffset$formatParam$bboxParam",
-                type = if (format == "html") "text/html" else "application/json",
+                type = contentType,
                 title = "Previous page",
             ),
         )
@@ -58,7 +71,7 @@ fun createPagingLinks(
         Link(
             rel = "first",
             href = "$baseUrl?limit=$limit&offset=0$formatParam$bboxParam",
-            type = if (format == "html") "text/html" else "application/json",
+            type = contentType,
             title = "First page",
         ),
     )
@@ -70,7 +83,7 @@ fun createPagingLinks(
             Link(
                 rel = "last",
                 href = "$baseUrl?limit=$limit&offset=$lastOffset$formatParam$bboxParam",
-                type = if (format == "html") "text/html" else "application/json",
+                type = contentType,
                 title = "Last page",
             ),
         )

@@ -6,33 +6,52 @@ import io.ktor.server.application.ApplicationCall
 import kotlinx.serialization.json.JsonObject
 
 enum class ItemExportFormat(
-    val paramValue: String,
-    val mediaType: String,
-) {
+  val paramValue: String,
+  val mediaType: String,
+)  {
     HTML("html", "text/html"),
-    INDEX("ingrid-index-json", "application/vnd.ingrid.index+json"),
+    ISO,
+    INDEX,
+    GEOJSON,
+    INGRID_INDEX_JSON("ingrid-index-json", "application/vnd.ingrid.index+json"),
+    GEODCAT_XML,
 }
 
 val SUPPORTED_ITEM_FORMATS: List<String> = ItemExportFormat.entries.map { it.paramValue }
 
 sealed class ItemExportFormatResult {
-    data class Ok(val format: ItemExportFormat) : ItemExportFormatResult()
+  data class Ok(val format: ItemExportFormat) : ItemExportFormatResult()
 
-    /** The `f` query parameter was provided but unknown. */
-    data class InvalidParam(val value: String) : ItemExportFormatResult()
+  /** The `f` query parameter was provided but unknown. */
+  data class InvalidParam(val value: String) : ItemExportFormatResult()
 
-    /** No `f` was given and the Accept header is not satisfiable. */
-    data class NotAcceptable(val acceptHeader: String) : ItemExportFormatResult()
+  /** No `f` was given and the Accept header is not satisfiable. */
+  data class NotAcceptable(val acceptHeader: String) : ItemExportFormatResult()
 }
 
 fun parseItemExportFormat(
     param: String?,
     acceptHeader: String? = null,
 ): ItemExportFormat =
-    when (val r = parseItemExportFormatResult(param, acceptHeader)) {
-        is ItemExportFormatResult.Ok -> r.format
+  when (val r = parseItemExportFormatResult(param, acceptHeader)) {
+    is ItemExportFormatResult.Ok -> r.format
+    else -> ItemExportFormat.HTML
+  }
+   /* when {
+        param?.lowercase() == "html" -> ItemExportFormat.HTML
+        param?.lowercase() == "iso" || param?.lowercase() == "xml" -> ItemExportFormat.ISO
+        param?.lowercase() == "index" -> ItemExportFormat.INDEX
+        param?.lowercase() == "json" || param?.lowercase() == "geojson" -> ItemExportFormat.GEOJSON
+        param?.lowercase() == "ingrid-index-json" -> ItemExportFormat.INGRID_INDEX_JSON
+        param?.lowercase() == "geodcat-xml" -> ItemExportFormat.GEODCAT_XML
+        param == null && acceptHeader?.contains("application/geo+json") == true -> ItemExportFormat.GEOJSON
+        param == null && acceptHeader?.contains("application/xml") == true -> ItemExportFormat.ISO
+        param == null && acceptHeader?.contains("application/vnd.ingrid.index+json") == true -> ItemExportFormat.INGRID_INDEX_JSON
+        param == null && acceptHeader?.contains("application/rdf+xml") == true -> ItemExportFormat.GEODCAT_XML
+        param == null && acceptHeader?.contains("application/json") == true -> ItemExportFormat.INDEX
+        param == null && acceptHeader?.contains("text/html") == true -> ItemExportFormat.HTML
         else -> ItemExportFormat.HTML
-    }
+    }*/
 
 fun parseItemExportFormatResult(
     param: String?,

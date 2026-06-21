@@ -9,5 +9,6 @@ object ItemsExporterFactory {
             ItemExportFormat.GEOJSON -> GeoJsonItemsExporter()
             ItemExportFormat.INGRID_INDEX_JSON -> IngridIndexItemsExporter()
             ItemExportFormat.GEODCAT_XML -> GeoDcatItemsExporter()
+            ItemExportFormat.JSON -> TODO()
         }
 }

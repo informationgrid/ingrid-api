@@ -137,11 +137,15 @@ private suspend fun resolveCollectionFormat(
     val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
     val accept = call.request.headers[HttpHeaders.Accept]
     return when (val r = parseExportFormatResult(fmtParam, accept)) {
-        is ExportFormatResult.Ok -> r.format
+        is ExportFormatResult.Ok -> {
+            r.format
+        }
+
         is ExportFormatResult.InvalidParam -> {
             respondInvalidFormatParameter(call, r.value, SUPPORTED_COLLECTION_FORMATS)
             null
         }
+
         is ExportFormatResult.NotAcceptable -> {
             respondNotAcceptable(call, r.acceptHeader, collectionAlternateLinks("$root$resourcePathSuffix"))
             null
@@ -157,11 +161,15 @@ private suspend fun resolveItemFormat(
     val fmtParam = call.request.queryParameters["format"] ?: call.request.queryParameters["f"]
     val accept = call.request.headers[HttpHeaders.Accept]
     return when (val r = parseItemExportFormatResult(fmtParam, accept)) {
-        is ItemExportFormatResult.Ok -> r.format
+        is ItemExportFormatResult.Ok -> {
+            r.format
+        }
+
         is ItemExportFormatResult.InvalidParam -> {
             respondInvalidFormatParameter(call, r.value, SUPPORTED_ITEM_FORMATS)
             null
         }
+
         is ItemExportFormatResult.NotAcceptable -> {
             respondNotAcceptable(call, r.acceptHeader, itemAlternateLinks("$root$resourcePathSuffix"))
             null
@@ -169,7 +177,10 @@ private suspend fun resolveItemFormat(
     }
 }
 
-private suspend fun handleLandingPage(call: ApplicationCall, root: String) {
+private suspend fun handleLandingPage(
+    call: ApplicationCall,
+    root: String,
+) {
     val format = resolveCollectionFormat(call, root, "/ogc/records") ?: return
     val exporter = CollectionsExporterFactory.create(format)
     val discoveryLinks =
@@ -221,7 +232,11 @@ private suspend fun handleLandingPage(call: ApplicationCall, root: String) {
 }
 
 fun Application.configureOgcRecordsRouting() {
-    val root = environment.config.propertyOrNull("ktor.deployment.rootPath")?.getString()?.trimEnd('/') ?: ""
+    val root =
+        environment.config
+            .propertyOrNull("ktor.deployment.rootPath")
+            ?.getString()
+            ?.trimEnd('/') ?: ""
     routing {
         // Landing page at '/ogc/records' and '/ogc/records/'
         route("ogc/records", { specName = "ogc-records" }) {
@@ -443,6 +458,11 @@ fun Application.configureOgcRecordsRouting() {
                             when (fmt) {
                                 ItemExportFormat.HTML -> "Items of this collection as HTML"
                                 ItemExportFormat.INDEX -> "Items of this collection as INGRID index documents"
+                                ItemExportFormat.ISO -> TODO()
+                                ItemExportFormat.JSON -> TODO()
+                                ItemExportFormat.GEOJSON -> TODO()
+                                ItemExportFormat.INGRID_INDEX_JSON -> TODO()
+                                ItemExportFormat.GEODCAT_XML -> TODO()
                             }
                         },
                         extraQuery = extraQuery,

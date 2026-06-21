@@ -6,37 +6,44 @@ import io.ktor.server.application.ApplicationCall
 import kotlinx.serialization.json.JsonObject
 
 enum class ItemExportFormat(
-  val paramValue: String,
-  val mediaType: String,
-)  {
+    val paramValue: String,
+    val mediaType: String,
+) {
     HTML("html", "text/html"),
-    ISO,
-    INDEX,
-    GEOJSON,
+    ISO("iso", "application/xml"),
+    JSON("json", "application/json"),
+    INDEX("index", "application/json"),
+    GEOJSON("geojson", "application/geo+json"),
     INGRID_INDEX_JSON("ingrid-index-json", "application/vnd.ingrid.index+json"),
-    GEODCAT_XML,
+    GEODCAT_XML("geodcat", "application/rdf+xml"),
 }
 
 val SUPPORTED_ITEM_FORMATS: List<String> = ItemExportFormat.entries.map { it.paramValue }
 
 sealed class ItemExportFormatResult {
-  data class Ok(val format: ItemExportFormat) : ItemExportFormatResult()
+    data class Ok(
+        val format: ItemExportFormat,
+    ) : ItemExportFormatResult()
 
-  /** The `f` query parameter was provided but unknown. */
-  data class InvalidParam(val value: String) : ItemExportFormatResult()
+    /** The `f` query parameter was provided but unknown. */
+    data class InvalidParam(
+        val value: String,
+    ) : ItemExportFormatResult()
 
-  /** No `f` was given and the Accept header is not satisfiable. */
-  data class NotAcceptable(val acceptHeader: String) : ItemExportFormatResult()
+    /** No `f` was given and the Accept header is not satisfiable. */
+    data class NotAcceptable(
+        val acceptHeader: String,
+    ) : ItemExportFormatResult()
 }
 
 fun parseItemExportFormat(
     param: String?,
     acceptHeader: String? = null,
 ): ItemExportFormat =
-  when (val r = parseItemExportFormatResult(param, acceptHeader)) {
-    is ItemExportFormatResult.Ok -> r.format
-    else -> ItemExportFormat.HTML
-  }
+    when (val r = parseItemExportFormatResult(param, acceptHeader)) {
+        is ItemExportFormatResult.Ok -> r.format
+        else -> ItemExportFormat.HTML
+    }
    /* when {
         param?.lowercase() == "html" -> ItemExportFormat.HTML
         param?.lowercase() == "iso" || param?.lowercase() == "xml" -> ItemExportFormat.ISO

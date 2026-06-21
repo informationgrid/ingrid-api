@@ -54,6 +54,11 @@ class IndexItemsExporter : ItemsExporter {
                                             when (fmt) {
                                                 ItemExportFormat.HTML -> "This record as HTML"
                                                 ItemExportFormat.INDEX -> "This record as INGRID index document"
+                                                ItemExportFormat.ISO -> TODO()
+                                                ItemExportFormat.JSON -> TODO()
+                                                ItemExportFormat.GEOJSON -> TODO()
+                                                ItemExportFormat.INGRID_INDEX_JSON -> TODO()
+                                                ItemExportFormat.GEODCAT_XML -> TODO()
                                             },
                                         )
                                     },

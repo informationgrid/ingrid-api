@@ -27,11 +27,11 @@ class OgcRecordsFormatErrorsTest {
                 }
                 configureOgcRecordsRouting()
             }
-            client.get("/ogc/records/collections?f=geodcat-xml").apply {
+            client.get("/ogc/records/collections?f=pdf").apply {
                 assertEquals(HttpStatusCode.BadRequest, status)
                 val body = bodyAsText()
                 assertTrue(body.contains("InvalidParameterValue"), "body=$body")
-                assertTrue(body.contains("geodcat-xml"))
+                assertTrue(body.contains("pdf"))
                 assertTrue(body.contains("\"allowedValues\""))
                 assertTrue(body.contains("\"json\""))
                 assertTrue(body.contains("\"html\""))
@@ -94,7 +94,7 @@ class OgcRecordsFormatErrorsTest {
             client
                 .get("/ogc/records/collections/test-id/items/rec-1") {
                     headers.remove(HttpHeaders.Accept)
-                    header(HttpHeaders.Accept, "application/xml")
+                    header(HttpHeaders.Accept, "application/pdf")
                 }.apply {
                     val body = bodyAsText()
                     assertEquals(HttpStatusCode.NotAcceptable, status, "body=$body")

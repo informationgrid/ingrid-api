@@ -21,7 +21,11 @@ class HtmlItemsExporter : ItemsExporter {
         offset: Int,
         bbox: String?,
     ) {
-        val root = call.application.environment.config.propertyOrNull("ktor.deployment.rootPath")?.getString()?.trimEnd('/') ?: ""
+        val root =
+            call.application.environment.config
+                .propertyOrNull("ktor.deployment.rootPath")
+                ?.getString()
+                ?.trimEnd('/') ?: ""
         val total = searchResponse?.total ?: 0L
         val html =
             buildString {
@@ -133,7 +137,11 @@ class HtmlItemsExporter : ItemsExporter {
         catalogId: String,
         recordId: String,
     ) {
-        val root = call.application.environment.config.propertyOrNull("ktor.deployment.rootPath")?.getString()?.trimEnd('/') ?: ""
+        val root =
+            call.application.environment.config
+                .propertyOrNull("ktor.deployment.rootPath")
+                ?.getString()
+                ?.trimEnd('/') ?: ""
         if (record == null) {
             call.respond(HttpStatusCode.NotFound)
             return
@@ -176,21 +184,38 @@ class HtmlItemsExporter : ItemsExporter {
                       <ul>
                         <li>
                           <span class="link-rel">self</span>
-                          <a href="$root/ogc/records/collections/${
-                        escapeHtml(
-                            catalogId,
-                        )
-                    }/items/${escapeHtml(recordId)}?f=html">This record as HTML</a>
+                          <a href="$root/ogc/records/collections/${escapeHtml(
+                        catalogId,
+                    )}/items/${escapeHtml(recordId)}?f=html">This record as HTML</a>
                           (<code>text/html</code>)
                         </li>
                         <li>
                           <span class="link-rel">alternate</span>
-                          <a href="$root/ogc/records/collections/${
-                        escapeHtml(
-                            catalogId,
-                        )
-                    }/items/${escapeHtml(recordId)}?f=ingrid-index-json">This record as INGRID index document</a>
+                          <a href="$root/ogc/records/collections/${escapeHtml(
+                        catalogId,
+                    )}/items/${escapeHtml(recordId)}?f=json">This record as GeoJSON</a>
+                          (<code>application/geo+json</code>)
+                        </li>
+                        <li>
+                          <span class="link-rel">alternate</span>
+                          <a href="$root/ogc/records/collections/${escapeHtml(
+                        catalogId,
+                    )}/items/${escapeHtml(recordId)}?f=xml">This record as ISO XML</a>
+                          (<code>application/xml</code>)
+                        </li>
+                        <li>
+                          <span class="link-rel">alternate</span>
+                          <a href="$root/ogc/records/collections/${escapeHtml(
+                        catalogId,
+                    )}/items/${escapeHtml(recordId)}?f=ingrid-index-json">This record as INGRID INDEX JSON</a>
                           (<code>application/vnd.ingrid.index+json</code>)
+                        </li>
+                        <li>
+                          <span class="link-rel">alternate</span>
+                          <a href="$root/ogc/records/collections/${escapeHtml(
+                        catalogId,
+                    )}/items/${escapeHtml(recordId)}?f=geodcat-xml">This record as GeoDCAT RDF/XML</a>
+                          (<code>application/rdf+xml</code>)
                         </li>
                         <li>
                           <span class="link-rel">collection</span>

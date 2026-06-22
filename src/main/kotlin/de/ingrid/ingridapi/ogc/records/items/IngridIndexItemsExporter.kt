@@ -55,6 +55,42 @@ class IngridIndexItemsExporter : ItemsExporter {
                                     put("type", "application/vnd.ingrid.index+json")
                                 },
                             )
+                            // Add alternate links for all supported formats
+                            add(
+                                buildJsonObject {
+                                    put("rel", "alternate")
+                                    put("href", "/ogc/records/collections/$catalogId/items/$recordId?f=html")
+                                    put("type", "text/html")
+                                },
+                            )
+                            add(
+                                buildJsonObject {
+                                    put("rel", "alternate")
+                                    put("href", "/ogc/records/collections/$catalogId/items/$recordId?f=json")
+                                    put("type", "application/geo+json")
+                                },
+                            )
+                            add(
+                                buildJsonObject {
+                                    put("rel", "alternate")
+                                    put("href", "/ogc/records/collections/$catalogId/items/$recordId?f=xml")
+                                    put("type", "application/xml")
+                                },
+                            )
+                            add(
+                                buildJsonObject {
+                                    put("rel", "alternate")
+                                    put("href", "/ogc/records/collections/$catalogId/items/$recordId?f=index")
+                                    put("type", "application/json")
+                                },
+                            )
+                            add(
+                                buildJsonObject {
+                                    put("rel", "alternate")
+                                    put("href", "/ogc/records/collections/$catalogId/items/$recordId?f=geodcat-xml")
+                                    put("type", "application/rdf+xml")
+                                },
+                            )
                             add(
                                 buildJsonObject {
                                     put("rel", "collection")

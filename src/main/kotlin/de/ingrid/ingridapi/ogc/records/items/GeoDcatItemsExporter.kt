@@ -111,9 +111,18 @@ class GeoDcatItemsExporter : ItemsExporter {
 
         try {
             val resultRdfXml = transformIdfToGeoDcat(idf)
-            call.respondText(resultRdfXml, ContentType.parse("application/rdf+xml"))
+            // Add links to the RDF/XML response
+            val responseWithLinks = """<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <rdf:Description rdf:about="/ogc/records/collections/$catalogId/items/$recordId">
+        <rdf:type rdf:resource="http://www.w3.org/ns/dcat#Dataset"/>
+    </rdf:Description>
+    $resultRdfXml
+</rdf:RDF>"""
+            call.respondText(responseWithLinks, ContentType.parse("application/rdf+xml"))
         } catch (e: Exception) {
-            call.respond(HttpStatusCode.InternalServerError, "Error during GeoDCAT transformation: ${e.message}")
+            // If transformation fails, the record is not available in this format
+            call.respond(HttpStatusCode.NotAcceptable, "Record not available in GeoDCAT format: ${e.message}")
         }
     }
 }

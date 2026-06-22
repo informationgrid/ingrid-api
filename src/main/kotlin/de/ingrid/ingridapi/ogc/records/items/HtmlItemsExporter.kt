@@ -55,8 +55,8 @@ class HtmlItemsExporter : ItemsExporter {
                     <body>
                       <nav>
                         <a href="$root/ogc/records">Home</a> / 
-                        <a href="$root/ogc/records/collections?format=html">Collections</a> / 
-                        <a href="$root/ogc/records/collections/${escapeHtml(featureCollection.name)}?format=html">${
+                        <a href="$root/ogc/records/collections?f=html">Collections</a> / 
+                        <a href="$root/ogc/records/collections/${escapeHtml(featureCollection.name)}?f=html">${
                         escapeHtml(
                             featureCollection.name,
                         )
@@ -85,7 +85,7 @@ class HtmlItemsExporter : ItemsExporter {
                         .append(escapeHtml(featureCollection.name))
                         .append("/items/")
                         .append(escapeHtml(id))
-                        .append("?format=html\">")
+                        .append("?f=html\">")
                         .append(escapeHtml(title))
                         .append("</a></td>")
                     append("<td>").append(escapeHtml(description)).append("</td>")
@@ -170,8 +170,8 @@ class HtmlItemsExporter : ItemsExporter {
                     <body>
                     <nav>
                       <a href="$root/ogc/records">Home</a> / 
-                      <a href="$root/ogc/records/collections?format=html">Collections</a> / 
-                      <a href="$root/ogc/records/collections/${escapeHtml(catalogId)}?format=html">${escapeHtml(catalogId)}</a>
+                      <a href="$root/ogc/records/collections?f=html">Collections</a> / 
+                      <a href="$root/ogc/records/collections/${escapeHtml(catalogId)}?f=html">${escapeHtml(catalogId)}</a>
                     </nav>
                       <h1>Record: ${escapeHtml(title)}</h1>
                       <p>${escapeHtml(description)}</p>

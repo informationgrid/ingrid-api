@@ -193,14 +193,14 @@ class HtmlItemsExporter : ItemsExporter {
                           <span class="link-rel">alternate</span>
                           <a href="$root/ogc/records/collections/${escapeHtml(
                         catalogId,
-                    )}/items/${escapeHtml(recordId)}?f=json">This record as GeoJSON</a>
+                    )}/items/${escapeHtml(recordId)}?f=geojson">This record as GeoJSON</a>
                           (<code>application/geo+json</code>)
                         </li>
                         <li>
                           <span class="link-rel">alternate</span>
                           <a href="$root/ogc/records/collections/${escapeHtml(
                         catalogId,
-                    )}/items/${escapeHtml(recordId)}?f=xml">This record as ISO XML</a>
+                    )}/items/${escapeHtml(recordId)}?f=iso">This record as ISO XML</a>
                           (<code>application/xml</code>)
                         </li>
                         <li>
@@ -214,7 +214,7 @@ class HtmlItemsExporter : ItemsExporter {
                           <span class="link-rel">alternate</span>
                           <a href="$root/ogc/records/collections/${escapeHtml(
                         catalogId,
-                    )}/items/${escapeHtml(recordId)}?f=geodcat-xml">This record as GeoDCAT RDF/XML</a>
+                    )}/items/${escapeHtml(recordId)}?f=geodcat">This record as GeoDCAT RDF/XML</a>
                           (<code>application/rdf+xml</code>)
                         </li>
                         <li>

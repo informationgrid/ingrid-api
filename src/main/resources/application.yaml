@@ -25,6 +25,8 @@ ktor:
     realm: "$KEYCLOAK_REALM:InGrid"
     clientId: "$KEYCLOAK_CLIENT_ID:ingrid-api"
     clientSecret: "$KEYCLOAK_CLIENT_SECRET:B8L4SgFXeRcLazRgPp0HAN24HvFHltKv"
+  security:
+    authDisabled: "$AUTH_DISABLED:false"
   session:
     signKey: "$SESSION_SIGN_KEY:000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
     secure: "$SESSION_SECURE:true"

@@ -11,8 +11,6 @@ enum class ItemExportFormat(
 ) {
     HTML("html", "text/html"),
     ISO("iso", "application/xml"),
-    JSON("json", "application/json"),
-    INDEX("index", "application/json"),
     GEOJSON("geojson", "application/geo+json"),
     INGRID_INDEX_JSON("ingrid-index-json", "application/vnd.ingrid.index+json"),
     GEODCAT_XML("geodcat", "application/rdf+xml"),
@@ -70,12 +68,12 @@ fun parseItemExportFormatResult(
     }
     if (acceptHeader.isNullOrBlank()) {
         // Default for items is INDEX (Elasticsearch JSON) for compatibility.
-        return ItemExportFormatResult.Ok(ItemExportFormat.INDEX)
+        return ItemExportFormatResult.Ok(ItemExportFormat.INGRID_INDEX_JSON)
     }
     val lower = acceptHeader.lowercase()
     ItemExportFormat.entries.firstOrNull { lower.contains(it.mediaType) }?.let { return ItemExportFormatResult.Ok(it) }
     // application/json is treated as a synonym for the INGRID index JSON
-    if (lower.contains("application/json")) return ItemExportFormatResult.Ok(ItemExportFormat.INDEX)
+    if (lower.contains("application/json")) return ItemExportFormatResult.Ok(ItemExportFormat.INGRID_INDEX_JSON)
     // Browser-style wildcards fall back to HTML
     if (lower.contains("*/*")) return ItemExportFormatResult.Ok(ItemExportFormat.HTML)
     return ItemExportFormatResult.NotAcceptable(acceptHeader)

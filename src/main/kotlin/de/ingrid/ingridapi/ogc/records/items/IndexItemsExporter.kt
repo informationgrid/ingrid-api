@@ -46,19 +46,17 @@ class IndexItemsExporter : ItemsExporter {
                             ItemExportFormat.entries.forEach { fmt ->
                                 add(
                                     buildJsonObject {
-                                        put("rel", if (fmt == ItemExportFormat.INDEX) "self" else "alternate")
+                                        put("rel", if (fmt == ItemExportFormat.INGRID_INDEX_JSON) "self" else "alternate")
                                         put("href", "$resourcePath?f=${fmt.paramValue}")
                                         put("type", fmt.mediaType)
                                         put(
                                             "title",
                                             when (fmt) {
                                                 ItemExportFormat.HTML -> "This record as HTML"
-                                                ItemExportFormat.INDEX -> "This record as INGRID index document"
-                                                ItemExportFormat.ISO -> TODO()
-                                                ItemExportFormat.JSON -> TODO()
-                                                ItemExportFormat.GEOJSON -> TODO()
-                                                ItemExportFormat.INGRID_INDEX_JSON -> TODO()
-                                                ItemExportFormat.GEODCAT_XML -> TODO()
+                                                ItemExportFormat.ISO -> "This record as ISO 19139"
+                                                ItemExportFormat.GEOJSON -> "This record as GeoJSON"
+                                                ItemExportFormat.INGRID_INDEX_JSON -> "This record as INGRID index document"
+                                                ItemExportFormat.GEODCAT_XML -> "This record as GEODCAT-AP XML"
                                             },
                                         )
                                     },

@@ -457,12 +457,10 @@ fun Application.configureOgcRecordsRouting() {
                         titleFor = { fmt ->
                             when (fmt) {
                                 ItemExportFormat.HTML -> "Items of this collection as HTML"
-                                ItemExportFormat.INDEX -> "Items of this collection as INGRID index documents"
-                                ItemExportFormat.ISO -> TODO()
-                                ItemExportFormat.JSON -> TODO()
-                                ItemExportFormat.GEOJSON -> TODO()
-                                ItemExportFormat.INGRID_INDEX_JSON -> TODO()
-                                ItemExportFormat.GEODCAT_XML -> TODO()
+                                ItemExportFormat.ISO -> "Items of this collection as ISO 19139"
+                                ItemExportFormat.GEOJSON -> "Items of this collection as GeoJSON"
+                                ItemExportFormat.INGRID_INDEX_JSON -> "Items of this collection as INGRID index documents in JSON"
+                                ItemExportFormat.GEODCAT_XML -> "Items of this collection as GEODCAT-AP XML"
                             }
                         },
                         extraQuery = extraQuery,

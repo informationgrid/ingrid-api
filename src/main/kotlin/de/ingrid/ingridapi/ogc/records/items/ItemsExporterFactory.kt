@@ -5,10 +5,8 @@ object ItemsExporterFactory {
         when (format) {
             ItemExportFormat.HTML -> HtmlItemsExporter()
             ItemExportFormat.ISO -> IsoItemsExporter()
-            ItemExportFormat.INDEX -> IndexItemsExporter()
             ItemExportFormat.GEOJSON -> GeoJsonItemsExporter()
             ItemExportFormat.INGRID_INDEX_JSON -> IngridIndexItemsExporter()
             ItemExportFormat.GEODCAT_XML -> GeoDcatItemsExporter()
-            ItemExportFormat.JSON -> TODO()
         }
 }

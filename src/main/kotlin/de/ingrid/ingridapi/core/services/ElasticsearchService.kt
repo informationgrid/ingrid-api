@@ -128,6 +128,17 @@ class ElasticsearchService(
                                             add(
                                                 buildJsonObject {
                                                     put("match_all", buildJsonObject { })
+                                                    put(
+                                                        "term",
+                                                        buildJsonObject {
+                                                            put(
+                                                                "isfolder",
+                                                                buildJsonObject {
+                                                                    put("value", JsonPrimitive("false"))
+                                                                },
+                                                            )
+                                                        },
+                                                    )
                                                 },
                                             )
                                         },
@@ -181,14 +192,27 @@ class ElasticsearchService(
                     )
                 }.toString()
             } else {
-                null
+                buildJsonObject {
+                    put(
+                        "query",
+                        buildJsonObject {
+                            put(
+                                "term",
+                                buildJsonObject {
+                                    put(
+                                        "isfolder",
+                                        buildJsonObject {
+                                            put("value", JsonPrimitive("false"))
+                                        },
+                                    )
+                                },
+                            )
+                        }
+                    )
+                }.toString()
             }
 
-        return if (queryJson != null) {
-            client.search(indices, rawJson = queryJson, size = size, from = from)
-        } else {
-            client.search(indices, size = size, from = from)
-        }
+        return client.search(indices, rawJson = queryJson, size = size, from = from)
     }
 
     suspend fun getIndexDocument(

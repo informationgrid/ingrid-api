@@ -99,7 +99,7 @@ class OgcRecordsHtmlTest {
                 assertEquals(HttpStatusCode.OK, status)
                 val body = bodyAsText()
                 assertTrue(body.contains("<h1>Record: Record 1</h1>"), "Should contain record title")
-                assertTrue(body.contains("<p>Desc 1</p>"), "Should contain record description")
+                assertTrue(body.contains("<td>Desc 1</td>"), "Should contain record description")
             }
         }
 

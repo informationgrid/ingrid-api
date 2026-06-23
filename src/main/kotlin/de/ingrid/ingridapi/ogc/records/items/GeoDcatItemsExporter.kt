@@ -9,53 +9,59 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import kotlinx.serialization.json.JsonObject
-import java.io.StringReader
+import org.apache.jena.rdf.model.Model
+import org.apache.jena.rdf.model.ModelFactory
+import org.apache.jena.vocabulary.DCAT
+import org.apache.jena.vocabulary.DCTerms
+import org.apache.jena.vocabulary.RDF
 import java.io.StringWriter
-import javax.xml.transform.TransformerFactory
-import javax.xml.transform.stream.StreamResult
-import javax.xml.transform.stream.StreamSource
 
 /**
  * Exporter for GeoDCAT (RDF/XML) format (application/rdf+xml)
- * This format transforms IDF metadata to GeoDCAT RDF/XML representation.
  */
 class GeoDcatItemsExporter : ItemsExporter {
-    
-    private fun transformIdfToGeoDcat(idf: String): String {
-        // Try to use XSLT transformation if available
-        val transformerFactory = TransformerFactory.newInstance()
-        
-        // Try to load GeoDCAT transformation XSL
-        val xslStream = this::class.java.classLoader.getResourceAsStream("idf_to_geodcat.xsl")
-            ?: this::class.java.classLoader.getResourceAsStream("idf_1_0_0_to_geodcat.xsl")
-        
-        if (xslStream != null) {
-            val transformer = transformerFactory.newTransformer(StreamSource(xslStream))
-            val reader = StringReader(idf)
-            val writer = StringWriter()
-            transformer.transform(StreamSource(reader), StreamResult(writer))
-            return writer.toString()
+
+    private fun createGeoDcatModel(
+        record: JsonObject,
+        catalogId: String,
+        recordId: String,
+        rootPath: String,
+    ): Model {
+        val model = ModelFactory.createDefaultModel()
+        model.setNsPrefix("dct", DCTerms.getURI())
+        model.setNsPrefix("dcat", DCAT.getURI())
+        model.setNsPrefix("rdf", RDF.getURI())
+        model.setNsPrefix("geodcat", "http://data.europa.eu/930/def/geodcat-ap#")
+
+        val itemUri = "$rootPath/ogc/records/collections/$catalogId/items/$recordId"
+        val resource = model.createResource("http://localhost$itemUri")
+        resource.addProperty(RDF.type, DCAT.Dataset)
+
+        val title = record["title"].asSafeString().ifEmpty { recordId }
+        resource.addProperty(DCTerms.title, title)
+
+        val description = record["description"]?.asSafeString() ?: record["summary"].asSafeString()
+        if (description.isNotEmpty()) {
+            resource.addProperty(DCTerms.description, description)
         }
-        
-        // Fallback: Return a basic RDF/XML structure with the IDF content
-        // This is a placeholder - in production, a proper XSLT transformation should be used
-        return """<?xml version="1.0" encoding="UTF-8"?>
-<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-         xmlns:geodcat="http://data.europa.eu/930/def/geodcat-ap#"
-         xmlns:dct="http://purl.org/dc/terms/"
-         xmlns:dcat="http://www.w3.org/ns/dcat#">
-    <geodcat:Dataset rdf:about="">
-        <dct:description>${idf.escapeXml()}</dct:description>
-    </geodcat:Dataset>
-</rdf:RDF>""".trimIndent()
+
+        val uuid =
+            record["obj_uuid"]?.asSafeString()?.ifEmpty { record["addr_uuid"]?.asSafeString() }?.ifEmpty { recordId }
+                ?: recordId
+        resource.addProperty(DCTerms.identifier, uuid)
+
+        val created = record["created"]?.asSafeString() ?: ""
+        if (created.isNotEmpty()) {
+            resource.addProperty(DCTerms.issued, created)
+        }
+
+        val modified = record["modified"]?.asSafeString() ?: ""
+        if (modified.isNotEmpty()) {
+            resource.addProperty(DCTerms.modified, modified)
+        }
+
+        return model
     }
-    
-    private fun String.escapeXml(): String =
-        this.replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace("\"", "&quot;")
-            .replace("'", "&apos;")
 
     override suspend fun respond(
         call: ApplicationCall,
@@ -65,30 +71,29 @@ class GeoDcatItemsExporter : ItemsExporter {
         offset: Int,
         bbox: String?,
     ) {
-        // Convert each hit's idf to GeoDCAT RDF/XML and return an aggregated document
-        val transformed =
-            searchResponse
-                ?.hits
-                ?.hits
-                ?.mapNotNull { hit ->
-                    val idf = hit.source?.get("idf").asSafeString()
-                    if (idf.isBlank()) return@mapNotNull null
-                    try {
-                        transformIdfToGeoDcat(idf)
-                    } catch (_: Exception) {
-                        null
-                    }
-                } ?: emptyList()
+        val rootPath =
+            call.application.environment.config
+                .propertyOrNull("ktor.deployment.rootPath")
+                ?.getString()
+                ?.trimEnd('/') ?: ""
+        val catalogId = featureCollection.name
 
-        val rdfXml =
-            buildString {
-                append("""<?xml version="1.0" encoding="UTF-8"?>
-<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-""")
-                transformed.forEach { append(it) }
-                append("\n</rdf:RDF>")
-            }
-        call.respondText(rdfXml, ContentType.parse("application/rdf+xml"))
+        val mainModel = ModelFactory.createDefaultModel()
+        mainModel.setNsPrefix("dct", DCTerms.getURI())
+        mainModel.setNsPrefix("dcat", DCAT.getURI())
+        mainModel.setNsPrefix("rdf", RDF.getURI())
+        mainModel.setNsPrefix("geodcat", "http://data.europa.eu/930/def/geodcat-ap#")
+
+        searchResponse?.hits?.hits?.forEach { hit ->
+            val record = hit.source ?: return@forEach
+            val recordId = hit.id
+            val itemModel = createGeoDcatModel(record, catalogId, recordId, rootPath)
+            mainModel.add(itemModel)
+        }
+
+        val writer = StringWriter()
+        mainModel.write(writer, "RDF/XML-ABBREV", "http://localhost")
+        call.respondText(writer.toString(), ContentType.parse("application/rdf+xml"))
     }
 
     override suspend fun respondSingle(
@@ -102,27 +107,19 @@ class GeoDcatItemsExporter : ItemsExporter {
             return
         }
 
-        val idf = record["idf"].asSafeString()
-        if (idf.isBlank()) {
-            // If no IDF, try to use the record directly as a fallback
-            call.respond(HttpStatusCode.NotFound, "No IDF metadata available for GeoDCAT transformation")
-            return
-        }
+        val rootPath =
+            call.application.environment.config
+                .propertyOrNull("ktor.deployment.rootPath")
+                ?.getString()
+                ?.trimEnd('/') ?: ""
 
         try {
-            val resultRdfXml = transformIdfToGeoDcat(idf)
-            // Add links to the RDF/XML response
-            val responseWithLinks = """<?xml version="1.0" encoding="UTF-8"?>
-<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-    <rdf:Description rdf:about="/ogc/records/collections/$catalogId/items/$recordId">
-        <rdf:type rdf:resource="http://www.w3.org/ns/dcat#Dataset"/>
-    </rdf:Description>
-    $resultRdfXml
-</rdf:RDF>"""
-            call.respondText(responseWithLinks, ContentType.parse("application/rdf+xml"))
+            val model = createGeoDcatModel(record, catalogId, recordId, rootPath)
+            val writer = StringWriter()
+            model.write(writer, "RDF/XML-ABBREV", "http://localhost")
+            call.respondText(writer.toString(), ContentType.parse("application/rdf+xml"))
         } catch (e: Exception) {
-            // If transformation fails, the record is not available in this format
-            call.respond(HttpStatusCode.NotAcceptable, "Record not available in GeoDCAT format: ${e.message}")
+            call.respond(HttpStatusCode.InternalServerError, "Error generating GeoDCAT format: ${e.message}")
         }
     }
 }

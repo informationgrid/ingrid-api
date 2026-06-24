@@ -212,7 +212,8 @@ class HtmlItemsExporter : ItemsExporter {
                       <div id="map"></div>
                       <script>
                         var geometry = ${
-                        ((record["spatial"] as JsonObject?)?.get("geometries") as JsonArray?)?.get(0)
+                        ((record["spatial"] as JsonObject?)?.get("geometries") as JsonArray?)
+                            ?.getOrNull(0)
                             ?.toString() ?: "null"
                     };
                         if (geometry) {

@@ -20,18 +20,13 @@ import java.io.StringWriter
  * Exporter for GeoDCAT (RDF/XML) format (application/rdf+xml)
  */
 class GeoDcatItemsExporter : ItemsExporter {
-
     private fun createGeoDcatModel(
         record: JsonObject,
         catalogId: String,
         recordId: String,
         rootPath: String,
     ): Model {
-        val model = ModelFactory.createDefaultModel()
-        model.setNsPrefix("dct", DCTerms.getURI())
-        model.setNsPrefix("dcat", DCAT.getURI())
-        model.setNsPrefix("rdf", RDF.getURI())
-        model.setNsPrefix("geodcat", "http://data.europa.eu/930/def/geodcat-ap#")
+        val model = createModelWithNamespaces()
 
         val itemUri = "$rootPath/ogc/records/collections/$catalogId/items/$recordId"
         val resource = model.createResource("http://localhost$itemUri")
@@ -50,14 +45,52 @@ class GeoDcatItemsExporter : ItemsExporter {
                 ?: recordId
         resource.addProperty(DCTerms.identifier, uuid)
 
-        val created = record["created"]?.asSafeString() ?: ""
+        /*val created = record["created"]?.asSafeString() ?: ""
         if (created.isNotEmpty()) {
             resource.addProperty(DCTerms.issued, created)
-        }
+        }*/
 
         val modified = record["modified"]?.asSafeString() ?: ""
         if (modified.isNotEmpty()) {
             resource.addProperty(DCTerms.modified, modified)
+        }
+
+        // Add catalog
+        val catalogUri = "$rootPath/ogc/records/collections/$catalogId"
+        val catalogResource = model.createResource("http://localhost$catalogUri")
+        catalogResource.addProperty(RDF.type, DCAT.Catalog)
+        val dcatCatalog = model.createProperty("http://www.w3.org/ns/dcat#catalog")
+        resource.addProperty(dcatCatalog, catalogResource)
+
+        // Add distribution
+        val distributionUri = "${itemUri}_distribution"
+        val distribution = model.createResource(distributionUri)
+        distribution.addProperty(RDF.type, DCAT.Distribution)
+        val dcatDistribution = model.createProperty("http://www.w3.org/ns/dcat#distribution")
+        resource.addProperty(dcatDistribution, distribution)
+
+        // Add access URL to distribution
+        val dcatAccessUrl = model.createProperty("http://www.w3.org/ns/dcat#accessURL")
+        distribution.addProperty(dcatAccessUrl, "http://localhost$itemUri")
+
+        // Add download URL if available in record
+        val downloadUrl = record["url"]?.asSafeString() ?: ""
+        if (downloadUrl.isNotEmpty()) {
+            val dcatDownloadUrl = model.createProperty("http://www.w3.org/ns/dcat#downloadURL")
+            distribution.addProperty(dcatDownloadUrl, downloadUrl)
+        }
+
+        // Add publisher
+        val publisherName = record["t02_address.address_value"]?.asSafeString() ?: ""
+        if (publisherName.isNotEmpty()) {
+            val publisherUri = "${itemUri}_publisher"
+            val publisher = model.createResource(publisherUri)
+            val dcatPublisher = model.createProperty("http://www.w3.org/ns/dcat#publisher")
+            val foafAgent = model.createProperty("http://xmlns.com/foaf/0.1/Agent")
+            val foafName = model.createProperty("http://xmlns.com/foaf/0.1/name")
+            publisher.addProperty(RDF.type, foafAgent)
+            publisher.addProperty(foafName, publisherName)
+            resource.addProperty(dcatPublisher, publisher)
         }
 
         return model
@@ -78,11 +111,7 @@ class GeoDcatItemsExporter : ItemsExporter {
                 ?.trimEnd('/') ?: ""
         val catalogId = featureCollection.name
 
-        val mainModel = ModelFactory.createDefaultModel()
-        mainModel.setNsPrefix("dct", DCTerms.getURI())
-        mainModel.setNsPrefix("dcat", DCAT.getURI())
-        mainModel.setNsPrefix("rdf", RDF.getURI())
-        mainModel.setNsPrefix("geodcat", "http://data.europa.eu/930/def/geodcat-ap#")
+        val mainModel = createModelWithNamespaces()
 
         searchResponse?.hits?.hits?.forEach { hit ->
             val record = hit.source ?: return@forEach
@@ -95,6 +124,15 @@ class GeoDcatItemsExporter : ItemsExporter {
         mainModel.write(writer, "RDF/XML-ABBREV", "http://localhost")
         call.respondText(writer.toString(), ContentType.parse("application/rdf+xml"))
     }
+
+    private fun createModelWithNamespaces(): Model =
+        ModelFactory.createDefaultModel().apply {
+            setNsPrefix("dct", DCTerms.getURI())
+            setNsPrefix("dcat", DCAT.getURI())
+            setNsPrefix("rdf", RDF.getURI())
+            setNsPrefix("foaf", "http://xmlns.com/foaf/0.1/")
+            setNsPrefix("geodcat", "http://data.europa.eu/930/def/geodcat-ap#")
+        }
 
     override suspend fun respondSingle(
         call: ApplicationCall,

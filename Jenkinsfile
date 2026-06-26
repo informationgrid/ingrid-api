@@ -67,7 +67,7 @@ pipeline {
             }
             steps {
                 script {
-                    sh "sed -i 's/^Version:.*/Version: ${determineVersion()}/' rpm/ingrid-api.spec"
+                    sh "sed -i 's/^Version:.*/Version: ${determineRpmVersion()}/' rpm/ingrid-api.spec"
                     sh "sed -i 's/^Release:.*/Release: ${determineRpmReleasePart()}/' rpm/ingrid-api.spec"
 
                     // Prepare build
@@ -115,7 +115,7 @@ pipeline {
             steps {
                 script {
                     def repoType = env.TAG_NAME ? "rpm-ingrid-releases" : "rpm-ingrid-snapshots"
-                    sh "mv build/reports/bom.json build/reports/ingrid-api-${determineVersion()}.bom.json"
+                    sh "mv build/reports/bom.json build/reports/ingrid-api-${determineRpmVersion()}.bom.json"
                     archiveArtifacts artifacts: "build/reports/*.bom.json", fingerprint: true
 
                     withCredentials([usernamePassword(credentialsId: '9623a365-d592-47eb-9029-a2de40453f68', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
@@ -196,6 +196,10 @@ def determineVersion() {
     } else {
         return env.BRANCH_NAME.replaceAll('/', '_')
     }
+}
+
+def determineRpmVersion() {
+    return determineVersion().replaceAll('-', '_')
 }
 
 def determineRpmReleasePart() {

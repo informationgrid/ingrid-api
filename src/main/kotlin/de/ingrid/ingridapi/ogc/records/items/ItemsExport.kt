@@ -68,12 +68,12 @@ fun parseItemExportFormatResult(
     }
     if (acceptHeader.isNullOrBlank()) {
         // Default for items is INDEX (Elasticsearch JSON) for compatibility.
-        return ItemExportFormatResult.Ok(ItemExportFormat.INGRID_INDEX_JSON)
+        return ItemExportFormatResult.Ok(ItemExportFormat.GEOJSON)
     }
     val lower = acceptHeader.lowercase()
     ItemExportFormat.entries.firstOrNull { lower.contains(it.mediaType) }?.let { return ItemExportFormatResult.Ok(it) }
     // application/json is treated as a synonym for the INGRID index JSON
-    if (lower.contains("application/json")) return ItemExportFormatResult.Ok(ItemExportFormat.INGRID_INDEX_JSON)
+    if (lower.contains("application/json")) return ItemExportFormatResult.Ok(ItemExportFormat.GEOJSON)
     // Browser-style wildcards fall back to HTML
     if (lower.contains("*/*")) return ItemExportFormatResult.Ok(ItemExportFormat.HTML)
     return ItemExportFormatResult.NotAcceptable(acceptHeader)

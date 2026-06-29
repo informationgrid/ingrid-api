@@ -225,7 +225,7 @@ private suspend fun handleLandingPage(
         call,
         LandingPage(
             title = "OGC API - Records",
-            description = "This is the landing page of the OGC API - Records service.",
+            description = "Welcome to the OGC API - Records service. This API provides discovery and access to metadata records describing geospatial data and services.",
             links = discoveryLinks + staticLinks,
         ),
     )

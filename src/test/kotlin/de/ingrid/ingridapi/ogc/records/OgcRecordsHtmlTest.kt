@@ -35,7 +35,7 @@ class OgcRecordsHtmlTest {
             client.get("/ogc/records/conformance?f=html").apply {
                 assertEquals(HttpStatusCode.OK, status)
                 val body = bodyAsText()
-                assertTrue(body.contains("<h1>Conformance</h1>"), "Should contain title")
+                assertTrue(body.contains("<h1>OGC API - Records: Conformance</h1>"), "Should contain title")
                 assertTrue(
                     body.contains("http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core"),
                     "Should contain core conformance class",
@@ -71,7 +71,7 @@ class OgcRecordsHtmlTest {
             client.get("/ogc/records/collections?f=html").apply {
                 assertEquals(HttpStatusCode.OK, status)
                 val body = bodyAsText()
-                assertTrue(body.contains("<h1>Collections</h1>"), "Should contain title")
+                assertTrue(body.contains("<h1>OGC API - Records: Collections</h1>"), "Should contain title")
                 assertTrue(body.contains("test-collection"), "Should contain collection id")
                 assertTrue(body.contains("Test Description"), "Should contain collection description")
             }
@@ -154,7 +154,7 @@ class OgcRecordsHtmlTest {
                 assertEquals(HttpStatusCode.OK, status)
                 assertEquals(ContentType.Text.Html.withCharset(Charsets.UTF_8), contentType())
                 val body = bodyAsText()
-                assertTrue(body.contains("<h1>Test-id</h1>"), "Should contain collection title")
+                assertTrue(body.contains("<h1>OGC API - Records: Test-id</h1>"), "Should contain collection title")
                 assertTrue(body.contains("<code>test-id</code>"), "Should contain collection id")
                 assertTrue(body.contains("Description for collection &#39;test-id&#39;"), "Should contain description")
                 assertTrue(
@@ -180,7 +180,7 @@ class OgcRecordsHtmlTest {
                 assertEquals(HttpStatusCode.OK, status)
                 assertEquals(ContentType.Text.Html.withCharset(Charsets.UTF_8), contentType())
                 val body = bodyAsText()
-                assertTrue(body.contains("<h1>Test-id</h1>"), "Should contain collection title")
+                assertTrue(body.contains("<h1>OGC API - Records: Test-id</h1>"), "Should contain collection title")
             }
 
             // Test JSON representation

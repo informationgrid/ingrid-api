@@ -13,6 +13,9 @@ import com.jillesvangurp.ktsearch.search
 import com.jillesvangurp.ktsearch.searchHits
 import com.jillesvangurp.ktsearch.total
 import com.jillesvangurp.ktsearch.updateDocument
+import com.jillesvangurp.searchdsls.querydsl.ESQuery
+import com.jillesvangurp.searchdsls.querydsl.bool
+import com.jillesvangurp.searchdsls.querydsl.matchAll
 import com.jillesvangurp.searchdsls.querydsl.term
 import de.ingrid.ingridapi.config.AppConfig
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
@@ -97,143 +100,69 @@ class ElasticsearchService(
         from: Int,
         bbox: List<Double>? = null,
     ): SearchResponse? {
-        val filteredCatalogs =
-            getActiveCatalogs()
-                .filter {
-                    it["plugdescription"]
-                        ?.jsonObject["dataSourceName"]
-                        ?.jsonPrimitive
-                        ?.content
-                        .equals(id, ignoreCase = true)
-                }.mapNotNull { it["linkedIndex"]?.jsonPrimitive?.content }
+        val indices = getIndicesForDataSource(id) ?: return null
 
-        if (filteredCatalogs.isEmpty()) {
-            return null
+        return client.search(indices) {
+            this.from = from
+            this.resultSize = size
+            query =
+                if (bbox != null && bbox.size >= 4) {
+                    bool {
+                        must(
+                            matchAll(),
+                            term("isfolder", "false"),
+                        )
+                        filter(
+                            geoShapeEnvelope("spatial.geometries", bbox),
+                        )
+                    }
+                } else {
+                    term("isfolder", "false")
+                }
         }
-        val indices =
-            filteredCatalogs.joinToString(",").also { log.debug { "Searching in indices: $it" } }
+    }
 
-        val queryJson =
-            if (bbox != null && bbox.size >= 4) {
+    private fun geoShapeEnvelope(
+        field: String,
+        bbox: List<Double>,
+    ): ESQuery =
+        ESQuery("geo_shape").apply {
+            put(
+                field,
                 buildJsonObject {
                     put(
-                        "query",
+                        "shape",
                         buildJsonObject {
+                            put("type", "envelope")
                             put(
-                                "bool",
-                                buildJsonObject {
-                                    put(
-                                        "must",
+                                "coordinates",
+                                buildJsonArray {
+                                    add(
                                         buildJsonArray {
-                                            add(
-                                                buildJsonObject {
-                                                    put("match_all", buildJsonObject { })
-                                                    put(
-                                                        "term",
-                                                        buildJsonObject {
-                                                            put(
-                                                                "isfolder",
-                                                                buildJsonObject {
-                                                                    put("value", JsonPrimitive("false"))
-                                                                },
-                                                            )
-                                                        },
-                                                    )
-                                                },
-                                            )
+                                            add(JsonPrimitive(bbox[0]))
+                                            add(JsonPrimitive(bbox[3]))
                                         },
                                     )
-                                    put(
-                                        "filter",
+                                    add(
                                         buildJsonArray {
-                                            add(
-                                                buildJsonObject {
-                                                    put(
-                                                        "geo_shape",
-                                                        buildJsonObject {
-                                                            put(
-                                                                "spatial.geometries",
-                                                                buildJsonObject {
-                                                                    put(
-                                                                        "shape",
-                                                                        buildJsonObject {
-                                                                            put("type", JsonPrimitive("envelope"))
-                                                                            put(
-                                                                                "coordinates",
-                                                                                buildJsonArray {
-                                                                                    add(
-                                                                                        buildJsonArray {
-                                                                                            add(JsonPrimitive(bbox[0]))
-                                                                                            add(JsonPrimitive(bbox[3]))
-                                                                                        },
-                                                                                    )
-                                                                                    add(
-                                                                                        buildJsonArray {
-                                                                                            add(JsonPrimitive(bbox[2]))
-                                                                                            add(JsonPrimitive(bbox[1]))
-                                                                                        },
-                                                                                    )
-                                                                                },
-                                                                            )
-                                                                        },
-                                                                    )
-                                                                    put("relation", JsonPrimitive("intersects"))
-                                                                },
-                                                            )
-                                                        },
-                                                    )
-                                                },
-                                            )
+                                            add(JsonPrimitive(bbox[2]))
+                                            add(JsonPrimitive(bbox[1]))
                                         },
                                     )
                                 },
                             )
                         },
                     )
-                }.toString()
-            } else {
-                buildJsonObject {
-                    put(
-                        "query",
-                        buildJsonObject {
-                            put(
-                                "term",
-                                buildJsonObject {
-                                    put(
-                                        "isfolder",
-                                        buildJsonObject {
-                                            put("value", JsonPrimitive("false"))
-                                        },
-                                    )
-                                },
-                            )
-                        }
-                    )
-                }.toString()
-            }
-
-        return client.search(indices, rawJson = queryJson, size = size, from = from)
-    }
+                    put("relation", "intersects")
+                },
+            )
+        }
 
     suspend fun getIndexDocument(
         id: String,
         recordId: String,
     ): JsonObject? {
-        val filteredCatalogs =
-            getActiveCatalogs()
-                .filter {
-                    it["plugdescription"]
-                        ?.jsonObject["dataSourceName"]
-                        ?.jsonPrimitive
-                        ?.content
-                        .equals(id, ignoreCase = true)
-                }.mapNotNull { it["linkedIndex"]?.jsonPrimitive?.content }
-
-        if (filteredCatalogs.isEmpty()) {
-            return null
-        }
-        val indices =
-            filteredCatalogs.joinToString(",").also { log.debug { "Searching in indices: $it" } }
+        val indices = getIndicesForDataSource(id) ?: return null
 
         return try {
             client
@@ -245,6 +174,23 @@ class ElasticsearchService(
             log.error { "Error while fetching document $recordId from indices $indices: ${ex.message}" }
             null
         }
+    }
+
+    private suspend fun getIndicesForDataSource(id: String): String? {
+        val filteredCatalogs =
+            getActiveCatalogs()
+                .filter {
+                    it["plugdescription"]
+                        ?.jsonObject["dataSourceName"]
+                        ?.jsonPrimitive
+                        ?.content
+                        .equals(id, ignoreCase = true)
+                }.mapNotNull { it["linkedIndex"]?.jsonPrimitive?.content }
+
+        if (filteredCatalogs.isEmpty()) {
+            return null
+        }
+        return filteredCatalogs.joinToString(",").also { log.debug { "Searching in indices: $it" } }
     }
 
     // TODO: add caching to this function

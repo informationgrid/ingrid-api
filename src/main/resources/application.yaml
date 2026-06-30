@@ -9,7 +9,7 @@ ktor:
       - de.ingrid.ingridapi.ApplicationKt.ogcRecords
       - de.ingrid.ingridapi.ApplicationKt.admin
   deployment:
-    port: 8081
+    port: 8080
     watch:
       - classes
       - resources

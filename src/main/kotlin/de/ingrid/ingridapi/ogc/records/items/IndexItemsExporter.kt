@@ -56,7 +56,7 @@ class IndexItemsExporter : ItemsExporter {
                                                 ItemExportFormat.ISO -> "This record as ISO 19139"
                                                 ItemExportFormat.GEOJSON -> "This record as GeoJSON"
                                                 ItemExportFormat.INGRID_INDEX_JSON -> "This record as INGRID index document"
-                                                ItemExportFormat.GEODCAT_XML -> "This record as GEODCAT-AP XML"
+                                                ItemExportFormat.GEODCAT_XML -> "This record as GeoDCAT-AP RDF/XML"
                                             },
                                         )
                                     },

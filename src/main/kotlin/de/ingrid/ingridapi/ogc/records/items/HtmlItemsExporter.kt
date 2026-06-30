@@ -158,9 +158,9 @@ class HtmlItemsExporter : ItemsExporter {
                     listOf(
                         Link("self", "$root/ogc/records/collections/$catalogId/items/$recordId?f=html", "text/html", "This record as HTML"),
                         Link("alternate", "$root/ogc/records/collections/$catalogId/items/$recordId?f=geojson", "application/geo+json", "This record as GeoJSON"),
-                        Link("alternate", "$root/ogc/records/collections/$catalogId/items/$recordId?f=iso", "application/xml", "This record as ISO XML"),
-                        Link("alternate", "$root/ogc/records/collections/$catalogId/items/$recordId?f=ingrid-index-json", "application/vnd.ingrid.index+json", "This record as INGRID INDEX JSON"),
-                        Link("alternate", "$root/ogc/records/collections/$catalogId/items/$recordId?f=geodcat", "application/rdf+xml", "This record as GeoDCAT RDF/XML"),
+                        Link("alternate", "$root/ogc/records/collections/$catalogId/items/$recordId?f=iso", "application/xml", "This record as ISO 19139"),
+                        Link("alternate", "$root/ogc/records/collections/$catalogId/items/$recordId?f=ingrid-index-json", "application/vnd.ingrid.index+json", "This record as INGRID index document in JSON"),
+                        Link("alternate", "$root/ogc/records/collections/$catalogId/items/$recordId?f=geodcat", "application/rdf+xml", "This record as GeoDCAT-AP RDF/XML"),
                         Link("collection", "$root/ogc/records/collections/$catalogId?f=html", "text/html", "The collection description"),
                     )
                 append(HtmlTemplateUtils.renderLinksSection(links))
@@ -183,11 +183,4 @@ class HtmlItemsExporter : ItemsExporter {
         call.respondText(html, ContentType.Text.Html)
     }
 
-    private fun formatContact(obj: JsonObject): String {
-        val organisation = obj["organisation"].asSafeString()
-        val firstName = obj["t02_address.firstname"].asSafeString()
-        val lastName = obj["t02_address.lastname"].asSafeString()
-        val person = listOf(firstName, lastName).filter { it.isNotEmpty() }.joinToString(" ")
-        return listOf(organisation, person).filter { it.isNotEmpty() }.joinToString(", ")
-    }
 }

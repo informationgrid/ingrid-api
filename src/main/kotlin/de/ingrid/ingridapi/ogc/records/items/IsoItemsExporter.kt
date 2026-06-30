@@ -11,15 +11,17 @@ import io.ktor.server.response.respondText
 import kotlinx.serialization.json.JsonObject
 import java.io.StringReader
 import java.io.StringWriter
+import javax.xml.transform.OutputKeys
 import javax.xml.transform.TransformerFactory
 import javax.xml.transform.stream.StreamResult
 import javax.xml.transform.stream.StreamSource
 
 class IsoItemsExporter : ItemsExporter {
-    private fun transformIdfToIso(idf: String): String {
+    internal fun transformIdfToIso(idf: String): String {
         val transformerFactory = TransformerFactory.newInstance()
         val xslStream = this::class.java.classLoader.getResourceAsStream("idf_1_0_0_to_iso_metadata.xsl")
         val transformer = transformerFactory.newTransformer(StreamSource(xslStream))
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes")
 
         val reader = StringReader(idf)
         val writer = StringWriter()

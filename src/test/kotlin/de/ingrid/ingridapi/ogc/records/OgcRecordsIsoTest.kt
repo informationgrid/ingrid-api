@@ -1,5 +1,6 @@
 package de.ingrid.ingridapi.ogc.records
 
+import com.jillesvangurp.serializationext.toJsonElement
 import de.ingrid.ingridapi.core.services.ElasticsearchService
 import de.ingrid.ingridapi.ogc.records.services.RecordsService
 import de.ingrid.ingridapi.plugins.configureSerialization
@@ -21,7 +22,6 @@ import kotlin.test.assertTrue
 
 class OgcRecordsIsoTest {
     @Test
-    @Ignore
     fun testGetRecordIso() =
         testApplication {
             val client =
@@ -42,16 +42,19 @@ class OgcRecordsIsoTest {
                 configureOgcRecordsRouting()
             }
 
-            coEvery { esService.getIndexDocument("test-collection", "record-1") } returns JsonObject(emptyMap())
+            coEvery { esService.getIndexDocument("test-collection", "record-1") } returns JsonObject(mapOf("idf" to """
+                <idf:idfMdMetadata xmlns:idf="http://www.portalu.de/IDF/1.0" uuid="test-uuid" id="test-id"></idf:idfMdMetadata>
+                """.trimIndent().toJsonElement()!!))
             coEvery { esService.getIndexDocument("test-collection", "non-existent") } returns null
 
+//            println(esService.getIndexDocument("test-collection", "record-1"))
             // Test successful getRecord
-            client.get("/ogc/records/collections/test-collection/items/record-1?format=index").apply {
+            client.get("/ogc/records/collections/test-collection/items/record-1?format=iso").apply {
                 assertEquals(HttpStatusCode.OK, status)
             }
 
             // Test 404 for non-existent record
-            client.get("/ogc/records/collections/test-collection/items/non-existent?format=index").apply {
+            client.get("/ogc/records/collections/test-collection/items/non-existent?format=iso").apply {
                 assertEquals(HttpStatusCode.NotFound, status)
             }
 

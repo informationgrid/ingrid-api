@@ -18,6 +18,7 @@ import io.mockk.mockk
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -47,7 +48,7 @@ class OgcRecordsAcceptHeaderTest {
                         "Should return HTML for Accept: text/html",
                     )
                     val body = bodyAsText()
-                    assertTrue(body.contains("<h1>Test-id</h1>"), "Should contain collection title in HTML")
+                    assertTrue(body.contains("<h1>OGC API - Records: Test-id</h1>"), "Should contain collection title in HTML")
                 }
 
             // Test Accept: application/json
@@ -146,7 +147,7 @@ class OgcRecordsAcceptHeaderTest {
                 }.apply {
                     assertEquals(HttpStatusCode.OK, status)
                     assertEquals(ContentType.Text.Html, contentType()?.withoutParameters())
-                    assertTrue(bodyAsText().contains("<h1>Collections</h1>"))
+                    assertContains(bodyAsText(), "<h1>OGC API - Records: Collections</h1>")
                 }
 
             // Test Accept: application/json

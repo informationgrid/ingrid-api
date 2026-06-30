@@ -140,6 +140,9 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.4")
 
+    // RDF library
+    implementation("org.apache.jena:jena-core:5.3.0")
+
     // tests
     testImplementation("io.ktor:ktor-server-tests-jvm:2.3.13")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")

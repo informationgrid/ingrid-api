@@ -30,24 +30,44 @@ class IndexItemsExporter : ItemsExporter {
         recordId: String,
     ) {
         if (record != null) {
+            val root =
+                call.application.environment.config
+                    .propertyOrNull("ktor.deployment.rootPath")
+                    ?.getString()
+                    ?.trimEnd('/') ?: ""
+            val resourcePath = "$root/ogc/records/collections/$catalogId/items/$recordId"
             val recordWithLinks =
                 buildJsonObject {
                     record.forEach { (key, value) -> put(key, value) }
                     put(
                         "links",
                         kotlinx.serialization.json.buildJsonArray {
-                            add(
-                                buildJsonObject {
-                                    put("rel", "self")
-                                    put("href", "/ogc/records/collections/$catalogId/items/$recordId")
-                                    put("type", "application/json")
-                                },
-                            )
+                            // self + alternates for every supported item format
+                            ItemExportFormat.entries.forEach { fmt ->
+                                add(
+                                    buildJsonObject {
+                                        put("rel", if (fmt == ItemExportFormat.INGRID_INDEX_JSON) "self" else "alternate")
+                                        put("href", "$resourcePath?f=${fmt.paramValue}")
+                                        put("type", fmt.mediaType)
+                                        put(
+                                            "title",
+                                            when (fmt) {
+                                                ItemExportFormat.HTML -> "This record as HTML"
+                                                ItemExportFormat.ISO -> "This record as ISO 19139"
+                                                ItemExportFormat.GEOJSON -> "This record as GeoJSON"
+                                                ItemExportFormat.INGRID_INDEX_JSON -> "This record as INGRID index document"
+                                                ItemExportFormat.GEODCAT_XML -> "This record as GEODCAT-AP XML"
+                                            },
+                                        )
+                                    },
+                                )
+                            }
                             add(
                                 buildJsonObject {
                                     put("rel", "collection")
-                                    put("href", "/ogc/records/collections/$catalogId")
+                                    put("href", "$root/ogc/records/collections/$catalogId?f=json")
                                     put("type", "application/json")
+                                    put("title", "The collection description")
                                 },
                             )
                         },

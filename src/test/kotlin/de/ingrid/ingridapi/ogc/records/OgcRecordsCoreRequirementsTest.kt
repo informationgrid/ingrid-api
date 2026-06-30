@@ -224,8 +224,17 @@ class OgcRecordsCoreRequirementsTest {
                     assertTrue(rels.contains("self"), "Collection should have a self link")
                     assertTrue(rels.contains("items"), "Collection should have an items link")
 
-                    val itemsLink = links.find { it.jsonObject["rel"]?.jsonPrimitive?.content == "items" }?.jsonObject
-                    assertEquals("application/json", itemsLink?.get("type")?.jsonPrimitive?.content)
+                    // Discovery: items links SHALL be emitted for every supported item media type
+                    val itemsLinks = links.filter { it.jsonObject["rel"]?.jsonPrimitive?.content == "items" }
+                    val itemTypes = itemsLinks.map { it.jsonObject["type"]?.jsonPrimitive?.content }
+                    assertTrue(
+                        itemTypes.contains("application/vnd.ingrid.index+json"),
+                        "Collection items links should advertise INGRID index JSON",
+                    )
+                    assertTrue(
+                        itemTypes.contains("text/html"),
+                        "Collection items links should advertise HTML",
+                    )
 
                     // Requirement 13: /req/core/fc-md-links
                     val topLinks = body["links"]?.jsonArray

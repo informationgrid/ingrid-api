@@ -170,7 +170,7 @@ class OgcRecordsJsonTest {
             coEvery { esMock.getIndexDocuments("test-collection", any(), any(), any()) } returns mockSearchResponse
 
             client
-                .get("/ogc/records/collections/test-collection/items?f=index") {
+                .get("/ogc/records/collections/test-collection/items?f=ingrid-index-json") {
                     headers { append(HttpHeaders.Accept, "application/json") }
                 }.apply {
                     assertEquals(HttpStatusCode.OK, status)
@@ -193,7 +193,7 @@ class OgcRecordsJsonTest {
             coEvery { esMock.getIndexDocument("test-collection", "record-1") } returns mockRecord
 
             client
-                .get("/ogc/records/collections/test-collection/items/record-1?f=index") {
+                .get("/ogc/records/collections/test-collection/items/record-1?f=ingrid-index-json") {
                     headers { append(HttpHeaders.Accept, "application/json") }
                 }.apply {
                     assertEquals(HttpStatusCode.OK, status)

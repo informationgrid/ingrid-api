@@ -3,22 +3,60 @@ package de.ingrid.ingridapi.ogc.records.export
 import de.ingrid.ingridapi.ogc.records.CollectionDetail
 import de.ingrid.ingridapi.ogc.records.Conformance
 import de.ingrid.ingridapi.ogc.records.Link
+import de.ingrid.ingridapi.ogc.records.export.HtmlTemplateUtils.escapeHtml
 import io.ktor.http.ContentType
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import kotlinx.serialization.Serializable
 
-enum class ExportFormat { JSON, HTML }
+enum class ExportFormat(
+    val paramValue: String,
+    val mediaType: String,
+) {
+    JSON("json", "application/json"),
+    HTML("html", "text/html"),
+}
+
+val SUPPORTED_COLLECTION_FORMATS: List<String> = ExportFormat.entries.map { it.paramValue }
+
+sealed class ExportFormatResult {
+    data class Ok(val format: ExportFormat) : ExportFormatResult()
+
+    /** The `f` query parameter was provided but unknown. */
+    data class InvalidParam(val value: String) : ExportFormatResult()
+
+    /** No `f` was given and the Accept header is not satisfiable. */
+    data class NotAcceptable(val acceptHeader: String) : ExportFormatResult()
+}
 
 fun parseExportFormat(
     param: String?,
     acceptHeader: String? = null,
 ): ExportFormat =
-    when {
-        param?.lowercase() == "json" || acceptHeader?.lowercase() == "application/json" -> ExportFormat.JSON
+    when (val r = parseExportFormatResult(param, acceptHeader)) {
+        is ExportFormatResult.Ok -> r.format
         else -> ExportFormat.HTML
     }
+
+fun parseExportFormatResult(
+    param: String?,
+    acceptHeader: String? = null,
+): ExportFormatResult {
+    if (param != null) {
+        val match = ExportFormat.entries.firstOrNull { it.paramValue.equals(param, ignoreCase = true) }
+        return if (match != null) ExportFormatResult.Ok(match) else ExportFormatResult.InvalidParam(param)
+    }
+    if (acceptHeader.isNullOrBlank()) {
+        return ExportFormatResult.Ok(ExportFormat.JSON)
+    }
+    val lower = acceptHeader.lowercase()
+    // Exact known media types
+    ExportFormat.entries.firstOrNull { lower.contains(it.mediaType) }?.let { return ExportFormatResult.Ok(it) }
+    // Browser-style wildcards fall back to HTML (best practice for user agents)
+    if (lower.contains("*/*")) return ExportFormatResult.Ok(ExportFormat.HTML)
+    return ExportFormatResult.NotAcceptable(acceptHeader)
+}
 
 @Serializable
 data class CollectionSummary(
@@ -100,49 +138,41 @@ class HtmlCollectionsExporter : CollectionsExporter {
         call: ApplicationCall,
         landingPage: LandingPage,
     ) {
-        val html =
+        val content =
             buildString {
                 append(
                     """
-                    <!DOCTYPE html>
-                    <html lang="en">
-                    <head>
-                      <meta charset="utf-8"/>
-                      <title>${landingPage.title}</title>
-                      <style>
-                        body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif; margin:20px}
-                        ul{list-style:none; padding:0}
-                        li{margin-bottom:8px}
-                        .link-rel{font-weight:bold; display:inline-block; width:100px}
-                        code{background:#f6f8fa; padding:2px 4px; border-radius:4px}
-                      </style>
-                    </head>
-                    <body>
-                      <h1>${landingPage.title}</h1>
-                      <p>${landingPage.description.orEmpty()}</p>
-                      <h2>Links</h2>
+                    <div class="card">
+                      <p>${escapeHtml(landingPage.description.orEmpty())}</p>
+                    </div>
+                    
+                    <div class="card">
+                      <h2>API Overview</h2>
+                      <p>
+                        This service implements the <strong>OGC API - Records</strong> standard. 
+                        It provides discovery and access to metadata records describing geospatial data and services.
+                      </p>
+                      <p>
+                        You can explore the available collections of records, search for specific items using spatial filters, 
+                        and retrieve metadata in various formats.
+                      </p>
+                    </div>
+    
+                    <div class="card">
+                      <h2>Common Search Parameters</h2>
+                      <p>When querying record collections, you can use the following parameters to filter your results:</p>
                       <ul>
-                    """.trimIndent(),
-                )
-                for (link in landingPage.links) {
-                    append("<li>")
-                    append("<span class=\"link-rel\">").append(escapeHtml(link.rel)).append("</span>")
-                    append("<a href=\"").append(escapeHtml(link.href)).append("\">")
-                    append(escapeHtml(link.title ?: link.href))
-                    append("</a>")
-                    if (link.type != null) {
-                        append(" (<code>").append(escapeHtml(link.type)).append("</code>)")
-                    }
-                    append("</li>")
-                }
-                append(
-                    """
+                        <li><code>bbox</code>: Spatial filter using a bounding box in <code>minLon,minLat,maxLon,maxLat</code> format.</li>
+                        <li><code>limit</code>: Maximum number of records to return (default is 10).</li>
+                        <li><code>offset</code>: Number of records to skip for pagination.</li>
+                        <li><code>format</code> / <code>f</code>: The output format (<code>json</code> or <code>html</code>).</li>
                       </ul>
-                    </body>
-                    </html>
+                    </div>
                     """.trimIndent(),
                 )
+                append(HtmlTemplateUtils.renderLinksSection(landingPage.links))
             }
+        val html = HtmlTemplateUtils.renderHtmlPage(landingPage.title, emptyList(), content)
         call.respondText(html, ContentType.Text.Html)
     }
 
@@ -151,31 +181,16 @@ class HtmlCollectionsExporter : CollectionsExporter {
         collections: List<CollectionSummary>,
         links: List<Link>,
     ) {
-        val root = call.application.environment.config.propertyOrNull("ktor.deployment.rootPath")?.getString()?.trimEnd('/') ?: ""
-        val html =
+        val root =
+            call.application.environment.config
+                .propertyOrNull("ktor.deployment.rootPath")
+                ?.getString()
+                ?.trimEnd('/') ?: ""
+        val content =
             buildString {
                 append(
                     """
-                    <!DOCTYPE html>
-                    <html lang="en">
-                    <head>
-                      <meta charset="utf-8"/>
-                      <title>OGC API - Records: Collections</title>
-                      <style>
-                        body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif; margin:20px}
-                        table{border-collapse:collapse; width:100%}
-                        th,td{border:1px solid #ddd; padding:8px}
-                        th{background:#f5f5f5; text-align:left}
-                        caption{font-weight:600; margin-bottom:8px}
-                        code{background:#f6f8fa; padding:2px 4px; border-radius:4px}
-                        ul{list-style:none; padding:0}
-                        li{margin-bottom:8px}
-                        .link-rel{font-weight:bold; display:inline-block; width:100px}
-                      </style>
-                    </head>
-                    <body>
-                      <nav><a href="$root/ogc/records">Home</a></nav>
-                      <h1>Collections</h1>
+                    <div class="card">
                       <table>
                         <caption>Available record collections</caption>
                         <thead>
@@ -191,7 +206,7 @@ class HtmlCollectionsExporter : CollectionsExporter {
                     append("<tr>")
                     append("<td><a href=\"$root/ogc/records/collections/")
                         .append(escapeHtml(id))
-                        .append("?format=html\"><code>")
+                        .append("?f=html\"><code>")
                         .append(escapeHtml(id))
                         .append("</code></a></td>")
                     append("<td>").append(escapeHtml(title)).append("</td>")
@@ -200,32 +215,15 @@ class HtmlCollectionsExporter : CollectionsExporter {
                 }
                 append(
                     """
-                      </tbody>
-                    </table>
-
-                    <h2>Links</h2>
-                    <ul>
+                        </tbody>
+                      </table>
+                    </div>
                     """.trimIndent(),
                 )
-                for (link in links) {
-                    append("<li>")
-                    append("<span class=\"link-rel\">").append(escapeHtml(link.rel)).append("</span>")
-                    append("<a href=\"").append(escapeHtml(link.href)).append("\">")
-                    append(escapeHtml(link.title ?: link.href))
-                    append("</a>")
-                    if (link.type != null) {
-                        append(" (<code>").append(escapeHtml(link.type)).append("</code>)")
-                    }
-                    append("</li>")
-                }
-                append(
-                    """
-                      </ul>
-                    </body>
-                    </html>
-                    """.trimIndent(),
-                )
+                append(HtmlTemplateUtils.renderLinksSection(links))
             }
+        val breadcrumbs = listOf("Home" to "$root/ogc/records")
+        val html = HtmlTemplateUtils.renderHtmlPage("OGC API - Records: Collections", breadcrumbs, content)
         call.respondText(html, ContentType.Text.Html)
     }
 
@@ -233,58 +231,32 @@ class HtmlCollectionsExporter : CollectionsExporter {
         call: ApplicationCall,
         collection: CollectionDetail,
     ) {
-        val root = call.application.environment.config.propertyOrNull("ktor.deployment.rootPath")?.getString()?.trimEnd('/') ?: ""
-        val html =
+        val root =
+            call.application.environment.config
+                .propertyOrNull("ktor.deployment.rootPath")
+                ?.getString()
+                ?.trimEnd('/') ?: ""
+        val content =
             buildString {
                 append(
                     """
-                    <!DOCTYPE html>
-                    <html lang="en">
-                    <head>
-                      <meta charset="utf-8"/>
-                      <title>OGC API - Records: ${escapeHtml(collection.title)}</title>
-                      <style>
-                        body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif; margin:20px}
-                        th,td{padding:8px; text-align:left; vertical-align:top}
-                        th{background:#f5f5f5; width:150px}
-                        code{background:#f6f8fa; padding:2px 4px; border-radius:4px}
-                        ul{list-style:none; padding:0}
-                        li{margin-bottom:8px}
-                        .link-rel{font-weight:bold; display:inline-block; width:80px}
-                      </style>
-                    </head>
-                    <body>
-                      <nav><a href="$root/ogc/records">Home</a> / <a href="$root/ogc/records/collections">Collections</a></nav>
-                      <h1>${escapeHtml(collection.title)}</h1>
+                    <div class="card">
                       <p>${escapeHtml(collection.description)}</p>
                       <table>
                         <tr><th>ID</th><td><code>${escapeHtml(collection.id)}</code></td></tr>
                         <tr><th>Item Type</th><td>${escapeHtml(collection.itemType)}</td></tr>
                       </table>
-                      
-                      <h2>Links</h2>
-                      <ul>
+                    </div>
                     """.trimIndent(),
                 )
-                for (link in collection.links) {
-                    append("<li>")
-                    append("<span class=\"link-rel\">").append(escapeHtml(link.rel)).append("</span>")
-                    append("<a href=\"").append(escapeHtml(link.href)).append("\">")
-                    append(escapeHtml(link.title ?: link.href))
-                    append("</a>")
-                    if (link.type != null) {
-                        append(" (<code>").append(escapeHtml(link.type)).append("</code>)")
-                    }
-                    append("</li>")
-                }
-                append(
-                    """
-                      </ul>
-                    </body>
-                    </html>
-                    """.trimIndent(),
-                )
+                append(HtmlTemplateUtils.renderLinksSection(collection.links))
             }
+        val breadcrumbs =
+            listOf(
+                "Home" to "$root/ogc/records",
+                "Collections" to "$root/ogc/records/collections?f=html",
+            )
+        val html = HtmlTemplateUtils.renderHtmlPage("OGC API - Records: ${collection.title}", breadcrumbs, content)
         call.respondText(html, ContentType.Text.Html)
     }
 
@@ -292,27 +264,16 @@ class HtmlCollectionsExporter : CollectionsExporter {
         call: ApplicationCall,
         conformance: Conformance,
     ) {
-        val root = call.application.environment.config.propertyOrNull("ktor.deployment.rootPath")?.getString()?.trimEnd('/') ?: ""
-        val html =
+        val root =
+            call.application.environment.config
+                .propertyOrNull("ktor.deployment.rootPath")
+                ?.getString()
+                ?.trimEnd('/') ?: ""
+        val content =
             buildString {
                 append(
                     """
-                    <!DOCTYPE html>
-                    <html lang="en">
-                    <head>
-                      <meta charset="utf-8"/>
-                      <title>OGC API - Records: Conformance</title>
-                      <style>
-                        body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif; margin:20px}
-                        ul{list-style:none; padding:0}
-                        li{margin-bottom:8px}
-                        .link-rel{font-weight:bold; display:inline-block; width:100px}
-                        code{background:#f6f8fa; padding:2px 4px; border-radius:4px}
-                      </style>
-                    </head>
-                    <body>
-                      <nav><a href="$root/ogc/records">Home</a></nav>
-                      <h1>Conformance</h1>
+                    <div class="card">
                       <p>This implementation conforms to the following OGC API conformance classes:</p>
                       <ul>
                     """.trimIndent(),
@@ -326,27 +287,14 @@ class HtmlCollectionsExporter : CollectionsExporter {
                 append(
                     """
                       </ul>
-                    </body>
-                    </html>
+                    </div>
                     """.trimIndent(),
                 )
             }
+        val breadcrumbs = listOf("Home" to "$root/ogc/records")
+        val html = HtmlTemplateUtils.renderHtmlPage("OGC API - Records: Conformance", breadcrumbs, content)
         call.respondText(html, ContentType.Text.Html)
     }
-
-    private fun escapeHtml(text: String): String =
-        buildString(text.length) {
-            for (ch in text) {
-                when (ch) {
-                    '<' -> append("&lt;")
-                    '>' -> append("&gt;")
-                    '&' -> append("&amp;")
-                    '"' -> append("&quot;")
-                    '\'' -> append("&#39;")
-                    else -> append(ch)
-                }
-            }
-        }
 }
 
 object CollectionsExporterFactory {

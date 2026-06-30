@@ -1,6 +1,9 @@
 package de.ingrid.ingridapi.ogc.records.items
 
 import de.ingrid.ingridapi.ogc.records.Link
+import io.ktor.http.URLBuilder
+import io.ktor.http.fullPath
+import io.ktor.http.takeFrom
 import kotlin.math.max
 
 fun parseBboxParam(bbox: String?): List<Double>? {
@@ -24,17 +27,42 @@ fun createPagingLinks(
 ): List<Link> {
     val links = mutableListOf<Link>()
 
-    val formatParam = if (format != null) "&format=$format" else ""
-    val bboxParam = if (bbox != null) "&bbox=$bbox" else ""
+    fun getContentType(fmt: String?): String =
+        when (fmt?.lowercase()) {
+            "html" -> "text/html"
+            "json", "geojson" -> "application/geo+json"
+            "index" -> "application/json"
+            "xml", "iso" -> "application/xml"
+            "ingrid-index-json" -> "application/vnd.ingrid.index+json"
+            "geodcat-xml" -> "application/rdf+xml"
+            else -> "application/json"
+        }
+
+    val contentType = getContentType(format)
+
+    fun buildHref(newOffset: Int): String {
+        val builder = URLBuilder().takeFrom(baseUrl)
+        builder.parameters.apply {
+            set("limit", limit.toString())
+            set("offset", newOffset.toString())
+            if (format != null) set("f", format)
+            if (bbox != null) set("bbox", bbox)
+        }
+        val built = builder.build()
+        return if (baseUrl.startsWith("http") || baseUrl.startsWith("//")) {
+            built.toString()
+        } else {
+            built.fullPath
+        }
+    }
 
     // Next link
     if (offset + limit < total) {
-        val nextOffset = offset + limit
         links.add(
             Link(
                 rel = "next",
-                href = "$baseUrl?limit=$limit&offset=$nextOffset$formatParam$bboxParam",
-                type = if (format == "html") "text/html" else "application/json",
+                href = buildHref(offset + limit),
+                type = contentType,
                 title = "Next page",
             ),
         )
@@ -42,12 +70,11 @@ fun createPagingLinks(
 
     // Prev link
     if (offset > 0) {
-        val prevOffset = max(0, offset - limit)
         links.add(
             Link(
                 rel = "prev",
-                href = "$baseUrl?limit=$limit&offset=$prevOffset$formatParam$bboxParam",
-                type = if (format == "html") "text/html" else "application/json",
+                href = buildHref(max(0, offset - limit)),
+                type = contentType,
                 title = "Previous page",
             ),
         )
@@ -57,8 +84,8 @@ fun createPagingLinks(
     links.add(
         Link(
             rel = "first",
-            href = "$baseUrl?limit=$limit&offset=0$formatParam$bboxParam",
-            type = if (format == "html") "text/html" else "application/json",
+            href = buildHref(0),
+            type = contentType,
             title = "First page",
         ),
     )
@@ -69,8 +96,8 @@ fun createPagingLinks(
         links.add(
             Link(
                 rel = "last",
-                href = "$baseUrl?limit=$limit&offset=$lastOffset$formatParam$bboxParam",
-                type = if (format == "html") "text/html" else "application/json",
+                href = buildHref(lastOffset.toInt()),
+                type = contentType,
                 title = "Last page",
             ),
         )

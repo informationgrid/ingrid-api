@@ -2,15 +2,15 @@ package de.ingrid.ingridapi.ogc.records.items
 
 import com.jillesvangurp.ktsearch.SearchResponse
 import com.jillesvangurp.ktsearch.total
+import com.jillesvangurp.serializationext.toJsonElement
 import de.ingrid.ingridapi.ogc.records.FeatureCollection
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.response.respond
-import io.ktor.server.response.respondText
-import kotlinx.serialization.json.JsonElement
+import io.ktor.server.application.*
+import io.ktor.server.response.*
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 class GeoJsonItemsExporter : ItemsExporter {
@@ -27,7 +27,7 @@ class GeoJsonItemsExporter : ItemsExporter {
                 buildJsonObject {
                     put("type", "Feature")
                     put("id", hit.id)
-                    put("geometry", hit.source?.get("geometry") ?: JsonPrimitive(null as String?))
+                    put("geometry", hit.source?.get("spatial")?.jsonObject?.get("geometry") ?: JsonPrimitive(null as String?))
                     put("properties", hit.source ?: buildJsonObject { })
                 }
             } ?: emptyList()
@@ -77,8 +77,8 @@ class GeoJsonItemsExporter : ItemsExporter {
                 buildJsonObject {
                     put("type", "Feature")
                     put("id", record["id"] ?: JsonPrimitive(recordId))
-                    put("geometry", record["geometry"] ?: JsonPrimitive(null as String?))
-                    put("properties", record)
+                    put("geometry", record["spatial"]?.jsonObject?.get("geometries") ?: JsonPrimitive(null as String?))
+                    put("properties", record.jsonObject.filter { it.key != "idf" }.toJsonElement())
                     put(
                         "links",
                         kotlinx.serialization.json.buildJsonArray {

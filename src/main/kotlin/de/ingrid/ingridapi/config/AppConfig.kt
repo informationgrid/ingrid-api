@@ -24,6 +24,8 @@ class AppConfig {
     val sessionSignKey: String = applicationConfiguration.property("ktor.session.signKey").getString()
     val sessionSecure: Boolean = applicationConfiguration.property("ktor.session.secure").getString().toBoolean()
 
+    val authDisabled: Boolean = applicationConfiguration.propertyOrNull("ktor.security.authDisabled")?.getString()?.toBoolean() ?: false
+
     val rootPath: String = applicationConfiguration.property("ktor.deployment.rootPath").getString()
 
     val keycloakIssuer: String

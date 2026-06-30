@@ -82,6 +82,20 @@ fun Application.security() {
     val cfg = AppConfig()
     val root = cfg.rootPath.trimEnd('/')
 
+    if (cfg.authDisabled) {
+        log.info { "Authentication is DISABLED via configuration (dev mode)." }
+        SessionTokenStore.put(
+            "dev-admin",
+            TokenStoreEntry(
+                accessToken = "dev-access-token",
+                refreshToken = null,
+                expiresAtEpochSec = System.currentTimeMillis() / 1000 + 3600 * 24 * 365, // 1 year
+                subject = "dev-admin",
+                preferredUsername = "Development Admin",
+            ),
+        )
+    }
+
     install(Sessions) {
         cookie<UserSession>("INGRID_ADMIN_SESSION") {
             cookie.path = "/"
@@ -133,56 +147,78 @@ fun Application.security() {
         }
 
         // ---- Session-based guard used to protect the admin routes ------------
-        session<UserSession>("admin-session") {
-            validate { session ->
-                val entry = SessionTokenStore.get(session.sid) ?: return@validate null
-                val now = System.currentTimeMillis() / 1000
-                val currentEntry =
-                    if (entry.expiresAtEpochSec - 30 > now) {
-                        entry
-                    } else {
-                        // Token expired (or close to expiring) — try to refresh server-side.
-                        val refreshed = entry.refreshToken?.let { refreshAccessToken(cfg, it) }
-                        if (refreshed != null) {
-                            SessionTokenStore.put(session.sid, refreshed)
-                            refreshed
-                        } else {
-                            SessionTokenStore.remove(session.sid)
-                            null
+        if (cfg.authDisabled) {
+            class DevAuthConfig(name: String?) : AuthenticationProvider.Config(name)
+            val provider =
+                object : AuthenticationProvider(DevAuthConfig("admin-session")) {
+                    override suspend fun onAuthenticate(context: AuthenticationContext) {
+                        val session = context.call.sessions.get<UserSession>()
+                        if (session == null || session.sid != "dev-admin") {
+                            context.call.sessions.set(UserSession(sid = "dev-admin"))
                         }
-                    } ?: return@validate null
-
-                // Ensure the user still has the required "admin" role.
-                if (!hasAdminRole(currentEntry.accessToken, cfg.keycloakClientId)) {
-                    log.warn {
-                        "User '${currentEntry.preferredUsername ?: currentEntry.subject}' lost admin role (sid=${
-                            session.sid.take(
-                                8,
-                            )
-                        }…)"
+                        context.principal(UserSession(sid = "dev-admin"))
                     }
-                    SessionTokenStore.remove(session.sid)
-                    null
-                } else {
-                    session
                 }
-            }
-            challenge {
-                // Remember where the user wanted to go, then send them to login.
-                val original = call.request.local.uri
-                call.respondRedirect(
-                    "$root/auth/login" + "?return=${
-                        java.net.URLEncoder.encode(
-                            original,
-                            Charsets.UTF_8
-                        )
-                    }"
-                )
+            register(provider)
+        } else {
+            session<UserSession>("admin-session") {
+                validate { session ->
+                    val entry = SessionTokenStore.get(session.sid) ?: return@validate null
+                    val now = System.currentTimeMillis() / 1000
+                    val currentEntry =
+                        if (entry.expiresAtEpochSec - 30 > now) {
+                            entry
+                        } else {
+                            // Token expired (or close to expiring) — try to refresh server-side.
+                            val refreshed = entry.refreshToken?.let { refreshAccessToken(cfg, it) }
+                            if (refreshed != null) {
+                                SessionTokenStore.put(session.sid, refreshed)
+                                refreshed
+                            } else {
+                                SessionTokenStore.remove(session.sid)
+                                null
+                            }
+                        } ?: return@validate null
+
+                    // Ensure the user still has the required "admin" role.
+                    if (!hasAdminRole(currentEntry.accessToken, cfg.keycloakClientId)) {
+                        log.warn {
+                            "User '${currentEntry.preferredUsername ?: currentEntry.subject}' lost admin role (sid=${
+                                session.sid.take(
+                                    8,
+                                )
+                            }…)"
+                        }
+                        SessionTokenStore.remove(session.sid)
+                        null
+                    } else {
+                        session
+                    }
+                }
+                challenge {
+                    // Remember where the user wanted to go, then send them to login.
+                    val original = call.request.local.uri
+                    call.respondRedirect(
+                        "$root/auth/login" + "?return=${
+                            java.net.URLEncoder.encode(
+                                original,
+                                Charsets.UTF_8,
+                            )
+                        }",
+                    )
+                }
             }
         }
     }
 
     routing {
+        if (cfg.authDisabled) {
+            get("/auth/login") {
+                val target = call.request.queryParameters["return"]?.takeIf { it.startsWith("/") } ?: "$root/admin"
+                call.respondRedirect(target)
+            }
+        }
+
         // /auth/login starts the OAuth2 flow. The `oauth` provider intercepts the
         // request, redirects the browser to Keycloak, and (on callback) re-enters
         // this handler with a populated principal.

@@ -80,7 +80,8 @@ class IsoItemsExporter : ItemsExporter {
             val resultXml = transformIdfToIso(idf)
             call.respondText(resultXml, ContentType.Application.Xml)
         } catch (e: Exception) {
-            call.respond(HttpStatusCode.InternalServerError, "Error during transformation: ${e.message}")
+            // If transformation fails, the record is not available in this format
+            call.respond(HttpStatusCode.NotAcceptable, "Record not available in ISO format: ${e.message}")
         }
     }
 }

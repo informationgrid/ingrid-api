@@ -135,17 +135,15 @@ class HtmlItemsExporter : ItemsExporter {
     
                     <div id="map"></div>
                     <script>
-                      var geometry = ${
-                        ((record["spatial"] as JsonObject?)?.get("geometries") as JsonArray?)
-                            ?.getOrNull(0)
-                            ?.toString() ?: "null"
+                      var geometries = ${
+                        (record["spatial"] as JsonObject?)?.get("geometries")?.toString() ?: "null"
                     };
-                      if (geometry) {
+                      if (geometries && geometries.length > 0) {
                           var map = L.map('map');
                           L.tileLayer('https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png', {
                               attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                           }).addTo(map);
-                          var geojsonLayer = L.geoJSON(geometry).addTo(map);
+                          var geojsonLayer = L.geoJSON(geometries).addTo(map);
                           map.fitBounds(geojsonLayer.getBounds());
                       } else {
                           document.getElementById('map').style.display = 'none';

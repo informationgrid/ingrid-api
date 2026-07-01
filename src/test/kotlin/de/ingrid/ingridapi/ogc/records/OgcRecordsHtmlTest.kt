@@ -15,6 +15,7 @@ import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
@@ -100,6 +101,58 @@ class OgcRecordsHtmlTest {
                 val body = bodyAsText()
                 assertTrue(body.contains("<h1>Record: Record 1</h1>"), "Should contain record title")
                 assertTrue(body.contains("<td>Desc 1</td>"), "Should contain record description")
+            }
+        }
+
+    @Test
+    fun testMultipleGeometriesHtml() =
+        testApplication {
+            val esMock = mockk<ElasticsearchService>()
+            val geom1 =
+                JsonObject(
+                    mapOf(
+                        "type" to JsonPrimitive("Point"),
+                        "coordinates" to JsonArray(listOf(JsonPrimitive(10.0), JsonPrimitive(20.0))),
+                    ),
+                )
+            val geom2 =
+                JsonObject(
+                    mapOf(
+                        "type" to JsonPrimitive("Point"),
+                        "coordinates" to JsonArray(listOf(JsonPrimitive(30.0), JsonPrimitive(40.0))),
+                    ),
+                )
+
+            coEvery { esMock.getIndexDocument("test-collection", "record-1") } returns
+                JsonObject(
+                    mapOf(
+                        "title" to JsonPrimitive("Record 1"),
+                        "description" to JsonPrimitive("Desc 1"),
+                        "spatial" to
+                            JsonObject(
+                                mapOf(
+                                    "geometries" to JsonArray(listOf(geom1, geom2)),
+                                ),
+                            ),
+                    ),
+                )
+            application {
+                configureSerialization()
+                dependencies {
+                    provide<RecordsService> { RecordsService(esMock) }
+                }
+                configureOgcRecordsRouting()
+            }
+            client.get("/ogc/records/collections/test-collection/items/record-1?f=html").apply {
+                assertEquals(HttpStatusCode.OK, status)
+                val body = bodyAsText()
+                assertTrue(
+                    body.contains(
+                        "var geometries = [{\"type\":\"Point\",\"coordinates\":[10.0,20.0]},{\"type\":\"Point\",\"coordinates\":[30.0,40.0]}];",
+                    ),
+                    "Should contain both geometries",
+                )
+                assertTrue(body.contains("var geojsonLayer = L.geoJSON(geometries).addTo(map);"), "Should use geometries variable")
             }
         }
 

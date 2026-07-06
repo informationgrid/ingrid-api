@@ -13,21 +13,17 @@ import de.ingrid.ingridapi.portal.configurePortalRouting
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.netty.EngineMain
-import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import de.ingrid.ingridapi.plugins.security as configureSecurity
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.base() {
+    install(XForwardedHeaders)
     configureDi()
     configureSerialization()
     configureCompression()
     configureCors()
-
-    // WARNING: for security, do not include this if not behind a reverse proxy
-    install(ForwardedHeaders)
-    install(XForwardedHeaders)
 
     configureStatusPages()
     configureSwagger()

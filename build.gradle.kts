@@ -106,7 +106,6 @@ dependencies {
     implementation("io.ktor:ktor-server-compression-jvm")
     implementation("io.ktor:ktor-server-host-common-jvm")
     implementation("io.ktor:ktor-server-status-pages-jvm")
-    implementation("io.ktor:ktor-server-forwarded-header")
     implementation("io.ktor:ktor-server-forwarded-header-jvm")
 
     // support JSON export

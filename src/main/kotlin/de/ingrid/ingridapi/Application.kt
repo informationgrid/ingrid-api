@@ -19,7 +19,9 @@ import de.ingrid.ingridapi.plugins.security as configureSecurity
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.base() {
-    install(XForwardedHeaders)
+    install(XForwardedHeaders) {
+        useFirstProxy()
+    }
     configureDi()
     configureSerialization()
     configureCompression()

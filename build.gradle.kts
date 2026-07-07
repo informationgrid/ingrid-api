@@ -26,12 +26,12 @@ application {
 }
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(25)
 }
 
 ktor {
     docker {
-        jreVersion.set(JavaVersion.VERSION_21)
+        jreVersion.set(JavaVersion.VERSION_25)
 
         val branchName = System.getenv("BRANCH_NAME").orEmpty()
         val tagName = System.getenv("TAG_NAME").orEmpty()

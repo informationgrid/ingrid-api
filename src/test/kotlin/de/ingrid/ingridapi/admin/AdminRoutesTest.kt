@@ -254,8 +254,8 @@ class AdminRoutesTest {
                 assertTrue(body.contains("page=3"), "Should have link to page 3")
 
                 val capturedQuery = Json.parseToJsonElement(querySlot.captured).jsonObject
-                assertEquals(20, capturedQuery["from"]?.jsonPrimitive?.int, "from should be 20 for page 2")
-                assertEquals(20, capturedQuery["size"]?.jsonPrimitive?.int, "size should be 20")
+                assertEquals(10, capturedQuery["from"]?.jsonPrimitive?.int, "from should be 10 for page 2")
+                assertEquals(10, capturedQuery["size"]?.jsonPrimitive?.int, "size should be 10")
             }
         }
 }

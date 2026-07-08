@@ -2,9 +2,10 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import fr.brouillard.oss.gradle.plugins.JGitverPluginExtensionBranchPolicy
 import io.ktor.plugin.features.DockerImageRegistry
 import org.cyclonedx.Version
+import org.gradle.kotlin.dsl.closureOf
 
-val logbackVersion: String by project
-val mockkVersion = "1.14.9"
+val logbackVersion = project.property("logbackVersion")
+val mockkVersion = "1.14.11"
 
 plugins {
     kotlin("jvm") version "2.4.0"
@@ -141,6 +142,7 @@ dependencies {
 
     // RDF library
     implementation("org.apache.jena:jena-core:6.1.0")
+    implementation("org.apache.jena:jena-arq:6.1.0")
 
     // tests
     testImplementation("io.ktor:ktor-server-tests-jvm:2.3.13")

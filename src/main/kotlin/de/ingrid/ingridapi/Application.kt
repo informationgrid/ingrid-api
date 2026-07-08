@@ -1,7 +1,6 @@
 package de.ingrid.ingridapi
 
 import de.ingrid.ingridapi.admin.configureAdminRouting
-import de.ingrid.ingridapi.api2.configureRouting2
 import de.ingrid.ingridapi.ogc.records.configureOgcRecordsRouting
 import de.ingrid.ingridapi.plugins.configureCompression
 import de.ingrid.ingridapi.plugins.configureCors
@@ -34,10 +33,6 @@ fun Application.base() {
 
 fun Application.portal() {
     configurePortalRouting()
-}
-
-fun Application.module2() {
-    configureRouting2()
 }
 
 fun Application.ogcRecords() {

@@ -1,5 +1,6 @@
 package de.ingrid.ingridapi.ogc.records
 
+import com.jillesvangurp.ktsearch.SearchResponse
 import de.ingrid.ingridapi.core.services.ElasticsearchService
 import de.ingrid.ingridapi.ogc.records.services.RecordsService
 import de.ingrid.ingridapi.plugins.configureSerialization
@@ -133,7 +134,7 @@ class OgcRecordsGeoDcatTest {
                     ignoreUnknownKeys = true
                     coerceInputValues = true
                 }
-            val mockSearchResponse = json.decodeFromString<com.jillesvangurp.ktsearch.SearchResponse>(mockResponseJson)
+            val mockSearchResponse = json.decodeFromString<SearchResponse>(mockResponseJson)
 
             coEvery { esService.getIndexDocuments("test-collection", any(), any(), any()) } returns mockSearchResponse
 

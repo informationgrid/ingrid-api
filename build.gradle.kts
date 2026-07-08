@@ -7,13 +7,13 @@ val logbackVersion: String by project
 val mockkVersion = "1.14.9"
 
 plugins {
-    kotlin("jvm") version "2.3.0"
-    kotlin("plugin.serialization") version "2.3.0"
-    id("io.ktor.plugin") version "3.4.0"
+    kotlin("jvm") version "2.4.0"
+    kotlin("plugin.serialization") version "2.4.0"
+    id("io.ktor.plugin") version "3.5.1"
     id("fr.brouillard.oss.gradle.jgitver") version "0.9.1"
-    id("com.diffplug.spotless") version "8.2.1"
-    id("org.cyclonedx.bom") version "3.1.0"
-    id("com.github.ben-manes.versions") version "0.53.0"
+    id("com.diffplug.spotless") version "8.8.0"
+    id("org.cyclonedx.bom") version "3.2.4"
+    id("com.github.ben-manes.versions") version "0.54.0"
 }
 
 group = "de.ingrid.ingridapi"
@@ -22,7 +22,7 @@ application {
     mainClass.set("io.ktor.server.netty.EngineMain")
 
     val isDevelopment: Boolean = project.ext.has("development")
-    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
+    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment", "--enable-native-access=ALL-UNNAMED")
 }
 
 kotlin {
@@ -89,9 +89,9 @@ repositories {
 
 configurations.all {
     resolutionStrategy {
-        force("org.slf4j:slf4j-api:2.0.17")
-        force("ch.qos.logback:logback-classic:$logbackVersion")
-        force("ch.qos.logback:logback-core:$logbackVersion")
+//        force("org.slf4j:slf4j-api:2.0.17")
+//        force("ch.qos.logback:logback-classic:$logbackVersion")
+//        force("ch.qos.logback:logback-core:$logbackVersion")
     }
 }
 
@@ -115,8 +115,8 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation")
 
     // swagger
-    implementation("io.github.smiley4:ktor-swagger-ui:5.4.0")
-    implementation("io.github.smiley4:ktor-openapi:5.4.0")
+    implementation("io.github.smiley4:ktor-swagger-ui:5.7.0")
+    implementation("io.github.smiley4:ktor-openapi:5.7.0")
 
     // Admin GUI: server-side HTML via kotlinx.html DSL (no separate template files)
     implementation("io.ktor:ktor-server-html-builder")
@@ -129,7 +129,7 @@ dependencies {
     implementation("io.ktor:ktor-client-apache5")
 
     // elasticsearch-client
-    implementation("com.jillesvangurp:search-client:2.8.4")
+    implementation("com.jillesvangurp:search-client:2.8.7")
 
     // dependency injection (Ktor DI)
     implementation("io.ktor:ktor-server-di")
@@ -137,10 +137,10 @@ dependencies {
     testImplementation("io.mockk:mockk:$mockkVersion")
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
-    implementation("io.github.oshai:kotlin-logging-jvm:7.0.4")
+    implementation("io.github.oshai:kotlin-logging-jvm:8.0.4")
 
     // RDF library
-    implementation("org.apache.jena:jena-core:5.3.0")
+    implementation("org.apache.jena:jena-core:6.1.0")
 
     // tests
     testImplementation("io.ktor:ktor-server-tests-jvm:2.3.13")
@@ -163,6 +163,7 @@ tasks.cyclonedxBom {
 tasks {
     test {
         ignoreFailures = true
+        jvmArgs("--enable-native-access=ALL-UNNAMED")
     }
 }
 

@@ -139,6 +139,8 @@ object AdminPages {
         }
     }
 
+    private val jsonConfig = Json { prettyPrint = true }
+
     fun HTML.renderViewPage(
         root: String,
         index: String,
@@ -155,7 +157,7 @@ object AdminPages {
             if (doc != null) {
                 pre {
                     code {
-                        +Json { prettyPrint = true }.encodeToString(JsonObject.serializer(), doc)
+                        +jsonConfig.encodeToString(JsonObject.serializer(), doc)
                     }
                 }
             } else {

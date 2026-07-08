@@ -101,7 +101,7 @@ fun Application.security() {
             // Keep this disabled for local HTTP-only development; enable in production behind TLS.
             cookie.secure = cfg.sessionSecure
             cookie.extensions["SameSite"] = "Lax"
-            transform(SessionTransportTransformerMessageAuthentication(hex(cfg.sessionSignKey)))
+            transform(SessionTransportTransformerMessageAuthentication(cfg.sessionSignKey.hexToByteArray()))
         }
     }
 
@@ -146,7 +146,9 @@ fun Application.security() {
 
         // ---- Session-based guard used to protect the admin routes ------------
         if (cfg.authDisabled) {
-            class DevAuthConfig(name: String?) : AuthenticationProvider.Config(name)
+            class DevAuthConfig(
+                name: String?,
+            ) : AuthenticationProvider.Config(name)
             val provider =
                 object : AuthenticationProvider(DevAuthConfig("admin-session")) {
                     override suspend fun onAuthenticate(context: AuthenticationContext) {

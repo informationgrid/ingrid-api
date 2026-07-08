@@ -1,5 +1,3 @@
-@file:Suppress("ktlint:standard:no-wildcard-imports")
-
 package de.ingrid.ingridapi.ogc.records
 
 import de.ingrid.ingridapi.core.services.asSafeString
@@ -17,6 +15,7 @@ import de.ingrid.ingridapi.ogc.records.items.SUPPORTED_ITEM_FORMATS
 import de.ingrid.ingridapi.ogc.records.items.parseBboxParam
 import de.ingrid.ingridapi.ogc.records.items.parseItemExportFormatResult
 import de.ingrid.ingridapi.ogc.records.services.RecordsService
+import io.github.smiley4.ktoropenapi.config.RouteConfig
 import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.openApi
 import io.github.smiley4.ktoropenapi.route
@@ -225,7 +224,8 @@ private suspend fun handleLandingPage(
         call,
         LandingPage(
             title = "OGC API - Records",
-            description = "Welcome to the OGC API - Records service. This API provides discovery and access to metadata records describing geospatial data and services.",
+            description =
+                "Welcome to the OGC API - Records service. This API provides discovery and access to metadata records describing geospatial data and services.",
             links = discoveryLinks + staticLinks,
         ),
     )
@@ -243,15 +243,15 @@ fun Application.configureOgcRecordsRouting() {
             get {
                 handleLandingPage(call, root)
             }
-            get("/") {
+            get("/", {
+                defaultParamSpec()
+            }) {
                 handleLandingPage(call, root)
             }
             get("", {
                 description = "The landing page of this OGC API."
                 hidden = true
-                request {
-                    queryParameter<String>("format") { description = "Output format: json (default) or html" }
-                }
+                defaultParamSpec()
             }) {}
 
             // Serve the OpenAPI JSON for OGC Records at '/ogc/records/api'
@@ -265,17 +265,7 @@ fun Application.configureOgcRecordsRouting() {
             // Minimal conformance endpoint
             get("conformance", {
                 description = "Reports the conformance classes supported by this implementation"
-                request {
-                    queryParameter<String>("format") { description = "Output format: json (default) or html" }
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        description = "Successful response"
-                    }
-                    HttpStatusCode.BadRequest to {
-                        description = "Invalid parameter"
-                    }
-                }
+                defaultParamSpec()
             }) {
                 val format = resolveCollectionFormat(call, root, "/ogc/records/conformance") ?: return@get
                 val exporter = CollectionsExporterFactory.create(format)
@@ -296,18 +286,7 @@ fun Application.configureOgcRecordsRouting() {
             // Collections list (placeholder)
             get("collections", {
                 description = "Lists available record collections"
-                request {
-                    queryParameter<String>("format") { description = "Output format: json (default) or html" }
-                    queryParameter<String>("f") { description = "Alias for 'format'" }
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        description = "Successful response"
-                    }
-                    HttpStatusCode.BadRequest to {
-                        description = "Invalid parameter"
-                    }
-                }
+                defaultParamSpec()
             }) {
                 val knownParams = listOf("format", "f")
                 if (call.request.queryParameters
@@ -370,7 +349,17 @@ fun Application.configureOgcRecordsRouting() {
                 description = "Describes a single collection"
                 request {
                     pathParameter<String>("catalogId") { description = "Collection identifier" }
-                    queryParameter<String>("format") { description = "Output format of the collection detail" }
+                    queryParameter<String>("format") {
+                        description = "Output format of the collection detail. Alias for parameter 'f'"
+                    }
+                }
+                response {
+                    HttpStatusCode.OK to {
+                        description = "Successful response"
+                    }
+                    HttpStatusCode.BadRequest to {
+                        description = "Invalid parameter"
+                    }
                 }
             }) {
                 val id = call.parameters["catalogId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
@@ -417,7 +406,7 @@ fun Application.configureOgcRecordsRouting() {
                     queryParameter<Int>("offset") { description = "Start offset for paging" }
                     queryParameter<String>("bbox") { description = "Bounding box: minLon,minLat,maxLon,maxLat" }
                     queryParameter<ItemExportFormat>("format") {
-                        description = "Output format of the collection items"
+                        description = "Output format of the collection items. Alias for parameter 'f'"
                     }
                 }
                 response {
@@ -492,12 +481,21 @@ fun Application.configureOgcRecordsRouting() {
                 request {
                     pathParameter<String>("catalogId") { description = "Collection identifier" }
                     pathParameter<String>("recordId") { description = "Record identifier" }
-                    queryParameter<ItemExportFormat>("format") { description = "Output format of the record" }
+                    queryParameter<ItemExportFormat>("format") {
+                        description = "Output format of the record. Alias for parameter 'f'"
+                    }
+                }
+                response {
+                    HttpStatusCode.OK to {
+                        description = "Successful response"
+                    }
+                    HttpStatusCode.BadRequest to {
+                        description = "Invalid parameter"
+                    }
                 }
             }) {
                 val recordsService = dependencies.resolve<RecordsService>()
-                val catalogId =
-                    call.parameters["catalogId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                val catalogId = call.parameters["catalogId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                 val recordId = call.parameters["recordId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                 val itemFormat =
                     resolveItemFormat(call, root, "/ogc/records/collections/$catalogId/items/$recordId") ?: return@get
@@ -506,6 +504,22 @@ fun Application.configureOgcRecordsRouting() {
                 val record = recordsService.getRecord(catalogId, recordId)
                 exporter.respondSingle(call, record, catalogId, recordId)
             }
+        }
+    }
+}
+
+private fun RouteConfig.defaultParamSpec() {
+    request {
+        queryParameter<String>("format") {
+            description = "Output format: html (default) or json. Alias for parameter 'f'"
+        }
+    }
+    response {
+        HttpStatusCode.OK to {
+            description = "Successful response"
+        }
+        HttpStatusCode.BadRequest to {
+            description = "Invalid parameter"
         }
     }
 }

@@ -1,5 +1,3 @@
-@file:Suppress("ktlint:standard:no-wildcard-imports")
-
 package de.ingrid.ingridapi.plugins
 
 import de.ingrid.ingridapi.config.AppConfig

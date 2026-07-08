@@ -10,7 +10,11 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-private val errorJson = Json { prettyPrint = true; encodeDefaults = true }
+private val errorJson =
+    Json {
+        prettyPrint = true
+        encodeDefaults = true
+    }
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable

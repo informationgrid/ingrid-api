@@ -27,7 +27,13 @@ class GeoJsonItemsExporter : ItemsExporter {
                 buildJsonObject {
                     put("type", "Feature")
                     put("id", hit.id)
-                    put("geometry", hit.source?.get("spatial")?.jsonObject?.get("geometry") ?: JsonPrimitive(null as String?))
+                    put(
+                        "geometry",
+                        hit.source
+                            ?.get("spatial")
+                            ?.jsonObject
+                            ?.get("geometry") ?: JsonPrimitive(null as String?),
+                    )
                     put("properties", hit.source ?: buildJsonObject { })
                 }
             } ?: emptyList()

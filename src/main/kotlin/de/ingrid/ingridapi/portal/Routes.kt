@@ -9,11 +9,11 @@ import io.github.smiley4.ktoropenapi.route
 import io.github.smiley4.ktorswaggerui.swaggerUI
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.plugins.di.dependencies
+import io.ktor.server.plugins.di.resolve
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
 import io.ktor.server.routing.routing
-import io.ktor.server.plugins.di.dependencies
-import io.ktor.server.plugins.di.resolve
 
 fun Application.configurePortalRouting() {
     routing {

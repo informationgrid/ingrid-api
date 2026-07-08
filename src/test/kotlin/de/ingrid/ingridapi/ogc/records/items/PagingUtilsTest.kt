@@ -11,9 +11,9 @@ class PagingUtilsTest {
         val limit = 10
         val offset = 0
         val format = "html"
-        
+
         val links = createPagingLinks(baseUrl, total, limit, offset, format)
-        
+
         val nextLink = links.find { it.rel == "next" }
         // Should handle existing query parameters correctly and avoid duplicates
         assertEquals("http://localhost/items?f=html&limit=10&offset=10", nextLink?.href)
@@ -26,9 +26,9 @@ class PagingUtilsTest {
         val limit = 10
         val offset = 0
         val format = "html"
-        
+
         val links = createPagingLinks(baseUrl, total, limit, offset, format)
-        
+
         val nextLink = links.find { it.rel == "next" }
         assertEquals("http://localhost/items?limit=10&offset=10&f=html", nextLink?.href)
     }
@@ -40,9 +40,9 @@ class PagingUtilsTest {
         val limit = 10
         val offset = 0
         val format = "html"
-        
+
         val links = createPagingLinks(baseUrl, total, limit, offset, format)
-        
+
         val nextLink = links.find { it.rel == "next" }
         assertEquals("/ogc/records/collections/test/items?f=html&limit=10&offset=10", nextLink?.href)
     }

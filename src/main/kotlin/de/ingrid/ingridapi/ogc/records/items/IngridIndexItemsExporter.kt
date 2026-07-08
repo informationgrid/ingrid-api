@@ -29,7 +29,8 @@ class IngridIndexItemsExporter : ItemsExporter {
         // This is similar to INDEX but with the specific content type
         val result = searchResponse?.hits?.hits?.map { it.source } ?: emptyList()
         call.respondText(
-            kotlinx.serialization.json.Json.encodeToString(result),
+            kotlinx.serialization.json.Json
+                .encodeToString(result),
             ContentType.parse("application/vnd.ingrid.index+json"),
         )
     }

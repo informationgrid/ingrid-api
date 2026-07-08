@@ -42,9 +42,15 @@ class OgcRecordsIsoTest {
                 configureOgcRecordsRouting()
             }
 
-            coEvery { esService.getIndexDocument("test-collection", "record-1") } returns JsonObject(mapOf("idf" to """
-                <idf:idfMdMetadata xmlns:idf="http://www.portalu.de/IDF/1.0" uuid="test-uuid" id="test-id"></idf:idfMdMetadata>
-                """.trimIndent().toJsonElement()!!))
+            coEvery { esService.getIndexDocument("test-collection", "record-1") } returns
+                JsonObject(
+                    mapOf(
+                        "idf" to
+                            """
+                            <idf:idfMdMetadata xmlns:idf="http://www.portalu.de/IDF/1.0" uuid="test-uuid" id="test-id"></idf:idfMdMetadata>
+                            """.trimIndent().toJsonElement()!!,
+                    ),
+                )
             coEvery { esService.getIndexDocument("test-collection", "non-existent") } returns null
 
 //            println(esService.getIndexDocument("test-collection", "record-1"))

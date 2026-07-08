@@ -42,9 +42,9 @@ class RoutesKtTest {
     fun testGetPortalCatalogs() =
         appWrapper { client, esMock ->
             coEvery { esMock.search(any()) } returns
-                    createSearchResult(
-                        "[]",
-                        """{
+                createSearchResult(
+                    "[]",
+                    """{
   "catalogs": {
     "buckets": [
       {
@@ -62,7 +62,7 @@ class RoutesKtTest {
                     "www"
                   ]
                 } } ] } } } ] } }""",
-                    )
+                )
 
             client.get("portal/catalogs").apply {
                 assertEquals(HttpStatusCode.OK, status)
@@ -86,8 +86,8 @@ class RoutesKtTest {
     fun testGetPortalCatalogsIdHierarchyRoot() =
         appWrapper { client, esMock ->
             coEvery { esMock.search(any()) } returns
-                    createSearchResult(
-                        """
+                createSearchResult(
+                    """
                             [
                               {
                                 "_index": "xxx",
@@ -101,7 +101,7 @@ class RoutesKtTest {
                               }
                             ]
                             """,
-                    )
+                )
             client.get("/portal/catalogs/test-catalog/hierarchy").apply {
                 assertEquals(HttpStatusCode.OK, status)
                 val result = body<List<ResponseHierarchy>>()

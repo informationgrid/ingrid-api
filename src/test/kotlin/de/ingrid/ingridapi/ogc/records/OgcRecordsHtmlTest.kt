@@ -152,7 +152,10 @@ class OgcRecordsHtmlTest {
                     ),
                     "Should contain both geometries",
                 )
-                assertTrue(body.contains("var geojsonLayer = L.geoJSON(geometries).addTo(map);"), "Should use geometries variable")
+                assertTrue(
+                    body.contains("var geojsonLayer = L.geoJSON(geometries).addTo(map);"),
+                    "Should use geometries variable",
+                )
             }
         }
 

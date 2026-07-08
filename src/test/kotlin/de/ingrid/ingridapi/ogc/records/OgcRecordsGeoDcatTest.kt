@@ -32,13 +32,16 @@ class OgcRecordsGeoDcatTest {
                 configureOgcRecordsRouting()
             }
 
-            val recordJson = JsonObject(mapOf(
-                "title" to JsonPrimitive("Test Title"),
-                "description" to JsonPrimitive("Test Description"),
-                "obj_uuid" to JsonPrimitive("test-uuid-123"),
-                "created" to JsonPrimitive("2023-01-01"),
-                "modified" to JsonPrimitive("2023-06-23")
-            ))
+            val recordJson =
+                JsonObject(
+                    mapOf(
+                        "title" to JsonPrimitive("Test Title"),
+                        "description" to JsonPrimitive("Test Description"),
+                        "obj_uuid" to JsonPrimitive("test-uuid-123"),
+                        "created" to JsonPrimitive("2023-01-01"),
+                        "modified" to JsonPrimitive("2023-06-23"),
+                    ),
+                )
 
             coEvery { esService.getIndexDocument("test-collection", "record-1") } returns recordJson
 
@@ -47,9 +50,15 @@ class OgcRecordsGeoDcatTest {
                 assertEquals(HttpStatusCode.OK, status, "Status should be OK. Body: $body")
                 assertTrue(body.contains("xmlns:dcat=\"http://www.w3.org/ns/dcat#\""), "Should contain DCAT namespace")
                 assertTrue(body.contains("xmlns:dct=\"http://purl.org/dc/terms/\""), "Should contain DCTerms namespace")
-                assertTrue(body.contains("rdf:about=\"/ogc/records/collections/test-collection/items/record-1\""), "Should contain about URI")
+                assertTrue(
+                    body.contains("rdf:about=\"/ogc/records/collections/test-collection/items/record-1\""),
+                    "Should contain about URI",
+                )
                 assertTrue(body.contains("<dct:title>Test Title</dct:title>"), "Should contain title")
-                assertTrue(body.contains("<dct:description>Test Description</dct:description>"), "Should contain description")
+                assertTrue(
+                    body.contains("<dct:description>Test Description</dct:description>"),
+                    "Should contain description",
+                )
                 assertTrue(body.contains("<dct:identifier>test-uuid-123</dct:identifier>"), "Should contain identifier")
 //                assertTrue(body.contains("<dct:issued>2023-01-01</dct:issued>"), "Should contain issued date")
                 assertTrue(body.contains("<dct:modified>2023-06-23</dct:modified>"), "Should contain modified date")
@@ -70,7 +79,8 @@ class OgcRecordsGeoDcatTest {
                 configureOgcRecordsRouting()
             }
 
-            val mockResponseJson = """
+            val mockResponseJson =
+                """
                 {
                   "took": 1,
                   "timed_out": false,
@@ -117,8 +127,12 @@ class OgcRecordsGeoDcatTest {
                   "point_in_time_id": "",
                   "suggest": {}
                 }
-            """.trimIndent()
-            val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
+                """.trimIndent()
+            val json =
+                Json {
+                    ignoreUnknownKeys = true
+                    coerceInputValues = true
+                }
             val mockSearchResponse = json.decodeFromString<com.jillesvangurp.ktsearch.SearchResponse>(mockResponseJson)
 
             coEvery { esService.getIndexDocuments("test-collection", any(), any(), any()) } returns mockSearchResponse
@@ -128,8 +142,14 @@ class OgcRecordsGeoDcatTest {
                 assertEquals(HttpStatusCode.OK, status, "Status should be OK. Body: $body")
                 assertTrue(body.contains("<dct:title>Title 1</dct:title>"), "Should contain Title 1")
                 assertTrue(body.contains("<dct:title>Title 2</dct:title>"), "Should contain Title 2")
-                assertTrue(body.contains("rdf:about=\"/ogc/records/collections/test-collection/items/record-1\""), "Should contain record-1 URI")
-                assertTrue(body.contains("rdf:about=\"/ogc/records/collections/test-collection/items/record-2\""), "Should contain record-2 URI")
+                assertTrue(
+                    body.contains("rdf:about=\"/ogc/records/collections/test-collection/items/record-1\""),
+                    "Should contain record-1 URI",
+                )
+                assertTrue(
+                    body.contains("rdf:about=\"/ogc/records/collections/test-collection/items/record-2\""),
+                    "Should contain record-2 URI",
+                )
             }
         }
 }

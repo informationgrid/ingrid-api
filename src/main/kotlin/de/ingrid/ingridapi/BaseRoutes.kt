@@ -20,7 +20,7 @@ data class DebugInfo(
     val origin_port: Int,
     val local_scheme: String,
     val local_port: Int,
-    val headers: Map<String, List<String>>
+    val headers: Map<String, List<String>>,
 )
 
 fun Application.configureBaseRoutes() {
@@ -33,16 +33,17 @@ fun Application.configureBaseRoutes() {
         get("/debug-headers") {
             val headers = call.request.headers.toMap()
             val origin = call.request.origin
-            val debugInfo = DebugInfo(
-                request_host = call.request.host(),
-                request_port = call.request.port(),
-                origin_scheme = origin.scheme,
-                origin_host = origin.serverHost,
-                origin_port = origin.serverPort,
-                local_scheme = call.request.local.scheme,
-                local_port = call.request.local.localPort,
-                headers = headers
-            )
+            val debugInfo =
+                DebugInfo(
+                    request_host = call.request.host(),
+                    request_port = call.request.port(),
+                    origin_scheme = origin.scheme,
+                    origin_host = origin.serverHost,
+                    origin_port = origin.serverPort,
+                    local_scheme = call.request.local.scheme,
+                    local_port = call.request.local.localPort,
+                    headers = headers,
+                )
             call.respond(debugInfo)
         }
     }

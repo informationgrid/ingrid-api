@@ -5,6 +5,7 @@ import com.jillesvangurp.ktsearch.Refresh
 import com.jillesvangurp.ktsearch.SearchClient
 import com.jillesvangurp.ktsearch.SearchResponse
 import com.jillesvangurp.ktsearch.count
+import com.jillesvangurp.ktsearch.deleteDocument
 import com.jillesvangurp.ktsearch.deleteIndex
 import com.jillesvangurp.ktsearch.getAliases
 import com.jillesvangurp.ktsearch.parseHit
@@ -176,6 +177,22 @@ class ElasticsearchService(
         }
     }
 
+    /** Fetch a single document from a specific index by its ID. */
+    suspend fun getDocument(
+        index: String,
+        id: String,
+    ): JsonObject? =
+        try {
+            client
+                .search(index) {
+                    query = term("_id", id)
+                }.parseHits<JsonObject>()
+                .firstOrNull()
+        } catch (ex: Exception) {
+            log.error { "Error while fetching document $id from index $index: ${ex.message}" }
+            null
+        }
+
     private suspend fun getIndicesForDataSource(id: String): String? {
         val filteredCatalogs =
             getActiveCatalogs()
@@ -224,6 +241,15 @@ class ElasticsearchService(
     suspend fun deleteIndex(index: String) {
         log.info { "Deleting index '$index'" }
         client.deleteIndex(index)
+    }
+
+    /** Delete a document by ID from a specific index. */
+    suspend fun deleteDocument(
+        index: String,
+        id: String,
+    ) {
+        log.info { "Deleting document '$id' from index '$index'" }
+        client.deleteDocument(target = index, id = id, refresh = Refresh.True)
     }
 
     /**

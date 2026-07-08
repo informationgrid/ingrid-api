@@ -21,13 +21,19 @@ enum class ExportFormat(
 val SUPPORTED_COLLECTION_FORMATS: List<String> = ExportFormat.entries.map { it.paramValue }
 
 sealed class ExportFormatResult {
-    data class Ok(val format: ExportFormat) : ExportFormatResult()
+    data class Ok(
+        val format: ExportFormat,
+    ) : ExportFormatResult()
 
     /** The `f` query parameter was provided but unknown. */
-    data class InvalidParam(val value: String) : ExportFormatResult()
+    data class InvalidParam(
+        val value: String,
+    ) : ExportFormatResult()
 
     /** No `f` was given and the Accept header is not satisfiable. */
-    data class NotAcceptable(val acceptHeader: String) : ExportFormatResult()
+    data class NotAcceptable(
+        val acceptHeader: String,
+    ) : ExportFormatResult()
 }
 
 fun parseExportFormat(
@@ -157,7 +163,7 @@ class HtmlCollectionsExporter : CollectionsExporter {
                         and retrieve metadata in various formats.
                       </p>
                     </div>
-    
+                    
                     <div class="card">
                       <h2>Common Search Parameters</h2>
                       <p>When querying record collections, you can use the following parameters to filter your results:</p>

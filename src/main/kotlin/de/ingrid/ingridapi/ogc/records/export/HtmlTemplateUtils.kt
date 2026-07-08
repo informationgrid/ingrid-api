@@ -3,7 +3,8 @@ package de.ingrid.ingridapi.ogc.records.export
 import de.ingrid.ingridapi.ogc.records.Link
 
 object HtmlTemplateUtils {
-    val SHARED_STYLES = """
+    val SHARED_STYLES =
+        """
         :root {
           --primary-color: #0056b3;
           --bg-color: #f8f9fa;
@@ -69,7 +70,7 @@ object HtmlTemplateUtils {
         .paging a:hover { background: #e9ecef; }
         .paging .current { font-weight: bold; color: var(--text-color); }
         #map { height: 400px; width: 100%; margin-top: 20px; border: 1px solid var(--border-color); border-radius: 8px; }
-    """.trimIndent()
+        """.trimIndent()
 
     fun renderHtmlPage(
         title: String,
@@ -108,27 +109,26 @@ object HtmlTemplateUtils {
               </div>
             </body>
             </html>
-        """.trimIndent()
+            """.trimIndent()
     }
 
-    fun renderLinksSection(links: List<Link>): String {
-        return """
+    fun renderLinksSection(links: List<Link>): String =
+        """
             <div class="card">
               <h2>Links</h2>
               <ul>
                 ${links.joinToString("") { link ->
             """
-                    <li>
-                      <span class="link-rel">${escapeHtml(link.rel)}</span>
-                      <a href="${escapeHtml(link.href)}">${escapeHtml(link.title ?: link.href)}</a>
-                      ${if (link.type != null) "<span class=\"tag\">${escapeHtml(link.type)}</span>" else ""}
-                    </li>
-                    """.trimIndent()
+            <li>
+              <span class="link-rel">${escapeHtml(link.rel)}</span>
+              <a href="${escapeHtml(link.href)}">${escapeHtml(link.title ?: link.href)}</a>
+              ${if (link.type != null) "<span class=\"tag\">${escapeHtml(link.type)}</span>" else ""}
+            </li>
+            """.trimIndent()
         }}
               </ul>
             </div>
         """.trimIndent()
-    }
 
     fun escapeHtml(text: String): String =
         buildString(text.length) {

@@ -132,7 +132,7 @@ class HtmlItemsExporter : ItemsExporter {
                         <tr><th>Description</th><td>${escapeHtml(description)}</td></tr>
                       </table>
                     </div>
-    
+                    
                     <div id="map"></div>
                     <script>
                       var geometries = ${
@@ -154,12 +154,42 @@ class HtmlItemsExporter : ItemsExporter {
 
                 val links =
                     listOf(
-                        Link("self", "$root/ogc/records/collections/$catalogId/items/$recordId?f=html", "text/html", "This record as HTML"),
-                        Link("alternate", "$root/ogc/records/collections/$catalogId/items/$recordId?f=geojson", "application/geo+json", "This record as GeoJSON"),
-                        Link("alternate", "$root/ogc/records/collections/$catalogId/items/$recordId?f=iso", "application/xml", "This record as ISO 19139"),
-                        Link("alternate", "$root/ogc/records/collections/$catalogId/items/$recordId?f=ingrid-index-json", "application/vnd.ingrid.index+json", "This record as INGRID index document in JSON"),
-                        Link("alternate", "$root/ogc/records/collections/$catalogId/items/$recordId?f=geodcat", "application/rdf+xml", "This record as GeoDCAT-AP RDF/XML"),
-                        Link("collection", "$root/ogc/records/collections/$catalogId?f=html", "text/html", "The collection description"),
+                        Link(
+                            "self",
+                            "$root/ogc/records/collections/$catalogId/items/$recordId?f=html",
+                            "text/html",
+                            "This record as HTML",
+                        ),
+                        Link(
+                            "alternate",
+                            "$root/ogc/records/collections/$catalogId/items/$recordId?f=geojson",
+                            "application/geo+json",
+                            "This record as GeoJSON",
+                        ),
+                        Link(
+                            "alternate",
+                            "$root/ogc/records/collections/$catalogId/items/$recordId?f=iso",
+                            "application/xml",
+                            "This record as ISO 19139",
+                        ),
+                        Link(
+                            "alternate",
+                            "$root/ogc/records/collections/$catalogId/items/$recordId?f=ingrid-index-json",
+                            "application/vnd.ingrid.index+json",
+                            "This record as INGRID index document in JSON",
+                        ),
+                        Link(
+                            "alternate",
+                            "$root/ogc/records/collections/$catalogId/items/$recordId?f=geodcat",
+                            "application/rdf+xml",
+                            "This record as GeoDCAT-AP RDF/XML",
+                        ),
+                        Link(
+                            "collection",
+                            "$root/ogc/records/collections/$catalogId?f=html",
+                            "text/html",
+                            "The collection description",
+                        ),
                     )
                 append(HtmlTemplateUtils.renderLinksSection(links))
             }
@@ -180,5 +210,4 @@ class HtmlItemsExporter : ItemsExporter {
         val html = HtmlTemplateUtils.renderHtmlPage("Record: $title", breadcrumbs, content, headExtra)
         call.respondText(html, ContentType.Text.Html)
     }
-
 }

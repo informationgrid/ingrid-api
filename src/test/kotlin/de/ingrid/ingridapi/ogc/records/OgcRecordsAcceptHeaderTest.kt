@@ -48,7 +48,10 @@ class OgcRecordsAcceptHeaderTest {
                         "Should return HTML for Accept: text/html",
                     )
                     val body = bodyAsText()
-                    assertTrue(body.contains("<h1>OGC API - Records: Test-id</h1>"), "Should contain collection title in HTML")
+                    assertTrue(
+                        body.contains("<h1>OGC API - Records: Test-id</h1>"),
+                        "Should contain collection title in HTML",
+                    )
                 }
 
             // Test Accept: application/json

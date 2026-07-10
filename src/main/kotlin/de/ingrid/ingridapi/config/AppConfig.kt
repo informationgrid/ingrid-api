@@ -10,6 +10,7 @@ class AppConfig {
     val elasticHttps: Boolean = applicationConfiguration.property("ktor.elasticsearch.https").getString().toBoolean()
     val elasticUsername: String = applicationConfiguration.property("ktor.elasticsearch.username").getString()
     val elasticPassword: String = applicationConfiguration.property("ktor.elasticsearch.password").getString()
+    val indexPrefix: String = applicationConfiguration.propertyOrNull("ktor.elasticsearch.indexPrefix")?.getString() ?: ""
 
     // --- Keycloak / OAuth2 (used by the admin GUI BFF) ----------------------
     val keycloakServerUrl: String = applicationConfiguration.property("ktor.keycloak.serverUrl").getString()

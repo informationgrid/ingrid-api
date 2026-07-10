@@ -122,6 +122,7 @@ class AdminRoutesTest {
     fun testAdminMetaPage() =
         testApplication {
             val esMock = mockk<ElasticsearchService>()
+            io.mockk.every { esMock.metaIndexName } returns "ingrid_meta"
             coEvery { esMock.getMetaEntries() } returns
                 listOf(
                     de.ingrid.ingridapi.core.services.IngridMetaEntry(
@@ -160,6 +161,7 @@ class AdminRoutesTest {
     fun testAdminDeleteMetaEntry() =
         testApplication {
             val esMock = mockk<ElasticsearchService>()
+            io.mockk.every { esMock.metaIndexName } returns "ingrid_meta"
             coEvery { esMock.deleteDocument("ingrid_meta", "meta-1") } returns Unit
 
             application {
@@ -256,6 +258,47 @@ class AdminRoutesTest {
                 val capturedQuery = Json.parseToJsonElement(querySlot.captured).jsonObject
                 assertEquals(10, capturedQuery["from"]?.jsonPrimitive?.int, "from should be 10 for page 2")
                 assertEquals(10, capturedQuery["size"]?.jsonPrimitive?.int, "size should be 10")
+            }
+        }
+    @Test
+    fun testAdminIndicesPageWithPrefix() =
+        testApplication {
+            val esMock = mockk<ElasticsearchService>()
+            io.mockk.every { esMock.indexPrefix } returns "pre_"
+            io.mockk.every { esMock.metaIndexName } returns "pre_ingrid_meta"
+            coEvery { esMock.listIndicesWithAliases() } returns mapOf(
+                "pre_index1" to emptySet(),
+                "other_index" to emptySet()
+            )
+            coEvery { esMock.getMetaEntries() } returns listOf(
+                de.ingrid.ingridapi.core.services.IngridMetaEntry("doc1", "id1", "pre_index1", true, "Prefixed Source"),
+                de.ingrid.ingridapi.core.services.IngridMetaEntry("doc2", "id2", "other_index", true, "Other Source")
+            )
+            coEvery { esMock.countDocuments(any()) } returns 10L
+
+            application {
+                install(Authentication) {
+                    val provider =
+                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                            override suspend fun onAuthenticate(context: AuthenticationContext) {
+                                context.principal(object : Principal {})
+                            }
+                        }
+                    register(provider)
+                }
+                dependencies.provide<ElasticsearchService> { esMock }
+                configureAdminRouting()
+            }
+
+            client.get("/admin").apply {
+                assertEquals(HttpStatusCode.OK, status)
+                val body = bodyAsText()
+                assertTrue(body.contains("Konfigurierter Index-Präfix:"))
+                assertTrue(body.contains("pre_"))
+                assertTrue(body.contains("Verwaltete Indizes mit Präfix 'pre_'"))
+                assertTrue(body.contains("Prefixed Source"))
+                assertTrue(body.contains("Weitere verwaltete Indizes"))
+                assertTrue(body.contains("Other Source"))
             }
         }
 }

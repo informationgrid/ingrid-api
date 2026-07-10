@@ -48,12 +48,20 @@ object AdminPages {
         counts: Map<String, Long>,
         message: String?,
         error: String?,
+        prefix: String = "",
+        metaIndexName: String = "ingrid_meta",
     ) {
         adminLayout("Administration", root, activeTab = "indices") {
             p {
                 +"Verwaltung der Elasticsearch-Indizes. Indizes, die in "
-                code { +"ingrid_meta" }
+                code { +metaIndexName }
                 +" referenziert sind, werden als Karten hervorgehoben."
+            }
+            if (prefix.isNotEmpty()) {
+                p {
+                    +"Konfigurierter Index-Präfix: "
+                    code { +prefix }
+                }
             }
             if (!message.isNullOrBlank()) {
                 div(classes = "msg ok") { +message }
@@ -62,18 +70,33 @@ object AdminPages {
                 div(classes = "msg err") { +error }
             }
 
-            h2 { +"Verwaltete Indizes" }
-            if (managedEntries.isEmpty()) {
-                p { +"Keine Indizes in 'ingrid_meta' referenziert." }
+            val hasPrefix = prefix.isNotEmpty()
+            val (prefixedManaged, otherManaged) = if (hasPrefix) {
+                managedEntries.partition { it.linkedIndex?.startsWith(prefix) == true }
             } else {
-                div(classes = "cards") {
-                    managedEntries
-                        .sortedBy { entry ->
-                            (entry.dataSourceName ?: entry.indexId ?: entry.linkedIndex ?: "").lowercase()
-                        }.forEach { entry ->
-                            val idx = entry.linkedIndex!!
-                            renderManagedCard(idx, entry, counts[idx], root)
-                        }
+                managedEntries to emptyList()
+            }
+
+            if (hasPrefix) {
+                h2 { +"Verwaltete Indizes mit Präfix '$prefix'" }
+                if (prefixedManaged.isEmpty()) {
+                    p { +"Keine Indizes mit diesem Präfix in '$metaIndexName' referenziert." }
+                } else {
+                    renderManagedCards(prefixedManaged, counts, root)
+                }
+
+                h2 { +"Weitere verwaltete Indizes" }
+                if (otherManaged.isEmpty()) {
+                    p { +"Keine weiteren verwalteten Indizes vorhanden." }
+                } else {
+                    renderManagedCards(otherManaged, counts, root)
+                }
+            } else {
+                h2 { +"Verwaltete Indizes" }
+                if (managedEntries.isEmpty()) {
+                    p { +"Keine Indizes in '$metaIndexName' referenziert." }
+                } else {
+                    renderManagedCards(managedEntries, counts, root)
                 }
             }
 
@@ -178,12 +201,13 @@ object AdminPages {
         entries: List<IngridMetaEntry>,
         message: String?,
         error: String?,
+        metaIndexName: String = "ingrid_meta",
     ) {
         adminLayout("Meta-Verwaltung", root, activeTab = "meta") {
-            h2 { +"Meta-Verwaltung (ingrid_meta)" }
+            h2 { +"Meta-Verwaltung ($metaIndexName)" }
             p {
                 +"Hier sind alle Dokumente des speziellen Index "
-                code { +"ingrid_meta" }
+                code { +metaIndexName }
                 +" gelistet. Diese Dokumente steuern, welche Indizes in der API aktiv sind."
             }
 
@@ -202,7 +226,7 @@ object AdminPages {
                             div(classes = "compact-name") {
                                 val displayName =
                                     entry.dataSourceName ?: entry.indexId ?: entry.linkedIndex ?: entry.docId
-                                a(href = "$root/admin/search/view?index=ingrid_meta&id=${entry.docId}") {
+                                a(href = "$root/admin/search/view?index=$metaIndexName&id=${entry.docId}") {
                                     strong { +displayName }
                                 }
                                 br {}
@@ -226,6 +250,21 @@ object AdminPages {
                         }
                     }
             }
+        }
+    }
+    private fun FlowContent.renderManagedCards(
+        entries: List<IngridMetaEntry>,
+        counts: Map<String, Long>,
+        root: String,
+    ) {
+        div(classes = "cards") {
+            entries
+                .sortedBy { entry ->
+                    (entry.dataSourceName ?: entry.indexId ?: entry.linkedIndex ?: "").lowercase()
+                }.forEach { entry ->
+                    val idx = entry.linkedIndex!!
+                    renderManagedCard(idx, entry, counts[idx], root)
+                }
         }
     }
 }

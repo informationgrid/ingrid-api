@@ -20,6 +20,7 @@ ktor:
     https: "$ES_HTTPS:false"
     username: "$ES_USERNAME:"
     password: "$ES_PASSWORD:"
+    indexPrefix: "$INDEX_PREFIX:"
   keycloak:
     serverUrl: "$KEYCLOAK_SERVER_URL:http://localhost:8080"
     realm: "$KEYCLOAK_REALM:InGrid"

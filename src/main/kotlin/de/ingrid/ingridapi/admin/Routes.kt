@@ -69,7 +69,16 @@ fun Application.configureAdminRouting() {
                     val others = indices.filterKeys { it !in managedIndexNames }
 
                     call.respondHtml(HttpStatusCode.OK) {
-                        renderIndicesPage(root, managedEntries, others, counts, message, error)
+                        renderIndicesPage(
+                            root,
+                            managedEntries,
+                            others,
+                            counts,
+                            message,
+                            error,
+                            elastic.indexPrefix,
+                            elastic.metaIndexName
+                        )
                     }
                 }
 
@@ -119,7 +128,7 @@ fun Application.configureAdminRouting() {
                     val error = call.request.queryParameters["err"]
 
                     call.respondHtml(HttpStatusCode.OK) {
-                        renderMetaPage(root, entries, message, error)
+                        renderMetaPage(root, entries, message, error, elastic.metaIndexName)
                     }
                 }
 
@@ -127,7 +136,7 @@ fun Application.configureAdminRouting() {
                     val docId = call.parameters["docId"].orEmpty()
                     val elastic = call.application.dependencies.resolve<ElasticsearchService>()
                     try {
-                        elastic.deleteDocument("ingrid_meta", docId)
+                        elastic.deleteDocument(elastic.metaIndexName, docId)
                         call.respondRedirect("$root/admin/meta?msg=${urlEncode("Dokument '$docId' wurde gelöscht.")}")
                     } catch (ex: Exception) {
                         call.respondRedirect(

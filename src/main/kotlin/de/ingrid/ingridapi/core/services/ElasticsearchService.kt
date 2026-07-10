@@ -36,7 +36,7 @@ class SearchException(
     message: String,
 ) : Exception(message)
 
-class ElasticsearchService(
+open class ElasticsearchService(
     config: AppConfig,
 ) {
     private val log = logger {}
@@ -50,6 +50,7 @@ class ElasticsearchService(
                 password = config.elasticPassword,
             ),
         )
+    open val indexPrefix = config.indexPrefix
 
     init {
         log.info { "Elastic Host: ${config.elasticHost}:${config.elasticPort}" }
@@ -89,7 +90,7 @@ class ElasticsearchService(
 
     suspend fun getActiveCatalogs(): List<JsonObject> =
         client
-            .search("ingrid_meta") {
+            .search(metaIndexName) {
                 query = term("active", "true")
                 from = 0
                 resultSize = 100
@@ -193,7 +194,7 @@ class ElasticsearchService(
             null
         }
 
-    private suspend fun getIndicesForDataSource(id: String): String? {
+    internal suspend fun getIndicesForDataSource(id: String): String? {
         val filteredCatalogs =
             getActiveCatalogs()
                 .filter {
@@ -203,6 +204,7 @@ class ElasticsearchService(
                         ?.content
                         .equals(id, ignoreCase = true)
                 }.mapNotNull { it["linkedIndex"]?.jsonPrimitive?.content }
+                .filter { indexPrefix.isEmpty() || it.startsWith(indexPrefix) }
 
         if (filteredCatalogs.isEmpty()) {
             return null
@@ -211,9 +213,10 @@ class ElasticsearchService(
     }
 
     // TODO: add caching to this function
-    private suspend fun getActiveIndices(): List<String> =
+    internal suspend fun getActiveIndices(): List<String> =
         getActiveCatalogs()
             .mapNotNull { it["linkedIndex"]?.jsonPrimitive?.content }
+            .filter { indexPrefix.isEmpty() || it.startsWith(indexPrefix) }
 
     // ---------------------------------------------------------------------
     // Admin API: index management and ingrid_meta administration

@@ -17,11 +17,13 @@ class ApplicationTest {
             }
             client.get("/").apply {
                 assertEquals(HttpStatusCode.OK, status)
-                assertContains(bodyAsText(), "Available APIs: portal, ogc/records")
+                assertContains(bodyAsText(), "InGrid API")
+                assertContains(bodyAsText(), "Portal API")
+                assertContains(bodyAsText(), "OGC API - Records")
             }
             client.get("").apply {
                 assertEquals(HttpStatusCode.OK, status)
-                assertContains(bodyAsText(), "Available APIs: portal, ogc/records")
+                assertContains(bodyAsText(), "InGrid API")
             }
         }
 }

@@ -1,14 +1,8 @@
 package de.ingrid.ingridapi
 
-import io.ktor.server.application.Application
-import io.ktor.server.plugins.origin
-import io.ktor.server.request.host
-import io.ktor.server.request.port
-import io.ktor.server.response.respond
-import io.ktor.server.response.respondText
-import io.ktor.server.routing.get
-import io.ktor.server.routing.routing
-import io.ktor.util.toMap
+import io.ktor.server.application.*
+import io.ktor.server.html.*
+import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
 
 @Serializable

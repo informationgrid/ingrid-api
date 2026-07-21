@@ -270,6 +270,18 @@ class AdminRoutesTest {
                 "pre_index1" to emptySet(),
                 "other_index" to emptySet()
             )
+            coEvery { esMock.listIndicesConfig() } returns buildJsonObject {
+                put("pre_index1", buildJsonObject {
+                    put("mappings", buildJsonObject {
+                        put("properties", buildJsonObject {
+                            put("title", buildJsonObject { put("type", JsonPrimitive("text")) })
+                        })
+                    })
+                    put("settings", buildJsonObject {
+                        put("index", buildJsonObject { put("number_of_shards", JsonPrimitive("1")) })
+                    })
+                })
+            }
             coEvery { esMock.getMetaEntries() } returns listOf(
                 de.ingrid.ingridapi.core.services.IngridMetaEntry("doc1", "id1", "pre_index1", true, "Prefixed Source"),
                 de.ingrid.ingridapi.core.services.IngridMetaEntry("doc2", "id2", "other_index", true, "Other Source")
@@ -293,10 +305,11 @@ class AdminRoutesTest {
             client.get("/admin").apply {
                 assertEquals(HttpStatusCode.OK, status)
                 val body = bodyAsText()
-                assertTrue(body.contains("Konfigurierter Index-Präfix:"))
                 assertTrue(body.contains("pre_"))
                 assertTrue(body.contains("Verwaltete Indizes mit Präfix 'pre_'"))
                 assertTrue(body.contains("Prefixed Source"))
+                assertTrue(body.contains("Mapping &amp; Settings"))
+                assertTrue(body.contains("number_of_shards"))
                 assertTrue(body.contains("Weitere verwaltete Indizes"))
                 assertTrue(body.contains("Other Source"))
             }

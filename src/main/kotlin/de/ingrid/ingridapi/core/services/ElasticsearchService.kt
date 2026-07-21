@@ -8,6 +8,7 @@ import com.jillesvangurp.ktsearch.count
 import com.jillesvangurp.ktsearch.deleteDocument
 import com.jillesvangurp.ktsearch.deleteIndex
 import com.jillesvangurp.ktsearch.getAliases
+import com.jillesvangurp.ktsearch.getIndex
 import com.jillesvangurp.ktsearch.parseHit
 import com.jillesvangurp.ktsearch.parseHits
 import com.jillesvangurp.ktsearch.search
@@ -230,6 +231,10 @@ open class ElasticsearchService(
         client
             .getAliases()
             .mapValues { it.value.aliases.keys }
+
+    /** Returns mapping and settings for all indices. */
+    suspend fun listIndicesConfig(): JsonObject =
+        client.getIndex("*")
 
     /** Number of documents in the given index (or 0 if not available). */
     suspend fun countDocuments(index: String): Long =

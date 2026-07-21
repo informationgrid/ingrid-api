@@ -53,6 +53,8 @@ fun Application.configureAdminRouting() {
                 get {
                     val elastic = call.application.dependencies.resolve<ElasticsearchService>()
                     val indices = runCatchingOrEmptyMap { elastic.listIndicesWithAliases() }
+                    val indicesConfig =
+                        runCatching { elastic.listIndicesConfig() }.getOrDefault(JsonObject(emptyMap()))
                     val metaEntries = runCatchingOrEmptyList { elastic.getMetaEntries() }
                     val message = call.request.queryParameters["msg"]
                     val error = call.request.queryParameters["err"]
@@ -74,10 +76,11 @@ fun Application.configureAdminRouting() {
                             managedEntries,
                             others,
                             counts,
+                            indicesConfig,
                             message,
                             error,
                             elastic.indexPrefix,
-                            elastic.metaIndexName
+                            elastic.metaIndexName,
                         )
                     }
                 }

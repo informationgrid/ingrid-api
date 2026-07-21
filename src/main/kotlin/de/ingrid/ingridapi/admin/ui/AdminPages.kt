@@ -231,9 +231,8 @@ object AdminPages {
                                 }
                                 br {}
                                 small {
-                                    code { +entry.docId }
                                     if (entry.linkedIndex != null) {
-                                        +" | Index: "
+                                        +"Index: "
                                         code { +entry.linkedIndex }
                                     }
                                 }

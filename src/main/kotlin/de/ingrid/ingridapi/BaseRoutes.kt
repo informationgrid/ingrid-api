@@ -3,21 +3,13 @@ package de.ingrid.ingridapi
 import io.ktor.server.application.*
 import io.ktor.server.html.*
 import io.ktor.server.routing.*
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class DebugInfo(
-    val request_host: String,
-    val request_port: Int,
-    val origin_scheme: String,
-    val origin_host: String,
-    val origin_port: Int,
-    val local_scheme: String,
-    val local_port: Int,
-    val headers: Map<String, List<String>>,
-)
 
 fun Application.configureBaseRoutes() {
+    val root =
+        environment.config
+            .propertyOrNull("ktor.deployment.rootPath")
+            ?.getString()
+            ?.trimEnd('/') ?: ""
     routing {
         // Handle both root paths (with and without trailing slash)
         val responseText = "Available APIs: portal, ogc/records"

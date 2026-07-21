@@ -19,10 +19,14 @@ fun HTML.adminLayout(
         }
     }
     body {
-        main(classes = "container") {
-            nav {
+        header {
+            nav(classes = "container") {
                 ul {
-                    li { strong { +"InGrid API – Administration" } }
+                    li {
+                        a(href = "$root/admin") {
+                            strong { +"InGrid API – Administration" }
+                        }
+                    }
                 }
                 ul {
                     li {
@@ -48,6 +52,8 @@ fun HTML.adminLayout(
                     }
                 }
             }
+        }
+        main(classes = "container") {
             content()
         }
     }

@@ -3,39 +3,49 @@ package de.ingrid.ingridapi.admin.ui
 import de.ingrid.ingridapi.admin.ui.AdminComponents.renderCompactRow
 import de.ingrid.ingridapi.admin.ui.AdminComponents.renderManagedCard
 import de.ingrid.ingridapi.admin.ui.AdminComponents.renderPagination
-import de.ingrid.ingridapi.core.services.ElasticsearchService
 import de.ingrid.ingridapi.core.services.IngridMetaEntry
 import de.ingrid.ingridapi.core.services.SearchResult
-import kotlinx.html.*
-import kotlinx.serialization.json.*
+import kotlinx.html.ButtonType
+import kotlinx.html.FlowContent
+import kotlinx.html.FormMethod
+import kotlinx.html.HTML
+import kotlinx.html.InputType
+import kotlinx.html.a
+import kotlinx.html.article
+import kotlinx.html.br
+import kotlinx.html.button
+import kotlinx.html.code
+import kotlinx.html.div
+import kotlinx.html.form
+import kotlinx.html.h2
+import kotlinx.html.h3
+import kotlinx.html.input
+import kotlinx.html.onClick
+import kotlinx.html.p
+import kotlinx.html.pre
+import kotlinx.html.small
+import kotlinx.html.strong
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 object AdminPages {
     fun HTML.renderErrorPage(
         root: String,
         error: String?,
     ) {
-        attributes["data-theme"] = "light"
-        head {
-            meta(charset = "utf-8")
-            meta(name = "viewport", content = "width=device-width, initial-scale=1")
-            title("InGrid API – Administration (Fehler)")
-            styleLink("https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css")
-            style { unsafe { +AdminComponents.CSS } }
-        }
-        body {
-            main(classes = "container") {
-                h1 { +"InGrid API – Administration" }
-                if (!error.isNullOrBlank()) {
-                    div(classes = "msg err") { +error }
-                }
-                p {
-                    +"Sie haben keine Berechtigung für diesen Bereich oder ein Sitzungsfehler ist aufgetreten."
-                }
-                div {
-                    a(href = "$root/auth/login", classes = "btn-retry") {
-                        attributes["role"] = "button"
-                        +"Erneut versuchen"
-                    }
+        adminLayout("Administration (Fehler)", root) {
+            if (!error.isNullOrBlank()) {
+                div(classes = "msg err") { +error }
+            }
+            p {
+                +"Sie haben keine Berechtigung für diesen Bereich oder ein Sitzungsfehler ist aufgetreten."
+            }
+            div {
+                a(href = "$root/auth/login", classes = "btn-retry") {
+                    attributes["role"] = "button"
+                    +"Erneut versuchen"
                 }
             }
         }
@@ -46,6 +56,7 @@ object AdminPages {
         managedEntries: List<IngridMetaEntry>,
         others: Map<String, Any?>,
         counts: Map<String, Long>,
+        indicesConfig: JsonObject,
         message: String?,
         error: String?,
         prefix: String = "",
@@ -57,12 +68,7 @@ object AdminPages {
                 code { +metaIndexName }
                 +" referenziert sind, werden als Karten hervorgehoben."
             }
-            if (prefix.isNotEmpty()) {
-                p {
-                    +"Konfigurierter Index-Präfix: "
-                    code { +prefix }
-                }
-            }
+            val hasPrefix = prefix.isNotEmpty()
             if (!message.isNullOrBlank()) {
                 div(classes = "msg ok") { +message }
             }
@@ -70,7 +76,6 @@ object AdminPages {
                 div(classes = "msg err") { +error }
             }
 
-            val hasPrefix = prefix.isNotEmpty()
             val (prefixedManaged, otherManaged) = if (hasPrefix) {
                 managedEntries.partition { it.linkedIndex?.startsWith(prefix) == true }
             } else {
@@ -82,21 +87,21 @@ object AdminPages {
                 if (prefixedManaged.isEmpty()) {
                     p { +"Keine Indizes mit diesem Präfix in '$metaIndexName' referenziert." }
                 } else {
-                    renderManagedCards(prefixedManaged, counts, root)
+                    renderManagedCards(prefixedManaged, counts, indicesConfig, root)
                 }
 
                 h2 { +"Weitere verwaltete Indizes" }
                 if (otherManaged.isEmpty()) {
                     p { +"Keine weiteren verwalteten Indizes vorhanden." }
                 } else {
-                    renderManagedCards(otherManaged, counts, root)
+                    renderManagedCards(otherManaged, counts, indicesConfig, root)
                 }
             } else {
                 h2 { +"Verwaltete Indizes" }
                 if (managedEntries.isEmpty()) {
                     p { +"Keine Indizes in '$metaIndexName' referenziert." }
                 } else {
-                    renderManagedCards(managedEntries, counts, root)
+                    renderManagedCards(managedEntries, counts, indicesConfig, root)
                 }
             }
 
@@ -106,7 +111,8 @@ object AdminPages {
             } else {
                 article(classes = "compact-list") {
                     others.entries.sortedBy { it.key }.forEach { (index, _) ->
-                        renderCompactRow(index, counts[index], root)
+                        val config = indicesConfig[index]?.jsonObject
+                        renderCompactRow(index, counts[index], config, root)
                     }
                 }
             }
@@ -254,15 +260,16 @@ object AdminPages {
     private fun FlowContent.renderManagedCards(
         entries: List<IngridMetaEntry>,
         counts: Map<String, Long>,
+        indicesConfig: JsonObject,
         root: String,
     ) {
         div(classes = "cards") {
             entries
-                .sortedBy { entry ->
-                    (entry.dataSourceName ?: entry.indexId ?: entry.linkedIndex ?: "").lowercase()
-                }.forEach { entry ->
+                .sortedBy { it.linkedIndex?.lowercase() ?: "" }
+                .forEach { entry ->
                     val idx = entry.linkedIndex!!
-                    renderManagedCard(idx, entry, counts[idx], root)
+                    val config = indicesConfig[idx]?.jsonObject
+                    renderManagedCard(idx, entry, counts[idx], config, root)
                 }
         }
     }

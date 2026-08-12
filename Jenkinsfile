@@ -43,7 +43,7 @@ pipeline {
                 }
             }
             environment {
-                DOCKER_REGISTRY_CREDS = credentials('docker-registry-wemove')
+                DOCKER_REGISTRY_CREDS = credentials('docker-registry-opencode')
             }
             steps {
                 sh './gradlew -Djib.console=plain publishImage'

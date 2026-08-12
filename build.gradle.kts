@@ -50,7 +50,7 @@ ktor {
             DockerImageRegistry.externalRegistry(
                 providers.environmentVariable("DOCKER_REGISTRY_CREDS_USR"),
                 providers.environmentVariable("DOCKER_REGISTRY_CREDS_PSW"),
-                provider { "docker-registry.wemove.com/ingrid-api:$tag" },
+                provider { "registry.opencode.de/informationgrid/ingrid-api:$tag" },
             ),
         )
         imageTag.set(tag)

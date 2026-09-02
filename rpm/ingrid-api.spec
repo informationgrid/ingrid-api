@@ -28,6 +28,7 @@ rm -Rf %{buildroot}*
 mkdir -p %{target}
 unzip -qq "${WORKSPACE}/build/distributions/ingrid-api-[0-9]*.zip"
 mv ./ingrid-api-*/* %{target}
+cp ${WORKSPACE}/build/resources/main/application.yaml %{target}
 
 # Copy over the systemd unit file
 mkdir -p %{buildroot}%{systemd_dir}

@@ -10,7 +10,7 @@ AutoReqProv:                no
 Requires:                   jre >= 21
 
 %define target              %{buildroot}/opt/ingrid/ingrid-api
-%define systemd_dir         /usr/lib/systemd/system
+%define systemd_dir         /etc/systemd/system
 %define ingrid_unit_name    ingrid-api.service
 %define ingrid_service      %{systemd_dir}/%{ingrid_unit_name}
 
@@ -43,25 +43,13 @@ cp ${WORKSPACE}/rpm/%{ingrid_unit_name} %{buildroot}%{systemd_dir}
 %pre
 # Scriptlet that is executed just before the package is installed on the target
 # system.
-if [ -f "/etc/systemd/system/ingrid-api.service" ]; then
+if [ -f "%{systemd_dir}/ingrid-api.service" ]; then
   service ingrid-api stop
 fi
 
-# Delete old files and libs
-#for dir in %{install_root}/%{ingrid_name}/conf \
-#    %{install_root}/%{ingrid_name}/lib \
-#    %{install_root}/%{ingrid_name}/logs; do
-#
-## Don't use `test' here. If the last directory doesn't exist, then a non-zero
-## exit code from test will cause the installation to fail.
-#    if [ -d "$dir" ]; then
-#        rm -Rf "$dir"/*
-#    fi
-#done
-
 ################################################################################
 %preun
-if [ -f "/etc/systemd/system/ingrid-api.service" ]; then
+if [ -f "%{systemd_dir}/ingrid-api.service" ]; then
   service ingrid-api stop
 fi
 

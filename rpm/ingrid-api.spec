@@ -38,6 +38,7 @@ cp ${WORKSPACE}/rpm/%{ingrid_unit_name} %{buildroot}%{systemd_dir}
 %defattr(0644,ingrid,ingrid,0755)
 %attr(0755,ingrid,ingrid) /opt/ingrid/ingrid-api
 %attr(0644,root,root) %{ingrid_service}
+%config(noreplace) /opt/ingrid/ingrid-api/application.yaml
 
 ################################################################################
 %pre

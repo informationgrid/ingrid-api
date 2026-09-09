@@ -111,7 +111,10 @@ fun Application.security() {
             urlProvider = {
                 val scheme = this.request.origin.scheme
                 val host = this.request.origin.serverHost
-                "$scheme://$host$root/auth/login"
+                val port =
+                    this.request.origin.serverPort
+                        .let { if (it != 80 && it != 443) ":$it" else "" }
+                "$scheme://$host$port$root/auth/login"
             }
             providerLookup = {
                 OAuthServerSettings.OAuth2ServerSettings(

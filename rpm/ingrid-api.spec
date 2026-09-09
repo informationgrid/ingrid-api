@@ -33,12 +33,14 @@ cp ${WORKSPACE}/build/resources/main/application.yaml %{target}
 # Copy over the systemd unit file
 mkdir -p %{buildroot}%{systemd_dir}
 cp ${WORKSPACE}/rpm/%{ingrid_unit_name} %{buildroot}%{systemd_dir}
+install -D ${WORKSPACE}/rpm/ingrid-api.sysconfig %{buildroot}/%{_sysconfdir}/sysconfig/ingrid-api
 
 %files
 %defattr(0644,ingrid,ingrid,0755)
 %attr(0755,ingrid,ingrid) /opt/ingrid/ingrid-api
 %attr(0644,root,root) %{ingrid_service}
 %config(noreplace) /opt/ingrid/ingrid-api/application.yaml
+%config(noreplace) %attr(640, root, ingrid) %{_sysconfdir}/sysconfig/ingrid-api
 
 ################################################################################
 %pre

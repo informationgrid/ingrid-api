@@ -7,7 +7,7 @@ License:                    Proprietary
 URL:                        https://www.wemove.com/
 BuildArch:                  noarch
 AutoReqProv:                no
-Requires:                   java-25
+Requires:                   java >= 21
 
 %define target              %{buildroot}/opt/ingrid/ingrid-api
 %define systemd_dir         /etc/systemd/system

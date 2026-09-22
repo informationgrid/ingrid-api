@@ -67,6 +67,21 @@ object AdminComponents {
                     }
                 }
                 div(classes = "index-name") { code { +index } }
+                
+                // Search link for each datasource in this index
+                if (entries.isNotEmpty()) {
+                    div(classes = "search-links") {
+                        entries.forEach { entry ->
+                            entry.dataSourceName?.let { dsName ->
+                                a(href = "$root/admin/search?q=collection.name:${java.net.URLEncoder.encode(dsName, "UTF-8")}") {
+                                    +"Search in $dsName"
+                                }
+                                +" "
+                            }
+                        }
+                    }
+                }
+                
                 div(classes = "meta-line") {
                     span(classes = "metric") {
                         span(classes = "label") { +"Dokumente: " }

@@ -1,11 +1,11 @@
 package de.ingrid.ingridapi.admin
 
-import de.ingrid.ingridapi.admin.ui.GroupedIndex
 import de.ingrid.ingridapi.admin.ui.AdminPages.renderErrorPage
 import de.ingrid.ingridapi.admin.ui.AdminPages.renderIndicesPage
 import de.ingrid.ingridapi.admin.ui.AdminPages.renderMetaPage
 import de.ingrid.ingridapi.admin.ui.AdminPages.renderSearchPage
 import de.ingrid.ingridapi.admin.ui.AdminPages.renderViewPage
+import de.ingrid.ingridapi.admin.ui.GroupedIndex
 import de.ingrid.ingridapi.core.services.ElasticsearchService
 import de.ingrid.ingridapi.core.services.IngridMetaEntry
 import io.ktor.http.HttpStatusCode
@@ -68,17 +68,17 @@ fun Application.configureAdminRouting() {
                     val managedEntries: List<IngridMetaEntry> =
                         metaEntries.filter { !it.linkedIndex.isNullOrBlank() && it.linkedIndex in indices }
 
-                    val groupedManagedEntries: List<GroupedIndex> = managedEntries
-                        .groupBy { it.linkedIndex!! }
-                        .map { (indexName, entries) ->
-                            GroupedIndex(
-                                indexName = indexName,
-                                dataSourceNames = entries.mapNotNull { it.dataSourceName }.sorted(),
-                                entries = entries,
-                                docCount = counts[indexName]
-                            )
-                        }
-                        .sortedBy { it.indexName.lowercase() }
+                    val groupedManagedEntries: List<GroupedIndex> =
+                        managedEntries
+                            .groupBy { it.linkedIndex!! }
+                            .map { (indexName, entries) ->
+                                GroupedIndex(
+                                    indexName = indexName,
+                                    dataSourceNames = entries.mapNotNull { it.dataSourceName }.sorted(),
+                                    entries = entries,
+                                    docCount = counts[indexName],
+                                )
+                            }.sortedBy { it.indexName.lowercase() }
 
                     val managedIndexNames = managedEntries.mapNotNull { it.linkedIndex }.toSet()
                     val others = indices.filterKeys { it !in managedIndexNames }
@@ -145,18 +145,18 @@ fun Application.configureAdminRouting() {
                     try {
                         val metaEntries = runCatchingOrEmptyList { elastic.getMetaEntries() }
                         val entriesToUpdate = metaEntries.filter { it.linkedIndex == indexName }
-                        
+
                         if (entriesToUpdate.isEmpty()) {
                             call.respondRedirect(
                                 "$root/admin?err=${urlEncode("Keine Einträge für Index '$indexName' gefunden.")}",
                             )
                             return@post
                         }
-                        
+
                         entriesToUpdate.forEach { entry ->
                             elastic.setMetaActive(entry.docId, active)
                         }
-                        
+
                         val displayNames = entriesToUpdate.mapNotNull { it.dataSourceName ?: it.indexId }.sorted()
                         val displayText = if (displayNames.isNotEmpty()) displayNames.joinToString(", ") else indexName
                         val state = if (active) "aktiviert" else "deaktiviert"
@@ -165,7 +165,9 @@ fun Application.configureAdminRouting() {
                         )
                     } catch (ex: Exception) {
                         call.respondRedirect(
-                            "$root/admin?err=${urlEncode("Index '$indexName' konnte nicht aktualisiert werden: ${ex.message}")}",
+                            "$root/admin?err=${urlEncode(
+                                "Index '$indexName' konnte nicht aktualisiert werden: ${ex.message}",
+                            )}",
                         )
                     }
                 }
@@ -211,18 +213,52 @@ fun Application.configureAdminRouting() {
                             put("from", JsonPrimitive(from))
                             put("size", JsonPrimitive(pageSize))
                             if (!q.isNullOrBlank()) {
-                                put(
-                                    "query",
-                                    buildJsonObject {
-                                        put(
-                                            "multi_match",
-                                            buildJsonObject {
-                                                put("query", JsonPrimitive(q))
-                                                put("fields", buildJsonArray { add(JsonPrimitive("*")) })
-                                            },
-                                        )
-                                    },
-                                )
+                                // Check if query contains field:value format for specific field search
+                                val fieldSearches = parseFieldSearches(q)
+                                if (fieldSearches.isNotEmpty()) {
+                                    // Multiple field searches - use bool query with must clauses
+                                    put(
+                                        "query",
+                                        buildJsonObject {
+                                            put(
+                                                "bool",
+                                                buildJsonObject {
+                                                    put(
+                                                        "must",
+                                                        buildJsonArray {
+                                                            fieldSearches.forEach { (field, value) ->
+                                                                add(
+                                                                    buildJsonObject {
+                                                                        put(
+                                                                            "match",
+                                                                            buildJsonObject {
+                                                                                put(field, JsonPrimitive(value))
+                                                                            },
+                                                                        )
+                                                                    },
+                                                                )
+                                                            }
+                                                        },
+                                                    )
+                                                },
+                                            )
+                                        },
+                                    )
+                                } else {
+                                    // Multi-field search
+                                    put(
+                                        "query",
+                                        buildJsonObject {
+                                            put(
+                                                "multi_match",
+                                                buildJsonObject {
+                                                    put("query", JsonPrimitive(q))
+                                                    put("fields", buildJsonArray { add(JsonPrimitive("*")) })
+                                                },
+                                            )
+                                        },
+                                    )
+                                }
                             } else {
                                 put(
                                     "query",
@@ -262,6 +298,30 @@ fun Application.configureAdminRouting() {
 }
 
 // --- helpers ---------------------------------------------------------------
+
+/**
+ * Parses a query string to detect field:value format.
+ * Returns a list of (field, value) pairs if the query contains field:value patterns, or empty list otherwise.
+ * Supports multiple field:value pairs separated by spaces.
+ * The field name should not contain colons, and the value is everything after the first colon.
+ */
+private fun parseFieldSearches(query: String): List<Pair<String, String>> {
+    val result = mutableListOf<Pair<String, String>>()
+    val tokens = query.split("\\s+".toRegex())
+    
+    for (token in tokens) {
+        val colonIndex = token.indexOf(':')
+        if (colonIndex > 0 && colonIndex < token.length - 1) {
+            val field = token.substring(0, colonIndex).trim()
+            val value = token.substring(colonIndex + 1).trim()
+            // Only treat as field search if field name doesn't contain spaces
+            if (field.isNotEmpty() && value.isNotEmpty() && !field.contains(" ")) {
+                result.add(Pair(field, value))
+            }
+        }
+    }
+    return result
+}
 
 private inline fun <K, V> runCatchingOrEmptyMap(block: () -> Map<K, V>): Map<K, V> =
     try {

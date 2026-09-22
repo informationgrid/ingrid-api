@@ -86,6 +86,116 @@ class AdminRoutesTest {
         }
 
     @Test
+    fun testAdminSearchFieldSearch() =
+        testApplication {
+            val esMock = mockk<ElasticsearchService>()
+            val hits =
+                buildJsonArray {
+                    add(
+                        buildJsonObject {
+                            put("_id", JsonPrimitive("456"))
+                            put("_index", JsonPrimitive("test-index"))
+                            put(
+                                "_source",
+                                buildJsonObject {
+                                    put("title", JsonPrimitive("Field Search Test"))
+                                    put("author", JsonPrimitive("John Doe"))
+                                },
+                            )
+                        },
+                    )
+                }
+            val querySlot = io.mockk.slot<String>()
+            coEvery { esMock.search(capture(querySlot)) } returns SearchResult(1, hits)
+
+            application {
+                install(Authentication) {
+                    val provider =
+                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                            override suspend fun onAuthenticate(context: AuthenticationContext) {
+                                context.principal(object : Principal {})
+                            }
+                        }
+                    register(provider)
+                }
+                dependencies.provide<ElasticsearchService> { esMock }
+                configureAdminRouting()
+            }
+
+            client.get("/admin/search?q=author:John").apply {
+                assertEquals(HttpStatusCode.OK, status)
+                val body = bodyAsText()
+                assertTrue(body.contains("Field Search Test"))
+                
+                // Verify that a bool query with must clause for the author field was created
+                val capturedQuery = Json.parseToJsonElement(querySlot.captured).jsonObject
+                val queryObj = capturedQuery["query"]?.jsonObject
+                assertTrue(queryObj?.containsKey("bool") ?: false, "Should use bool query for field search")
+                val boolObj = queryObj?.get("bool")?.jsonObject
+                assertTrue(boolObj?.containsKey("must") ?: false, "Should have must clause")
+                val mustArray = boolObj?.get("must")?.jsonArray
+                assertEquals(1, mustArray?.size, "Should have 1 must clause")
+                val firstMust = mustArray?.get(0)?.jsonObject
+                val matchObj = firstMust?.get("match")?.jsonObject
+                assertTrue(matchObj?.containsKey("author") ?: false, "Should search on author field")
+            }
+        }
+
+    @Test
+    fun testAdminSearchMultipleFields() =
+        testApplication {
+            val esMock = mockk<ElasticsearchService>()
+            val hits =
+                buildJsonArray {
+                    add(
+                        buildJsonObject {
+                            put("_id", JsonPrimitive("999"))
+                            put("_index", JsonPrimitive("test-index"))
+                            put(
+                                "_source",
+                                buildJsonObject {
+                                    put("title", JsonPrimitive("Multiple Field Test"))
+                                    put("author", JsonPrimitive("Jane Doe"))
+                                    put("category", JsonPrimitive("Tech"))
+                                },
+                            )
+                        },
+                    )
+                }
+            val querySlot = io.mockk.slot<String>()
+            coEvery { esMock.search(capture(querySlot)) } returns SearchResult(1, hits)
+
+            application {
+                install(Authentication) {
+                    val provider =
+                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                            override suspend fun onAuthenticate(context: AuthenticationContext) {
+                                context.principal(object : Principal {})
+                            }
+                        }
+                    register(provider)
+                }
+                dependencies.provide<ElasticsearchService> { esMock }
+                configureAdminRouting()
+            }
+
+            client.get("/admin/search?q=author:Jane category:Tech").apply {
+                assertEquals(HttpStatusCode.OK, status)
+                val body = bodyAsText()
+                assertTrue(body.contains("Multiple Field Test"))
+                
+                // Verify that a bool query with must clauses was created for multiple field searches
+                val capturedQuery = Json.parseToJsonElement(querySlot.captured).jsonObject
+                val queryObj = capturedQuery["query"]?.jsonObject
+                assertTrue(queryObj?.containsKey("bool") ?: false, "Should use bool query for multiple field searches")
+                val boolObj = queryObj?.get("bool")?.jsonObject
+                assertTrue(boolObj?.containsKey("must") ?: false, "Should have must clause")
+                val mustArray = boolObj?.get("must")?.jsonArray
+                assertEquals(2, mustArray?.size, "Should have 2 must clauses for 2 field searches")
+            }
+        }
+
+    @Test
     fun testAdminViewDocument() =
         testApplication {
             val esMock = mockk<ElasticsearchService>()
@@ -357,6 +467,10 @@ class AdminRoutesTest {
                 assertTrue(body.contains("other_index"), "Should show the other index name")
                 // Should have toggle for the grouped index
                 assertTrue(body.contains("meta/index/shared_index/active"), "Should have group toggle endpoint")
+                // Should have search links for each datasource (without index filtering)
+                assertTrue(body.contains("Search in Data Source 1"), "Should have search link for Data Source 1")
+                assertTrue(body.contains("Search in Data Source 2"), "Should have search link for Data Source 2")
+                assertTrue(body.contains("collection.name:Data+Source+1"), "Search link should use field search syntax")
             }
         }
     @Test

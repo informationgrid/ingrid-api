@@ -144,6 +144,9 @@ dependencies {
     implementation("org.apache.jena:jena-core:6.1.0")
     implementation("org.apache.jena:jena-arq:6.1.0")
 
+    // caching
+    implementation("com.github.ben-manes.caffeine:caffeine:3.3.0")
+
     // tests
     testImplementation("io.ktor:ktor-server-tests-jvm:2.3.13")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")

@@ -1,5 +1,7 @@
 package de.ingrid.ingridapi.core.services
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.jillesvangurp.ktsearch.KtorRestClient
 import com.jillesvangurp.ktsearch.Refresh
 import com.jillesvangurp.ktsearch.SearchClient
@@ -21,6 +23,8 @@ import com.jillesvangurp.searchdsls.querydsl.matchAll
 import com.jillesvangurp.searchdsls.querydsl.term
 import de.ingrid.ingridapi.config.AppConfig
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -32,6 +36,7 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.util.concurrent.TimeUnit
 
 class SearchException(
     message: String,
@@ -52,6 +57,15 @@ open class ElasticsearchService(
             ),
         )
     open val indexPrefix = config.indexPrefix
+
+    private val activeCatalogsKey = "active_catalogs"
+    private val activeCatalogsMutex = Mutex()
+
+    private val activeCatalogsCache: Cache<String, List<JsonObject>> =
+        Caffeine
+            .newBuilder()
+            .expireAfterWrite(1, TimeUnit.MINUTES)
+            .build()
 
     init {
         log.info { "Elastic Host: ${config.elasticHost}:${config.elasticPort}" }
@@ -89,7 +103,17 @@ open class ElasticsearchService(
         }
     }
 
-    suspend fun getActiveCatalogs(): List<JsonObject> =
+    suspend fun getActiveCatalogs(): List<JsonObject> {
+        activeCatalogsCache.getIfPresent(activeCatalogsKey)?.let { return it }
+        return activeCatalogsMutex.withLock {
+            activeCatalogsCache.getIfPresent(activeCatalogsKey)?.let { return it }
+            val catalogs = fetchActiveCatalogs()
+            activeCatalogsCache.put(activeCatalogsKey, catalogs)
+            catalogs
+        }
+    }
+
+    internal open suspend fun fetchActiveCatalogs(): List<JsonObject> =
         client
             .search(metaIndexName) {
                 query = term("active", "true")
@@ -213,7 +237,6 @@ open class ElasticsearchService(
         return filteredCatalogs.joinToString(",").also { log.debug { "Searching in indices: $it" } }
     }
 
-    // TODO: add caching to this function
     internal suspend fun getActiveIndices(): List<String> =
         getActiveCatalogs()
             .mapNotNull { it["linkedIndex"]?.jsonPrimitive?.content }
@@ -233,8 +256,7 @@ open class ElasticsearchService(
             .mapValues { it.value.aliases.keys }
 
     /** Returns mapping and settings for all indices. */
-    suspend fun listIndicesConfig(): JsonObject =
-        client.getIndex("*")
+    suspend fun listIndicesConfig(): JsonObject = client.getIndex("*")
 
     /** Number of documents in the given index (or 0 if not available). */
     suspend fun countDocuments(index: String): Long =
@@ -299,12 +321,24 @@ open class ElasticsearchService(
         active: Boolean,
     ) {
         log.info { "Setting active=$active on ingrid_meta document '$docId'" }
+        updateMetaDocument(docId, active)
+        clearActiveCatalogsCache()
+    }
+
+    internal open suspend fun updateMetaDocument(
+        docId: String,
+        active: Boolean,
+    ) {
         client.updateDocument(
             target = metaIndexName,
             id = docId,
             docJson = """{"active": $active}""",
             refresh = Refresh.True,
         )
+    }
+
+    internal fun clearActiveCatalogsCache() {
+        activeCatalogsCache.invalidateAll()
     }
 }
 

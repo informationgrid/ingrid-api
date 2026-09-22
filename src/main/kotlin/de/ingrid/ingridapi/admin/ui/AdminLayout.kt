@@ -56,5 +56,28 @@ fun HTML.adminLayout(
         main(classes = "container") {
             content()
         }
+        script {
+            unsafe {
+                +"""
+                // Save scroll position before form submission that causes redirect
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Save scroll position before form submission
+                    const forms = document.querySelectorAll('form[method="post"]');
+                    forms.forEach(form => {
+                        form.addEventListener('submit', function() {
+                            sessionStorage.setItem('adminScrollPosition', window.scrollY.toString());
+                        });
+                    });
+
+                    // Restore scroll position after page load
+                    const savedPosition = sessionStorage.getItem('adminScrollPosition');
+                    if (savedPosition) {
+                        window.scrollTo(0, parseInt(savedPosition));
+                        sessionStorage.removeItem('adminScrollPosition');
+                    }
+                });
+                """.trimIndent()
+            }
+        }
     }
 }

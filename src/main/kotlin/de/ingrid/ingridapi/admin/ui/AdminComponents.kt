@@ -29,83 +29,97 @@ object AdminComponents {
         val firstEntry = entries.firstOrNull()
         val allActive = entries.all { it.active }
         val anyActive = entries.any { it.active }
-        
+
         // Determine the overall active state
         // If all entries have the same state, use that state
         // If mixed, use false (off) as the default
         val toggleActive = if (allActive || !anyActive) allActive else false
 
         article(classes = "card") {
-            // LEFT: Aktivierungs-Umschalter
-            div(classes = "toggle") {
-                if (entries.isNotEmpty()) {
-                    // Use the index-based endpoint for grouped entries, or docId for single entry
-                    val (actionUrl, toggleState) = if (entries.size > 1) {
-                        // Multiple entries: toggle all entries for this index
-                        "$root/admin/meta/index/${index}/active" to allActive
-                    } else {
-                        // Single entry: toggle just this doc
-                        "$root/admin/meta/${entries.first().docId}/active" to entries.first().active
-                    }
-                    
-                    form(action = actionUrl, method = FormMethod.post) {
-                        hiddenInput(name = "active") { value = (!toggleState).toString() }
-                        button(type = ButtonType.submit, classes = if (toggleState) "btn-on" else "btn-off") {
-                            +(if (toggleState) "AN" else "AUS")
-                        }
-                    }
-                }
-            }
+            // TOP ROW: Flex layout with toggle, info, and right-side (last-indexed + delete)
+            div(classes = "card-main") {
+                // LEFT: Aktivierungs-Umschalter
+                div(classes = "toggle") {
+                    if (entries.isNotEmpty()) {
+                        // Use the index-based endpoint for grouped entries, or docId for single entry
+                        val (actionUrl, toggleState) =
+                            if (entries.size > 1) {
+                                // Multiple entries: toggle all entries for this index
+                                "$root/admin/meta/index/$index/active" to allActive
+                            } else {
+                                // Single entry: toggle just this doc
+                                "$root/admin/meta/${entries.first().docId}/active" to entries.first().active
+                            }
 
-            // CENTER: Info-Block
-            div(classes = "info") {
-                div(classes = "name") {
-                    if (displayNames.isNotEmpty()) {
-                        strong { +displayNames.joinToString(", ") }
-                    } else {
-                        strong { +index }
-                    }
-                }
-                div(classes = "index-name") { code { +index } }
-                
-                // Search link for each datasource in this index
-                if (entries.isNotEmpty()) {
-                    div(classes = "search-links") {
-                        entries.forEach { entry ->
-                            entry.dataSourceName?.let { dsName ->
-                                a(href = "$root/admin/search?q=collection.name:${java.net.URLEncoder.encode(dsName, "UTF-8")}") {
-                                    +"Search in $dsName"
-                                }
-                                +" "
+                        form(action = actionUrl, method = FormMethod.post) {
+                            hiddenInput(name = "active") { value = (!toggleState).toString() }
+                            button(type = ButtonType.submit, classes = if (toggleState) "btn-on" else "btn-off") {
+                                +(if (toggleState) "AN" else "AUS")
                             }
                         }
                     }
                 }
-                
-                div(classes = "meta-line") {
-                    span(classes = "metric") {
-                        span(classes = "label") { +"Dokumente: " }
-                        +(docCount?.toString() ?: "?")
+
+                // CENTER: Info-Block
+                div(classes = "info") {
+                    div(classes = "name") {
+                        if (displayNames.isNotEmpty()) {
+                            strong { +displayNames.joinToString(", ") }
+                        } else {
+                            strong { +index }
+                        }
                     }
-                    if (firstEntry != null) {
-                        span(classes = "metric") {
+                    div(classes = "index-name") { code { +index } }
+
+                    if (config != null) {
+                        renderConfigDetails(config)
+                    }
+                }
+
+                // RIGHT: Last indexed + Delete button (always stays on the right)
+                div(classes = "card-right") {
+                    div(classes = "delete") {
+                        form(action = "$root/admin/indices/$index/delete", method = FormMethod.post) {
+                            onClick =
+                                "return confirm('Index \\'$index\\' wirklich löschen? Dies kann nicht rückgängig gemacht werden.');"
+                            button(type = ButtonType.submit, classes = "btn-delete") { +"Löschen" }
+                        }
+                    }
+                }
+            }
+
+            // BOTTOM: Metadata line with search icon
+            div(classes = "card-footer") {
+                // Search icon for each datasource - only shown when index is active
+                if (entries.isNotEmpty() && anyActive) {
+                    div(classes = "search-icons") {
+                        entries.forEach { entry ->
+                            entry.dataSourceName?.let { dsName ->
+                                a(
+                                    classes = "search-icon",
+                                    href = "$root/admin/search?q=collection.name:${java.net.URLEncoder.encode(
+                                        dsName,
+                                        "UTF-8",
+                                    )}",
+                                ) {
+                                    attributes["title"] = "Search in $dsName"
+                                    +"🔍"
+                                }
+                            }
+                        }
+                    }
+                }
+                span(classes = "metric") {
+                    span(classes = "label") { +"Dokumente: " }
+                    +(docCount?.toString() ?: "?")
+                }
+                if (firstEntry != null) {
+                    div(classes = "card-right") {
+                        div(classes = "last-indexed") {
                             span(classes = "label") { +"Zuletzt indexiert: " }
                             +(formatTimestamp(firstEntry.lastIndexed) ?: "—")
                         }
                     }
-                }
-
-                if (config != null) {
-                    renderConfigDetails(config)
-                }
-            }
-
-            // RIGHT: Löschen
-            div(classes = "delete") {
-                form(action = "$root/admin/indices/$index/delete", method = FormMethod.post) {
-                    onClick =
-                        "return confirm('Index \\'$index\\' wirklich löschen? Dies kann nicht rückgängig gemacht werden.');"
-                    button(type = ButtonType.submit, classes = "btn-delete") { +"Löschen" }
                 }
             }
         }
@@ -289,22 +303,37 @@ object AdminComponents {
         .cards { display: flex; flex-direction: column; gap: 0; }
         article.card {
             display: flex;
-            align-items: center;
-            gap: 16px;
+            flex-direction: column;
             margin-top: 0;
             margin-bottom: 0.75rem;
             padding: 0.75rem 1rem;
             border-left: 4px solid var(--pico-primary);
             box-shadow: var(--pico-card-box-shadow);
         }
+        .card .card-main {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: nowrap;
+        }
         .card .toggle { flex: 0 0 auto; }
-        .card .info   { flex: 1 1 auto; min-width: 0; }
-        .card .delete { flex: 0 0 auto; display: none;}
-        .card:hover .delete { display: block;}
+        .card .info   { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+        .card .card-right { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; }
+        .card .delete { display: none; }
+        .card:hover .delete { display: block; }
+        .card .delete form { margin: 0; }
+        .card .last-indexed {
+            font-size: 0.88em;
+            white-space: nowrap;
+        }
+        .card .last-indexed .label { color: var(--pico-muted-color); font-weight: 500; }
         .card .name {
             font-size: 1.1em;
             color: var(--pico-primary);
             line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .card .index-name {
             font-family: var(--pico-font-family-monospace);
@@ -312,9 +341,31 @@ object AdminComponents {
             color: var(--pico-muted-color);
             margin-top: 1px;
         }
-        .card .meta-line { margin-top: 6px; font-size: 0.88em; }
-        .card .meta-line .metric { margin-right: 18px; }
-        .card .meta-line .label  { color: var(--pico-muted-color); font-weight: 500; }
+        .card .card-footer {
+            width: 100%;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid var(--pico-muted-border-color);
+            font-size: 0.88em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .card .search-icons {
+            display: flex;
+            gap: 8px;
+        }
+        .card .search-icon {
+            font-size: 1.1em;
+            text-decoration: none;
+            opacity: 0.6;
+        }
+        .card .search-icon:hover {
+            opacity: 1;
+        }
+        .card .card-footer .metric { margin-right: 18px; }
+        .card .card-footer .label  { color: var(--pico-muted-color); font-weight: 500; }
+        .card .card-footer .card-right { margin-left: auto; }
         
         button.btn-on  { --pico-background-color: #1b873f; --pico-border-color: #14672f; --pico-color: #fff; }
         button.btn-off { --pico-background-color: #5f6b7a; --pico-border-color: #4a5562; --pico-color: #fff; }

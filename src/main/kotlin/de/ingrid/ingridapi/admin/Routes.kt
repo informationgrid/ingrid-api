@@ -213,52 +213,21 @@ fun Application.configureAdminRouting() {
                             put("from", JsonPrimitive(from))
                             put("size", JsonPrimitive(pageSize))
                             if (!q.isNullOrBlank()) {
-                                // Check if query contains field:value format for specific field search
-                                val fieldSearches = parseFieldSearches(q)
-                                if (fieldSearches.isNotEmpty()) {
-                                    // Multiple field searches - use bool query with must clauses
-                                    put(
-                                        "query",
-                                        buildJsonObject {
-                                            put(
-                                                "bool",
-                                                buildJsonObject {
-                                                    put(
-                                                        "must",
-                                                        buildJsonArray {
-                                                            fieldSearches.forEach { (field, value) ->
-                                                                add(
-                                                                    buildJsonObject {
-                                                                        put(
-                                                                            "match",
-                                                                            buildJsonObject {
-                                                                                put(field, JsonPrimitive(value))
-                                                                            },
-                                                                        )
-                                                                    },
-                                                                )
-                                                            }
-                                                        },
-                                                    )
-                                                },
-                                            )
-                                        },
-                                    )
-                                } else {
-                                    // Multi-field search
-                                    put(
-                                        "query",
-                                        buildJsonObject {
-                                            put(
-                                                "multi_match",
-                                                buildJsonObject {
-                                                    put("query", JsonPrimitive(q))
-                                                    put("fields", buildJsonArray { add(JsonPrimitive("*")) })
-                                                },
-                                            )
-                                        },
-                                    )
-                                }
+                                // Use query_string with AND operator for all searches
+                                // This handles both field searches (e.g., collection.name:value) and general terms
+                                put(
+                                    "query",
+                                    buildJsonObject {
+                                        put(
+                                            "query_string",
+                                            buildJsonObject {
+                                                put("query", JsonPrimitive(q))
+                                                put("default_field", JsonPrimitive("*"))
+                                                put("default_operator", JsonPrimitive("AND"))
+                                            },
+                                        )
+                                    },
+                                )
                             } else {
                                 put(
                                     "query",
@@ -298,30 +267,6 @@ fun Application.configureAdminRouting() {
 }
 
 // --- helpers ---------------------------------------------------------------
-
-/**
- * Parses a query string to detect field:value format.
- * Returns a list of (field, value) pairs if the query contains field:value patterns, or empty list otherwise.
- * Supports multiple field:value pairs separated by spaces.
- * The field name should not contain colons, and the value is everything after the first colon.
- */
-private fun parseFieldSearches(query: String): List<Pair<String, String>> {
-    val result = mutableListOf<Pair<String, String>>()
-    val tokens = query.split("\\s+".toRegex())
-    
-    for (token in tokens) {
-        val colonIndex = token.indexOf(':')
-        if (colonIndex > 0 && colonIndex < token.length - 1) {
-            val field = token.substring(0, colonIndex).trim()
-            val value = token.substring(colonIndex + 1).trim()
-            // Only treat as field search if field name doesn't contain spaces
-            if (field.isNotEmpty() && value.isNotEmpty() && !field.contains(" ")) {
-                result.add(Pair(field, value))
-            }
-        }
-    }
-    return result
-}
 
 private inline fun <K, V> runCatchingOrEmptyMap(block: () -> Map<K, V>): Map<K, V> =
     try {

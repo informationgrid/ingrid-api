@@ -1,5 +1,6 @@
 package de.ingrid.ingridapi.admin
 
+import de.ingrid.ingridapi.admin.ui.GroupedIndex
 import de.ingrid.ingridapi.admin.ui.AdminPages.renderErrorPage
 import de.ingrid.ingridapi.admin.ui.AdminPages.renderIndicesPage
 import de.ingrid.ingridapi.admin.ui.AdminPages.renderMetaPage
@@ -63,9 +64,21 @@ fun Application.configureAdminRouting() {
                     val counts: Map<String, Long> =
                         indices.keys.associateWith { elastic.countDocuments(it) }
 
-                    // Each ingrid_meta entry is shown separately (do NOT group by index/alias).
+                    // Group ingrid_meta entries by linkedIndex
                     val managedEntries: List<IngridMetaEntry> =
                         metaEntries.filter { !it.linkedIndex.isNullOrBlank() && it.linkedIndex in indices }
+
+                    val groupedManagedEntries: List<GroupedIndex> = managedEntries
+                        .groupBy { it.linkedIndex!! }
+                        .map { (indexName, entries) ->
+                            GroupedIndex(
+                                indexName = indexName,
+                                dataSourceNames = entries.mapNotNull { it.dataSourceName }.sorted(),
+                                entries = entries,
+                                docCount = counts[indexName]
+                            )
+                        }
+                        .sortedBy { it.indexName.lowercase() }
 
                     val managedIndexNames = managedEntries.mapNotNull { it.linkedIndex }.toSet()
                     val others = indices.filterKeys { it !in managedIndexNames }
@@ -73,7 +86,7 @@ fun Application.configureAdminRouting() {
                     call.respondHtml(HttpStatusCode.OK) {
                         renderIndicesPage(
                             root,
-                            managedEntries,
+                            groupedManagedEntries,
                             others,
                             counts,
                             indicesConfig,
@@ -120,6 +133,39 @@ fun Application.configureAdminRouting() {
                     } catch (ex: Exception) {
                         call.respondRedirect(
                             "$root/admin?err=${urlEncode("'$docId' konnte nicht aktualisiert werden: ${ex.message}")}",
+                        )
+                    }
+                }
+
+                post("meta/index/{indexName}/active") {
+                    val indexName = call.parameters["indexName"].orEmpty()
+                    val params = call.receiveParameters()
+                    val active = params["active"]?.toBooleanStrictOrNull() ?: false
+                    val elastic = call.application.dependencies.resolve<ElasticsearchService>()
+                    try {
+                        val metaEntries = runCatchingOrEmptyList { elastic.getMetaEntries() }
+                        val entriesToUpdate = metaEntries.filter { it.linkedIndex == indexName }
+                        
+                        if (entriesToUpdate.isEmpty()) {
+                            call.respondRedirect(
+                                "$root/admin?err=${urlEncode("Keine Einträge für Index '$indexName' gefunden.")}",
+                            )
+                            return@post
+                        }
+                        
+                        entriesToUpdate.forEach { entry ->
+                            elastic.setMetaActive(entry.docId, active)
+                        }
+                        
+                        val displayNames = entriesToUpdate.mapNotNull { it.dataSourceName ?: it.indexId }.sorted()
+                        val displayText = if (displayNames.isNotEmpty()) displayNames.joinToString(", ") else indexName
+                        val state = if (active) "aktiviert" else "deaktiviert"
+                        call.respondRedirect(
+                            "$root/admin?msg=${urlEncode("'$displayText' wurde $state.")}",
+                        )
+                    } catch (ex: Exception) {
+                        call.respondRedirect(
+                            "$root/admin?err=${urlEncode("Index '$indexName' konnte nicht aktualisiert werden: ${ex.message}")}",
                         )
                     }
                 }

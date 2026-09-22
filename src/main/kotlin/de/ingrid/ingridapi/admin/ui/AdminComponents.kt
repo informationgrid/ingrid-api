@@ -6,41 +6,77 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 
+/** Represents a grouped index with potentially multiple datasources. */
+data class GroupedIndex(
+    val indexName: String,
+    val dataSourceNames: List<String>,
+    val entries: List<IngridMetaEntry>,
+    val docCount: Long? = null,
+)
+
 object AdminComponents {
     private val jsonConfig = Json { prettyPrint = true }
 
     fun FlowContent.renderManagedCard(
         index: String,
-        entry: IngridMetaEntry,
+        entries: List<IngridMetaEntry>,
         docCount: Long?,
         config: JsonObject?,
         root: String,
     ) {
-        val displayName = entry.dataSourceName ?: entry.indexId ?: index
+        // For multiple datasources, show all names
+        val displayNames = entries.mapNotNull { it.dataSourceName ?: it.indexId }
+        val firstEntry = entries.firstOrNull()
+        val allActive = entries.all { it.active }
+        val anyActive = entries.any { it.active }
+        
+        // Determine the overall active state
+        // If all entries have the same state, use that state
+        // If mixed, use false (off) as the default
+        val toggleActive = if (allActive || !anyActive) allActive else false
 
         article(classes = "card") {
             // LEFT: Aktivierungs-Umschalter
             div(classes = "toggle") {
-                form(action = "$root/admin/meta/${entry.docId}/active", method = FormMethod.post) {
-                    hiddenInput(name = "active") { value = (!entry.active).toString() }
-                    button(type = ButtonType.submit, classes = if (entry.active) "btn-on" else "btn-off") {
-                        +(if (entry.active) "AN" else "AUS")
+                if (entries.isNotEmpty()) {
+                    // Use the index-based endpoint for grouped entries, or docId for single entry
+                    val (actionUrl, toggleState) = if (entries.size > 1) {
+                        // Multiple entries: toggle all entries for this index
+                        "$root/admin/meta/index/${index}/active" to allActive
+                    } else {
+                        // Single entry: toggle just this doc
+                        "$root/admin/meta/${entries.first().docId}/active" to entries.first().active
+                    }
+                    
+                    form(action = actionUrl, method = FormMethod.post) {
+                        hiddenInput(name = "active") { value = (!toggleState).toString() }
+                        button(type = ButtonType.submit, classes = if (toggleState) "btn-on" else "btn-off") {
+                            +(if (toggleState) "AN" else "AUS")
+                        }
                     }
                 }
             }
 
             // CENTER: Info-Block
             div(classes = "info") {
-                div(classes = "name") { strong { +displayName } }
+                div(classes = "name") {
+                    if (displayNames.isNotEmpty()) {
+                        strong { +displayNames.joinToString(", ") }
+                    } else {
+                        strong { +index }
+                    }
+                }
                 div(classes = "index-name") { code { +index } }
                 div(classes = "meta-line") {
                     span(classes = "metric") {
                         span(classes = "label") { +"Dokumente: " }
                         +(docCount?.toString() ?: "?")
                     }
-                    span(classes = "metric") {
-                        span(classes = "label") { +"Zuletzt indexiert: " }
-                        +(formatTimestamp(entry.lastIndexed) ?: "—")
+                    if (firstEntry != null) {
+                        span(classes = "metric") {
+                            span(classes = "label") { +"Zuletzt indexiert: " }
+                            +(formatTimestamp(firstEntry.lastIndexed) ?: "—")
+                        }
                     }
                 }
 
@@ -267,6 +303,7 @@ object AdminComponents {
         
         button.btn-on  { --pico-background-color: #1b873f; --pico-border-color: #14672f; --pico-color: #fff; }
         button.btn-off { --pico-background-color: #5f6b7a; --pico-border-color: #4a5562; --pico-color: #fff; }
+        button.btn-mixed { --pico-background-color: #8a6d3b; --pico-border-color: #654321; --pico-color: #fff; cursor: not-allowed; opacity: 0.8; }
         button.btn-delete {
             --pico-background-color: #b3261e;
             --pico-border-color: #8c1d18;

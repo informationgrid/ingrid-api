@@ -3,6 +3,7 @@ package de.ingrid.ingridapi.admin.ui
 import de.ingrid.ingridapi.admin.ui.AdminComponents.renderCompactRow
 import de.ingrid.ingridapi.admin.ui.AdminComponents.renderManagedCard
 import de.ingrid.ingridapi.admin.ui.AdminComponents.renderPagination
+import de.ingrid.ingridapi.admin.ui.GroupedIndex
 import de.ingrid.ingridapi.core.services.IngridMetaEntry
 import de.ingrid.ingridapi.core.services.SearchResult
 import kotlinx.html.ButtonType
@@ -53,7 +54,7 @@ object AdminPages {
 
     fun HTML.renderIndicesPage(
         root: String,
-        managedEntries: List<IngridMetaEntry>,
+        groupedManagedEntries: List<GroupedIndex>,
         others: Map<String, Any?>,
         counts: Map<String, Long>,
         indicesConfig: JsonObject,
@@ -76,11 +77,12 @@ object AdminPages {
                 div(classes = "msg err") { +error }
             }
 
-            val (prefixedManaged, otherManaged) = if (hasPrefix) {
-                managedEntries.partition { it.linkedIndex?.startsWith(prefix) == true }
-            } else {
-                managedEntries to emptyList()
-            }
+            val (prefixedManaged, otherManaged) =
+                if (hasPrefix) {
+                    groupedManagedEntries.partition { it.indexName.startsWith(prefix) }
+                } else {
+                    groupedManagedEntries to emptyList()
+                }
 
             if (hasPrefix) {
                 h2 { +"Verwaltete Indizes mit Präfix '$prefix'" }
@@ -98,10 +100,10 @@ object AdminPages {
                 }
             } else {
                 h2 { +"Verwaltete Indizes" }
-                if (managedEntries.isEmpty()) {
+                if (groupedManagedEntries.isEmpty()) {
                     p { +"Keine Indizes in '$metaIndexName' referenziert." }
                 } else {
-                    renderManagedCards(managedEntries, counts, indicesConfig, root)
+                    renderManagedCards(groupedManagedEntries, counts, indicesConfig, root)
                 }
             }
 
@@ -248,7 +250,8 @@ object AdminPages {
                             }
                             div(classes = "delete") {
                                 form(action = "$root/admin/meta/${entry.docId}/delete", method = FormMethod.post) {
-                                    onClick = "return confirm('Dokument \\'${entry.docId}\\' wirklich löschen?');"
+                                    onClick =
+                                        "return confirm('Dokument \\'${entry.dataSourceName}\\' wirklich löschen?');"
                                     button(type = ButtonType.submit, classes = "btn-delete") { +"Löschen" }
                                 }
                             }
@@ -257,19 +260,24 @@ object AdminPages {
             }
         }
     }
+
     private fun FlowContent.renderManagedCards(
-        entries: List<IngridMetaEntry>,
+        groupedIndices: List<GroupedIndex>,
         counts: Map<String, Long>,
         indicesConfig: JsonObject,
         root: String,
     ) {
         div(classes = "cards") {
-            entries
-                .sortedBy { it.linkedIndex?.lowercase() ?: "" }
-                .forEach { entry ->
-                    val idx = entry.linkedIndex!!
-                    val config = indicesConfig[idx]?.jsonObject
-                    renderManagedCard(idx, entry, counts[idx], config, root)
+            groupedIndices
+                .forEach { groupedIndex ->
+                    val config = indicesConfig[groupedIndex.indexName]?.jsonObject
+                    renderManagedCard(
+                        groupedIndex.indexName,
+                        groupedIndex.entries,
+                        groupedIndex.docCount,
+                        config,
+                        root,
+                    )
                 }
         }
     }

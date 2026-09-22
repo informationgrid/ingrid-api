@@ -314,4 +314,86 @@ class AdminRoutesTest {
                 assertTrue(body.contains("Other Source"))
             }
         }
+    @Test
+    fun testAdminIndicesPageWithMultipleDataSourcesPerIndex() =
+        testApplication {
+            val esMock = mockk<ElasticsearchService>()
+            io.mockk.every { esMock.indexPrefix } returns ""
+            io.mockk.every { esMock.metaIndexName } returns "ingrid_meta"
+            coEvery { esMock.listIndicesWithAliases() } returns mapOf(
+                "shared_index" to emptySet(),
+                "other_index" to emptySet()
+            )
+            coEvery { esMock.listIndicesConfig() } returns buildJsonObject {}
+            coEvery { esMock.getMetaEntries() } returns listOf(
+                de.ingrid.ingridapi.core.services.IngridMetaEntry("doc1", "id1", "shared_index", true, "Data Source 1"),
+                de.ingrid.ingridapi.core.services.IngridMetaEntry("doc2", "id2", "shared_index", true, "Data Source 2"),
+                de.ingrid.ingridapi.core.services.IngridMetaEntry("doc3", "id3", "other_index", true, "Other Source")
+            )
+            coEvery { esMock.countDocuments(any()) } returns 10L
+
+            application {
+                install(Authentication) {
+                    val provider =
+                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                            override suspend fun onAuthenticate(context: AuthenticationContext) {
+                                context.principal(object : Principal {})
+                            }
+                        }
+                    register(provider)
+                }
+                dependencies.provide<ElasticsearchService> { esMock }
+                configureAdminRouting()
+            }
+
+            client.get("/admin").apply {
+                assertEquals(HttpStatusCode.OK, status)
+                val body = bodyAsText()
+                // Both datasources should be grouped under the same index
+                assertTrue(body.contains("Data Source 1, Data Source 2"), "Should show both datasource names for shared_index")
+                assertTrue(body.contains("Other Source"), "Should show Other Source for other_index")
+                // The index name should be visible
+                assertTrue(body.contains("shared_index"), "Should show the index name")
+                assertTrue(body.contains("other_index"), "Should show the other index name")
+                // Should have toggle for the grouped index
+                assertTrue(body.contains("meta/index/shared_index/active"), "Should have group toggle endpoint")
+            }
+        }
+    @Test
+    fun testAdminToggleGroupedIndex() =
+        testApplication {
+            val esMock = mockk<ElasticsearchService>()
+            io.mockk.every { esMock.metaIndexName } returns "ingrid_meta"
+            val metaEntries = listOf(
+                de.ingrid.ingridapi.core.services.IngridMetaEntry("doc1", "id1", "shared_index", false, "Data Source 1"),
+                de.ingrid.ingridapi.core.services.IngridMetaEntry("doc2", "id2", "shared_index", false, "Data Source 2")
+            )
+            coEvery { esMock.getMetaEntries() } returns metaEntries
+            coEvery { esMock.setMetaActive("doc1", true) } returns Unit
+            coEvery { esMock.setMetaActive("doc2", true) } returns Unit
+
+            application {
+                install(Authentication) {
+                    val provider =
+                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                            override suspend fun onAuthenticate(context: AuthenticationContext) {
+                                context.principal(object : Principal {})
+                            }
+                        }
+                    register(provider)
+                }
+                dependencies.provide<ElasticsearchService> { esMock }
+                configureAdminRouting()
+            }
+
+            // Toggle the grouped index to active
+            val response = client.post("/admin/meta/index/shared_index/active") {
+                contentType(ContentType.Application.FormUrlEncoded)
+                setBody("active=true")
+            }
+            assertEquals(HttpStatusCode.Found, response.status)
+            val location = response.headers[HttpHeaders.Location]
+            assertTrue(location?.contains("Data+Source+1") ?: false,
+                "Should redirect with success message containing both datasource names. Location: $location")
+        }
 }

@@ -2,16 +2,29 @@ package de.ingrid.ingridapi.admin
 
 import de.ingrid.ingridapi.core.services.ElasticsearchService
 import de.ingrid.ingridapi.core.services.SearchResult
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.plugins.di.*
-import io.ktor.server.testing.*
+import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
+import io.ktor.server.application.install
+import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.AuthenticationContext
+import io.ktor.server.auth.AuthenticationProvider
+import io.ktor.server.plugins.di.dependencies
+import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -24,9 +37,9 @@ class AdminRoutesTest {
             application {
                 install(Authentication) {
                     val provider =
-                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                        object : AuthenticationProvider(object : Config("admin-session") {}) {
                             override suspend fun onAuthenticate(context: AuthenticationContext) {
-                                context.principal(object : Principal {})
+                                context.principal(object : Any() {})
                             }
                         }
                     register(provider)
@@ -65,9 +78,9 @@ class AdminRoutesTest {
             application {
                 install(Authentication) {
                     val provider =
-                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                        object : AuthenticationProvider(object : Config("admin-session") {}) {
                             override suspend fun onAuthenticate(context: AuthenticationContext) {
-                                context.principal(object : Principal {})
+                                context.principal(object : Any() {})
                             }
                         }
                     register(provider)
@@ -111,9 +124,9 @@ class AdminRoutesTest {
             application {
                 install(Authentication) {
                     val provider =
-                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                        object : AuthenticationProvider(object : Config("admin-session") {}) {
                             override suspend fun onAuthenticate(context: AuthenticationContext) {
-                                context.principal(object : Principal {})
+                                context.principal(object : Any() {})
                             }
                         }
                     register(provider)
@@ -126,18 +139,15 @@ class AdminRoutesTest {
                 assertEquals(HttpStatusCode.OK, status)
                 val body = bodyAsText()
                 assertTrue(body.contains("Field Search Test"))
-                
-                // Verify that a bool query with must clause for the author field was created
+
+                // Verify that query_string query was created for the field search
                 val capturedQuery = Json.parseToJsonElement(querySlot.captured).jsonObject
                 val queryObj = capturedQuery["query"]?.jsonObject
-                assertTrue(queryObj?.containsKey("bool") ?: false, "Should use bool query for field search")
-                val boolObj = queryObj?.get("bool")?.jsonObject
-                assertTrue(boolObj?.containsKey("must") ?: false, "Should have must clause")
-                val mustArray = boolObj?.get("must")?.jsonArray
-                assertEquals(1, mustArray?.size, "Should have 1 must clause")
-                val firstMust = mustArray?.get(0)?.jsonObject
-                val matchObj = firstMust?.get("match")?.jsonObject
-                assertTrue(matchObj?.containsKey("author") ?: false, "Should search on author field")
+                assertTrue(queryObj?.containsKey("query_string") ?: false, "Should use query_string for field search")
+                val queryStringObj = queryObj["query_string"]?.jsonObject
+                assertEquals("author:John", queryStringObj?.get("query")?.jsonPrimitive?.content)
+                assertEquals("*", queryStringObj?.get("default_field")?.jsonPrimitive?.content)
+                assertEquals("AND", queryStringObj?.get("default_operator")?.jsonPrimitive?.content)
             }
         }
 
@@ -168,9 +178,9 @@ class AdminRoutesTest {
             application {
                 install(Authentication) {
                     val provider =
-                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                        object : AuthenticationProvider(object : Config("admin-session") {}) {
                             override suspend fun onAuthenticate(context: AuthenticationContext) {
-                                context.principal(object : Principal {})
+                                context.principal(object : Any() {})
                             }
                         }
                     register(provider)
@@ -183,15 +193,18 @@ class AdminRoutesTest {
                 assertEquals(HttpStatusCode.OK, status)
                 val body = bodyAsText()
                 assertTrue(body.contains("Multiple Field Test"))
-                
-                // Verify that a bool query with must clauses was created for multiple field searches
+
+                // Verify that query_string query was created for multiple field searches
                 val capturedQuery = Json.parseToJsonElement(querySlot.captured).jsonObject
                 val queryObj = capturedQuery["query"]?.jsonObject
-                assertTrue(queryObj?.containsKey("bool") ?: false, "Should use bool query for multiple field searches")
-                val boolObj = queryObj?.get("bool")?.jsonObject
-                assertTrue(boolObj?.containsKey("must") ?: false, "Should have must clause")
-                val mustArray = boolObj?.get("must")?.jsonArray
-                assertEquals(2, mustArray?.size, "Should have 2 must clauses for 2 field searches")
+                assertTrue(
+                    queryObj?.containsKey("query_string") ?: false,
+                    "Should use query_string for multiple field searches",
+                )
+                val queryStringObj = queryObj["query_string"]?.jsonObject
+                assertEquals("author:Jane category:Tech", queryStringObj?.get("query")?.jsonPrimitive?.content)
+                assertEquals("*", queryStringObj?.get("default_field")?.jsonPrimitive?.content)
+                assertEquals("AND", queryStringObj?.get("default_operator")?.jsonPrimitive?.content)
             }
         }
 
@@ -209,9 +222,9 @@ class AdminRoutesTest {
             application {
                 install(Authentication) {
                     val provider =
-                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                        object : AuthenticationProvider(object : Config("admin-session") {}) {
                             override suspend fun onAuthenticate(context: AuthenticationContext) {
-                                context.principal(object : Principal {})
+                                context.principal(object : Any() {})
                             }
                         }
                     register(provider)
@@ -247,9 +260,9 @@ class AdminRoutesTest {
             application {
                 install(Authentication) {
                     val provider =
-                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                        object : AuthenticationProvider(object : Config("admin-session") {}) {
                             override suspend fun onAuthenticate(context: AuthenticationContext) {
-                                context.principal(object : Principal {})
+                                context.principal(object : Any() {})
                             }
                         }
                     register(provider)
@@ -277,9 +290,9 @@ class AdminRoutesTest {
             application {
                 install(Authentication) {
                     val provider =
-                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                        object : AuthenticationProvider(object : Config("admin-session") {}) {
                             override suspend fun onAuthenticate(context: AuthenticationContext) {
-                                context.principal(object : Principal {})
+                                context.principal(object : Any() {})
                             }
                         }
                     register(provider)
@@ -318,9 +331,9 @@ class AdminRoutesTest {
             application {
                 install(Authentication) {
                     val provider =
-                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                        object : AuthenticationProvider(object : Config("admin-session") {}) {
                             override suspend fun onAuthenticate(context: AuthenticationContext) {
-                                context.principal(object : Principal {})
+                                context.principal(object : Any() {})
                             }
                         }
                     register(provider)
@@ -347,9 +360,9 @@ class AdminRoutesTest {
             application {
                 install(Authentication) {
                     val provider =
-                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                        object : AuthenticationProvider(object : Config("admin-session") {}) {
                             override suspend fun onAuthenticate(context: AuthenticationContext) {
-                                context.principal(object : Principal {})
+                                context.principal(object : Any() {})
                             }
                         }
                     register(provider)
@@ -370,40 +383,58 @@ class AdminRoutesTest {
                 assertEquals(10, capturedQuery["size"]?.jsonPrimitive?.int, "size should be 10")
             }
         }
+
     @Test
     fun testAdminIndicesPageWithPrefix() =
         testApplication {
             val esMock = mockk<ElasticsearchService>()
             io.mockk.every { esMock.indexPrefix } returns "pre_"
             io.mockk.every { esMock.metaIndexName } returns "pre_ingrid_meta"
-            coEvery { esMock.listIndicesWithAliases() } returns mapOf(
-                "pre_index1" to emptySet(),
-                "other_index" to emptySet()
-            )
-            coEvery { esMock.listIndicesConfig() } returns buildJsonObject {
-                put("pre_index1", buildJsonObject {
-                    put("mappings", buildJsonObject {
-                        put("properties", buildJsonObject {
-                            put("title", buildJsonObject { put("type", JsonPrimitive("text")) })
-                        })
-                    })
-                    put("settings", buildJsonObject {
-                        put("index", buildJsonObject { put("number_of_shards", JsonPrimitive("1")) })
-                    })
-                })
-            }
-            coEvery { esMock.getMetaEntries() } returns listOf(
-                de.ingrid.ingridapi.core.services.IngridMetaEntry("doc1", "id1", "pre_index1", true, "Prefixed Source"),
-                de.ingrid.ingridapi.core.services.IngridMetaEntry("doc2", "id2", "other_index", true, "Other Source")
-            )
+            coEvery { esMock.listIndicesWithAliases() } returns
+                mapOf(
+                    "pre_index1" to emptySet(),
+                    "other_index" to emptySet(),
+                )
+            coEvery { esMock.listIndicesConfig() } returns
+                buildJsonObject {
+                    put(
+                        "pre_index1",
+                        buildJsonObject {
+                            put(
+                                "mappings",
+                                buildJsonObject {
+                                    put(
+                                        "properties",
+                                        buildJsonObject {
+                                            put("title", buildJsonObject { put("type", JsonPrimitive("text")) })
+                                        },
+                                    )
+                                },
+                            )
+                            put(
+                                "settings",
+                                buildJsonObject {
+                                    put("index", buildJsonObject { put("number_of_shards", JsonPrimitive("1")) })
+                                },
+                            )
+                        },
+                    )
+                }
+            coEvery { esMock.getMetaEntries() } returns
+                listOf(
+                    de.ingrid.ingridapi.core.services
+                        .IngridMetaEntry("doc1", "id1", "pre_index1", true, "Prefixed Source"),
+                    de.ingrid.ingridapi.core.services
+                        .IngridMetaEntry("doc2", "id2", "other_index", true, "Other Source"),
+                )
             coEvery { esMock.countDocuments(any()) } returns 10L
 
             application {
                 install(Authentication) {
                     val provider =
-                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                        object : AuthenticationProvider(object : Config("admin-session") {}) {
                             override suspend fun onAuthenticate(context: AuthenticationContext) {
-                                context.principal(object : Principal {})
+                                context.principal(object : Any() {})
                             }
                         }
                     register(provider)
@@ -424,30 +455,36 @@ class AdminRoutesTest {
                 assertTrue(body.contains("Other Source"))
             }
         }
+
     @Test
     fun testAdminIndicesPageWithMultipleDataSourcesPerIndex() =
         testApplication {
             val esMock = mockk<ElasticsearchService>()
             io.mockk.every { esMock.indexPrefix } returns ""
             io.mockk.every { esMock.metaIndexName } returns "ingrid_meta"
-            coEvery { esMock.listIndicesWithAliases() } returns mapOf(
-                "shared_index" to emptySet(),
-                "other_index" to emptySet()
-            )
+            coEvery { esMock.listIndicesWithAliases() } returns
+                mapOf(
+                    "shared_index" to emptySet(),
+                    "other_index" to emptySet(),
+                )
             coEvery { esMock.listIndicesConfig() } returns buildJsonObject {}
-            coEvery { esMock.getMetaEntries() } returns listOf(
-                de.ingrid.ingridapi.core.services.IngridMetaEntry("doc1", "id1", "shared_index", true, "Data Source 1"),
-                de.ingrid.ingridapi.core.services.IngridMetaEntry("doc2", "id2", "shared_index", true, "Data Source 2"),
-                de.ingrid.ingridapi.core.services.IngridMetaEntry("doc3", "id3", "other_index", true, "Other Source")
-            )
+            coEvery { esMock.getMetaEntries() } returns
+                listOf(
+                    de.ingrid.ingridapi.core.services
+                        .IngridMetaEntry("doc1", "id1", "shared_index", true, "Data Source 1"),
+                    de.ingrid.ingridapi.core.services
+                        .IngridMetaEntry("doc2", "id2", "shared_index", true, "Data Source 2"),
+                    de.ingrid.ingridapi.core.services
+                        .IngridMetaEntry("doc3", "id3", "other_index", true, "Other Source"),
+                )
             coEvery { esMock.countDocuments(any()) } returns 10L
 
             application {
                 install(Authentication) {
                     val provider =
-                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                        object : AuthenticationProvider(object : Config("admin-session") {}) {
                             override suspend fun onAuthenticate(context: AuthenticationContext) {
-                                context.principal(object : Principal {})
+                                context.principal(object : Any() {})
                             }
                         }
                     register(provider)
@@ -460,7 +497,10 @@ class AdminRoutesTest {
                 assertEquals(HttpStatusCode.OK, status)
                 val body = bodyAsText()
                 // Both datasources should be grouped under the same index
-                assertTrue(body.contains("Data Source 1, Data Source 2"), "Should show both datasource names for shared_index")
+                assertTrue(
+                    body.contains("Data Source 1, Data Source 2"),
+                    "Should show both datasource names for shared_index",
+                )
                 assertTrue(body.contains("Other Source"), "Should show Other Source for other_index")
                 // The index name should be visible
                 assertTrue(body.contains("shared_index"), "Should show the index name")
@@ -473,15 +513,24 @@ class AdminRoutesTest {
                 assertTrue(body.contains("collection.name:Data+Source+1"), "Search link should use field search syntax")
             }
         }
+
     @Test
     fun testAdminToggleGroupedIndex() =
         testApplication {
             val esMock = mockk<ElasticsearchService>()
             io.mockk.every { esMock.metaIndexName } returns "ingrid_meta"
-            val metaEntries = listOf(
-                de.ingrid.ingridapi.core.services.IngridMetaEntry("doc1", "id1", "shared_index", false, "Data Source 1"),
-                de.ingrid.ingridapi.core.services.IngridMetaEntry("doc2", "id2", "shared_index", false, "Data Source 2")
-            )
+            val metaEntries =
+                listOf(
+                    de.ingrid.ingridapi.core.services.IngridMetaEntry(
+                        "doc1",
+                        "id1",
+                        "shared_index",
+                        false,
+                        "Data Source 1",
+                    ),
+                    de.ingrid.ingridapi.core.services
+                        .IngridMetaEntry("doc2", "id2", "shared_index", false, "Data Source 2"),
+                )
             coEvery { esMock.getMetaEntries() } returns metaEntries
             coEvery { esMock.setMetaActive("doc1", true) } returns Unit
             coEvery { esMock.setMetaActive("doc2", true) } returns Unit
@@ -489,9 +538,9 @@ class AdminRoutesTest {
             application {
                 install(Authentication) {
                     val provider =
-                        object : AuthenticationProvider(object : AuthenticationProvider.Config("admin-session") {}) {
+                        object : AuthenticationProvider(object : Config("admin-session") {}) {
                             override suspend fun onAuthenticate(context: AuthenticationContext) {
-                                context.principal(object : Principal {})
+                                context.principal(object : Any() {})
                             }
                         }
                     register(provider)
@@ -501,13 +550,16 @@ class AdminRoutesTest {
             }
 
             // Toggle the grouped index to active
-            val response = client.post("/admin/meta/index/shared_index/active") {
-                contentType(ContentType.Application.FormUrlEncoded)
-                setBody("active=true")
-            }
+            val response =
+                client.post("/admin/meta/index/shared_index/active") {
+                    contentType(ContentType.Application.FormUrlEncoded)
+                    setBody("active=true")
+                }
             assertEquals(HttpStatusCode.Found, response.status)
             val location = response.headers[HttpHeaders.Location]
-            assertTrue(location?.contains("Data+Source+1") ?: false,
-                "Should redirect with success message containing both datasource names. Location: $location")
+            assertTrue(
+                location?.contains("Data+Source+1") ?: false,
+                "Should redirect with success message containing both datasource names. Location: $location",
+            )
         }
 }

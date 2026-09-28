@@ -2,6 +2,7 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import fr.brouillard.oss.gradle.plugins.JGitverPluginExtensionBranchPolicy
 import io.ktor.plugin.features.DockerImageRegistry
 import org.cyclonedx.Version
+import org.cyclonedx.model.Component.Type.APPLICATION
 import org.gradle.kotlin.dsl.closureOf
 
 val logbackVersion = project.property("logbackVersion")
@@ -151,15 +152,20 @@ dependencies {
 //    testImplementation("org.jetbrains.kotlin:kotlin-test")
 }
 
-tasks.cyclonedxBom {
-    // includeConfigs is the list of configuration names to include when generating the BOM (leave empty to include every configuration), regex is supported
-//  setIncludeConfigs(listOf("runtimeClasspath"))
-    // skipConfigs is a list of configuration names to exclude when generating the BOM, regex is supported
-//  setSkipConfigs(listOf("compileClasspath", "testCompileClasspath"))
-    projectType = org.cyclonedx.model.Component.Type.APPLICATION
-    schemaVersion = Version.VERSION_15
-    jsonOutput = file("build/reports/bom.json")
+tasks.cyclonedxDirectBom {
+    if (project.hasProperty("devSBOM")) {
+        jsonOutput = layout.buildDirectory.file("reports/sbom-dev.json")
+    } else {
+        jsonOutput = layout.buildDirectory.file("reports/sbom.json")
+        // includeConfigs is the list of configuration names to include when generating the BOM (leave empty to include every configuration), regex is supported
+        includeConfigs = listOf("runtimeClasspath")
+        // skipConfigs is a list of configuration names to exclude when generating the BOM, regex is supported
+        skipConfigs = listOf("compileClasspath", "testCompileClasspath")
+    }
+    projectType = APPLICATION
+    schemaVersion = Version.VERSION_16
     componentVersion = rootProject.version.toString()
+    xmlOutput.convention(null as RegularFile?)
 }
 
 tasks {

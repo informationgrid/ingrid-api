@@ -30,6 +30,54 @@ pipeline {
             }
         }
 
+        stage ('Create SBOMs') {
+            when {
+                anyOf {
+                    branch 'main'
+                    buildingTag()
+                }
+            }
+            steps {
+                sh "./gradlew cyclonedxDirectBom"
+                sh "./gradlew cyclonedxDirectBom -PdevSBOM"
+                script {
+                    def imageVersion = determineVersion() == 'main' ? 'latest' : determineVersion()
+                    def imageToScan = "registry.opencode.de/informationgrid/ingrid-api:${imageVersion}"
+
+                    docker.withRegistry('https://registry.opencode.de', 'registry-opencode') {
+                        sh """
+                            docker run --rm --pull=always --volumes-from jenkins anchore/syft:latest ${imageToScan} --output cyclonedx-json=${WORKSPACE}/build/reports/sbom-docker.json
+                        """
+                    }
+                }
+            }
+        }
+
+        stage ('Upload SBOM') {
+            when {
+                anyOf {
+                    branch 'main'
+                    buildingTag()
+                }
+            }
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'api-token-dependency-track', variable: 'API_KEY')]) {
+                        dependencyTrackPublisher artifact: 'build/reports/sbom.json', projectName: 'ingrid-api', projectVersion: determineVersion(), synchronous: true, dependencyTrackApiKey: API_KEY, projectProperties: [group: 'InGrid', parentId: 'cc710f3c-7329-4980-a5da-f4d8f10e7367',tags: ['ingrid', 'deps_prod']]
+                        dependencyTrackPublisher artifact: 'build/reports/sbom-dev.json', projectName: 'ingrid-api', projectVersion: determineVersion() + '-dev', synchronous: true, dependencyTrackApiKey: API_KEY, projectProperties: [group: 'InGrid', parentId: 'cc710f3c-7329-4980-a5da-f4d8f10e7367',tags: ['ingrid', 'deps_dev']]
+                        dependencyTrackPublisher artifact: 'build/reports/sbom-docker.json', projectName: 'ingrid-api', projectVersion: determineVersion() + '-docker-image', synchronous: true, dependencyTrackApiKey: API_KEY, projectProperties: [group: 'InGrid', parentId: 'cc710f3c-7329-4980-a5da-f4d8f10e7367',tags: ['ingrid', 'deps_docker']]
+                    }
+                    def repoType = env.TAG_NAME ? "rpm-ingrid-releases" : "rpm-ingrid-snapshots"
+                    sh "mv build/reports/sbom.json build/reports/ingrid-api-${determineRpmVersion()}.bom.json"
+                    withCredentials([usernamePassword(credentialsId: '9623a365-d592-47eb-9029-a2de40453f68', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
+                        sh '''
+                            curl -f --user $USERNAME:$PASSWORD --upload-file build/reports/*.bom.json https://nexus.informationgrid.eu/repository/''' + repoType + '''/
+                        '''
+                    }
+                }
+            }
+        }
+
         stage('Deploy Image') {
             // do not run when building a release from a branch-Jenkins-Job
             // In Jenkins there's a special Tag-Job, that handles the release
@@ -90,22 +138,6 @@ pipeline {
 
                         archiveArtifacts artifacts: 'build/rpms/ingrid/ingrid-api-*.rpm', fingerprint: true
                     }
-
-                    withCredentials([
-                        file(credentialsId: 'itzbund-ingrid-rpm-public', variable: 'RPM_PUBLIC_KEY'),
-                        file(credentialsId: 'itzbund-ingrid-rpm-private', variable: 'RPM_PRIVATE_KEY'),
-                        string(credentialsId: 'itzbund-ingrid-rpm-passphrase', variable: 'RPM_SIGN_PASSPHRASE')
-                    ]) {
-                        sh 'rm -f ~/.gnupg/*.kbx'
-                        sh 'rm -f ~/.gnupg/*.gpg'
-                        sh 'gpg --batch --import $RPM_PUBLIC_KEY'
-                        sh 'gpg --batch --import $RPM_PRIVATE_KEY'
-                        sh "mkdir -p ./build/rpms/itzbund"
-                        sh "cp -r /root/rpmbuild/RPMS/noarch/* ${WORKSPACE}/build/rpms/itzbund/"
-                        sh "expect /rpm-sign.exp ${WORKSPACE}/build/rpms/itzbund/*.rpm"
-
-                        archiveArtifacts artifacts: 'build/rpms/itzbund/ingrid-api-*.rpm', fingerprint: true
-                    }
                 }
             }
         }
@@ -114,33 +146,10 @@ pipeline {
             when { expression { return shouldBuildDevOrRelease() } }
             steps {
                 script {
-                    def repoType = env.TAG_NAME ? "rpm-ingrid-releases" : "rpm-ingrid-snapshots"
-                    sh "mv build/reports/bom.json build/reports/ingrid-api-${determineRpmVersion()}.bom.json"
-                    archiveArtifacts artifacts: "build/reports/*.bom.json", fingerprint: true
-
                     withCredentials([usernamePassword(credentialsId: '9623a365-d592-47eb-9029-a2de40453f68', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
                         sh '''
                             curl -f --user $USERNAME:$PASSWORD --upload-file build/rpms/ingrid/*.rpm https://nexus.informationgrid.eu/repository/''' + repoType + '''/
-                            curl -f --user $USERNAME:$PASSWORD --upload-file build/reports/*.bom.json https://nexus.informationgrid.eu/repository/''' + repoType + '''/
                         '''
-                    }
-                    if (repoType == 'rpm-ingrid-releases') {
-                        withCredentials([usernamePassword(credentialsId: '9623a365-d592-47eb-9029-a2de40453f68', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
-                            sh '''
-                                curl -f --user $USERNAME:$PASSWORD --upload-file build/rpms/itzbund/*.rpm https://nexus.informationgrid.eu/repository/rpm-ingrid-itzbund/
-                                curl -f --user $USERNAME:$PASSWORD --upload-file build/reports/*.bom.json https://nexus.informationgrid.eu/repository/rpm-ingrid-itzbund/
-                            '''
-                        }
-                        if (env.TAG_NAME && env.TAG_NAME.startsWith("RPM-")) {
-                            // No upload to other ITZBund repos
-                        } else {
-                            withCredentials([usernamePassword(credentialsId: '9623a365-d592-47eb-9029-a2de40453f68', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
-                                sh '''
-                                    curl -f --user $USERNAME:$PASSWORD --upload-file build/rpms/itzbund/*.rpm https://nexus.informationgrid.eu/repository/rpm-zdm_release/
-                                    curl -f --user $USERNAME:$PASSWORD --upload-file build/reports/*.bom.json https://nexus.informationgrid.eu/repository/rpm-zdm_release/
-                                '''
-                            }
-                        }
                     }
                 }
             }

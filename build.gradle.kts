@@ -11,11 +11,11 @@ val mockkVersion = "1.14.11"
 plugins {
     kotlin("jvm") version "2.4.0"
     kotlin("plugin.serialization") version "2.4.0"
-    id("io.ktor.plugin") version "3.5.1"
+    id("io.ktor.plugin") version "3.6.0"
     id("fr.brouillard.oss.gradle.jgitver") version "0.9.1"
-    id("com.diffplug.spotless") version "8.8.0"
-    id("org.cyclonedx.bom") version "3.2.4"
-    id("com.github.ben-manes.versions") version "0.54.0"
+    id("com.diffplug.spotless") version "8.10.3"
+    id("org.cyclonedx.bom") version "3.4.1"
+    id("io.github.ben-manes.versions") version "0.64.0"
 }
 
 group = "de.ingrid.ingridapi"
@@ -131,7 +131,7 @@ dependencies {
     implementation("io.ktor:ktor-client-apache5")
 
     // elasticsearch-client
-    implementation("com.jillesvangurp:search-client:2.8.7")
+    implementation("com.jillesvangurp:search-client:2.9.0")
 
     // dependency injection (Ktor DI)
     implementation("io.ktor:ktor-server-di")
@@ -142,8 +142,8 @@ dependencies {
     implementation("io.github.oshai:kotlin-logging-jvm:8.0.4")
 
     // RDF library
-    implementation("org.apache.jena:jena-core:6.1.0")
-    implementation("org.apache.jena:jena-arq:6.1.0")
+    implementation("org.apache.jena:jena-core:6.2.0")
+    implementation("org.apache.jena:jena-arq:6.2.0")
 
     // tests
     testImplementation("io.ktor:ktor-server-tests-jvm:2.3.13")

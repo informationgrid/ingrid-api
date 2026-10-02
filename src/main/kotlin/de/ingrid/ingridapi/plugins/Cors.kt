@@ -11,8 +11,16 @@ fun Application.configureCors() {
         allowMethod(HttpMethod.Options)
         allowMethod(HttpMethod.Post)
         allowMethod(HttpMethod.Get)
-        allowHeader(HttpHeaders.AccessControlAllowOrigin)
+        allowMethod(HttpMethod.Put)
+        allowMethod(HttpMethod.Delete)
+        allowMethod(HttpMethod.Patch)
+        allowMethod(HttpMethod.Head)
         allowHeader(HttpHeaders.ContentType)
+        allowHeader(HttpHeaders.Accept)
+        allowHeader(HttpHeaders.Authorization)
+        allowHeader(HttpHeaders.Origin)
+        exposeHeader(HttpHeaders.ContentType)
+        exposeHeader(HttpHeaders.Accept)
         anyHost()
     }
 }

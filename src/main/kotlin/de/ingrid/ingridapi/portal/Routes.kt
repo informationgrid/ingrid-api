@@ -1,7 +1,12 @@
 package de.ingrid.ingridapi.portal
 
 import de.ingrid.ingridapi.core.services.ElasticsearchService
+import de.ingrid.ingridapi.core.services.SearchResult
+import de.ingrid.ingridapi.portal.model.Catalog
+import de.ingrid.ingridapi.portal.model.CatalogsResult
+import de.ingrid.ingridapi.portal.model.ResponseHierarchy
 import de.ingrid.ingridapi.portal.services.CatalogService
+import io.github.smiley4.ktoropenapi.config.descriptors.ValueExampleDescriptor
 import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.openApi
 import io.github.smiley4.ktoropenapi.post
@@ -16,19 +21,59 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.routing
 
 fun Application.configurePortalRouting() {
+    val root =
+        environment.config
+            .propertyOrNull("ktor.deployment.rootPath")
+            ?.getString()
+            ?.trimEnd('/') ?: ""
     routing {
-        route("portal/myApi.json") {
-            openApi("portal") // api-spec json is served at '/myApi.json'
-        }
         route("portal", { specName = "portal" }) {
-            swaggerUI("myApi.json") // swagger-ui is available at '/mySwagger' or '/mySwagger/index.html'
-            post("search", { request { body<String>() } }) {
+            route("api.json") {
+                openApi("portal") // api-spec json is served at '/myApi.json'
+            }
+            swaggerUI("$root/portal/api.json") // swagger-ui is available at '/mySwagger' or '/mySwagger/index.html'
+            post("search", {
+                description = "Search for datasets using the Elasticsearch query DSL"
+                request {
+                    body<Any> {
+                        description = "Elasticsearch query DSL (JSON)"
+                        example(
+                            ValueExampleDescriptor(
+                                name = "Match all documents",
+                                value = mapOf(
+                                    "query" to mapOf("match_all" to emptyMap<String, Any>())
+                                ),
+                                description = "Example Elasticsearch query that matches all documents",
+                            ),
+                        )
+                    }
+                }
+                response {
+                    HttpStatusCode.OK to {
+                        description = "Search results"
+                        body<SearchResult>()
+                    }
+                    HttpStatusCode.BadRequest to {
+                        description = "Invalid request"
+                    }
+                }
+            }) {
                 val elastic = dependencies.resolve<ElasticsearchService>()
-                call.respond(elastic.search(call.receiveText()))
+                val requestBody = call.receiveText()
+                call.respond(elastic.search(requestBody))
             }
 
             get("catalogs", {
                 description = "Get all connected catalogs which have at least one dataset"
+                response {
+                    HttpStatusCode.OK to {
+                        description = "List of catalogs"
+                        body<List<Catalog>>()
+                    }
+                    HttpStatusCode.BadRequest to {
+                        description = "Invalid request"
+                    }
+                }
             }) {
                 val elastic = dependencies.resolve<ElasticsearchService>()
                 val catalogService = dependencies.resolve<CatalogService>()
@@ -46,6 +91,15 @@ fun Application.configurePortalRouting() {
                     }
                     queryParameter<String>("parent") {
                         description = "The UUID of the parent dataset"
+                    }
+                }
+                response {
+                    HttpStatusCode.OK to {
+                        description = "Hierarchical structure of the catalog"
+                        body<List<ResponseHierarchy>>()
+                    }
+                    HttpStatusCode.BadRequest to {
+                        description = "Invalid request"
                     }
                 }
             }) {

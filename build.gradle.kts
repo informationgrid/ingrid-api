@@ -94,6 +94,7 @@ configurations.all {
 //        force("org.slf4j:slf4j-api:2.0.17")
 //        force("ch.qos.logback:logback-classic:$logbackVersion")
 //        force("ch.qos.logback:logback-core:$logbackVersion")
+        force("com.fasterxml.jackson.core:jackson-core:2.21.7")
     }
 }
 

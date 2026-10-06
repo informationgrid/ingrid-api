@@ -4,6 +4,8 @@ import io.ktor.plugin.features.DockerImageRegistry
 import org.cyclonedx.Version
 import org.cyclonedx.model.Component.Type.APPLICATION
 import org.gradle.kotlin.dsl.closureOf
+import sun.jvmstat.monitor.MonitoredVmUtil.jvmArgs
+import sun.jvmstat.monitor.MonitoredVmUtil.mainClass
 
 val logbackVersion = project.property("logbackVersion")
 val mockkVersion = "1.14.11"
@@ -91,10 +93,7 @@ repositories {
 
 configurations.all {
     resolutionStrategy {
-//        force("org.slf4j:slf4j-api:2.0.17")
-//        force("ch.qos.logback:logback-classic:$logbackVersion")
-//        force("ch.qos.logback:logback-core:$logbackVersion")
-        force("com.fasterxml.jackson.core:jackson-core:2.21.7")
+        force("com.fasterxml.jackson.core:jackson-core:2.22.3")
     }
 }
 
@@ -117,9 +116,10 @@ dependencies {
     // actually useful for tests
     implementation("io.ktor:ktor-client-content-negotiation")
 
-    // swagger
-    implementation("io.github.smiley4:ktor-swagger-ui:5.7.0")
-    implementation("io.github.smiley4:ktor-openapi:5.7.0")
+    // openapi / swagger ui (official ktor modules)
+    implementation("io.ktor:ktor-server-routing-openapi") // runtime route annotations (describe / hide)
+    implementation("io.ktor:ktor-server-openapi") // OpenAPI UI, brings the OpenAPI runtime API
+    implementation("io.ktor:ktor-server-swagger") // Swagger UI
 
     // Admin GUI: server-side HTML via kotlinx.html DSL (no separate template files)
     implementation("io.ktor:ktor-server-html-builder")

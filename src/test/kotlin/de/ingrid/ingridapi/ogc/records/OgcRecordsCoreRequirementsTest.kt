@@ -4,7 +4,6 @@ import com.jillesvangurp.ktsearch.SearchResponse
 import de.ingrid.ingridapi.core.services.ElasticsearchService
 import de.ingrid.ingridapi.ogc.records.services.RecordsService
 import de.ingrid.ingridapi.plugins.configureSerialization
-import de.ingrid.ingridapi.plugins.configureSwagger
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
@@ -57,7 +56,6 @@ class OgcRecordsCoreRequirementsTest {
         testApplication {
             application {
                 configureSerialization()
-                configureSwagger()
                 dependencies {
                     provide<ElasticsearchService> { mockk(relaxed = true) }
                     provide<RecordsService> { mockk(relaxed = true) }
@@ -108,7 +106,6 @@ class OgcRecordsCoreRequirementsTest {
         testApplication {
             application {
                 configureSerialization()
-                configureSwagger()
                 dependencies {
                     provide<ElasticsearchService> { mockk(relaxed = true) }
                     provide<RecordsService> { mockk(relaxed = true) }
@@ -188,7 +185,6 @@ class OgcRecordsCoreRequirementsTest {
 
             application {
                 configureSerialization()
-                configureSwagger()
                 dependencies {
                     provide<ElasticsearchService> { esMock }
                     provide<RecordsService> { RecordsService(esMock) }
@@ -258,7 +254,6 @@ class OgcRecordsCoreRequirementsTest {
         testApplication {
             application {
                 configureSerialization()
-                configureSwagger()
                 dependencies {
                     provide<ElasticsearchService> { mockk(relaxed = true) }
                     provide<RecordsService> { mockk(relaxed = true) }
@@ -353,7 +348,6 @@ class OgcRecordsCoreRequirementsTest {
 
             application {
                 configureSerialization()
-                configureSwagger()
                 dependencies {
                     provide<ElasticsearchService> { elasticsearchService }
                     provide<RecordsService> { recordsService }
@@ -417,7 +411,6 @@ class OgcRecordsCoreRequirementsTest {
             val recordsService = mockk<RecordsService>(relaxed = true)
             application {
                 configureSerialization()
-                configureSwagger()
                 dependencies {
                     provide<ElasticsearchService> { mockk(relaxed = true) }
                     provide<RecordsService> { recordsService }
@@ -487,7 +480,6 @@ class OgcRecordsCoreRequirementsTest {
         testApplication {
             application {
                 configureSerialization()
-                configureSwagger()
                 dependencies {
                     provide<ElasticsearchService> { mockk(relaxed = true) }
                     provide<RecordsService> { mockk(relaxed = true) }
@@ -538,7 +530,6 @@ class OgcRecordsCoreRequirementsTest {
             val recordsService = mockk<RecordsService>(relaxed = true)
             application {
                 configureSerialization()
-                configureSwagger()
                 dependencies {
                     provide<ElasticsearchService> { mockk(relaxed = true) }
                     provide<RecordsService> { recordsService }
@@ -602,7 +593,6 @@ class OgcRecordsCoreRequirementsTest {
         testApplication {
             application {
                 configureSerialization()
-                configureSwagger()
                 dependencies {
                     provide<ElasticsearchService> { mockk(relaxed = true) }
                     provide<RecordsService> { mockk(relaxed = true) }
@@ -650,7 +640,6 @@ class OgcRecordsCoreRequirementsTest {
         testApplication {
             application {
                 configureSerialization()
-                configureSwagger()
                 dependencies {
                     provide<ElasticsearchService> { mockk(relaxed = true) }
                     provide<RecordsService> { mockk(relaxed = true) }
@@ -702,7 +691,6 @@ class OgcRecordsCoreRequirementsTest {
         testApplication {
             application {
                 configureSerialization()
-                configureSwagger()
                 dependencies {
                     provide<ElasticsearchService> { mockk(relaxed = true) }
                     provide<RecordsService> { mockk(relaxed = true) }

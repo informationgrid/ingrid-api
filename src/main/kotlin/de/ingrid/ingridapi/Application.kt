@@ -7,7 +7,6 @@ import de.ingrid.ingridapi.plugins.configureCors
 import de.ingrid.ingridapi.plugins.configureDi
 import de.ingrid.ingridapi.plugins.configureSerialization
 import de.ingrid.ingridapi.plugins.configureStatusPages
-import de.ingrid.ingridapi.plugins.configureSwagger
 import de.ingrid.ingridapi.portal.configurePortalRouting
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -27,7 +26,6 @@ fun Application.base() {
     configureCors()
 
     configureStatusPages()
-    configureSwagger()
     configureBaseRoutes()
 }
 

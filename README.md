@@ -22,5 +22,6 @@ Create an annotated tag with the release version in the main or support branch, 
 ## Further documentation
 
 * [Ktor](https://ktor.io/docs)
-* [Ktor Swagger-UI](https://github.com/SMILEY4/ktor-swagger-ui)
+* [Ktor OpenAPI](https://docs.ktor.io/server/openapi)
+* [Ktor Swagger UI](https://docs.ktor.io/server/swagger-ui)
 * * [Koin](https://insert-koin.io/)

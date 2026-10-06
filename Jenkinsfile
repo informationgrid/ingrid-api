@@ -68,10 +68,10 @@ pipeline {
                         dependencyTrackPublisher artifact: 'build/reports/sbom-docker.json', projectName: 'ingrid-api', projectVersion: determineVersion() + '-docker-image', synchronous: true, dependencyTrackApiKey: API_KEY, projectProperties: [group: 'InGrid', parentId: 'cc710f3c-7329-4980-a5da-f4d8f10e7367',tags: ['ingrid', 'deps_docker']]
                     }
                     def repoType = env.TAG_NAME ? "rpm-ingrid-releases" : "rpm-ingrid-snapshots"
-                    sh "mv build/reports/sbom.json build/reports/ingrid-api-${determineRpmVersion()}.bom.json"
+                    sh "mv build/reports/sbom.json build/reports/ingrid-api-${determineRpmVersion()}.sbom.json"
                     withCredentials([usernamePassword(credentialsId: '9623a365-d592-47eb-9029-a2de40453f68', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
                         sh '''
-                            curl -f --user $USERNAME:$PASSWORD --upload-file build/reports/*.bom.json https://nexus.informationgrid.eu/repository/''' + repoType + '''/
+                            curl -f --user $USERNAME:$PASSWORD --upload-file build/reports/*.sbom.json https://nexus.informationgrid.eu/repository/''' + repoType + '''/
                         '''
                     }
                 }
@@ -219,7 +219,7 @@ def determineRpmReleasePart() {
         }
         return '1'
     } else {
-        return 'dev'
+        return 'SNAPSHOT'
     }
 }
 

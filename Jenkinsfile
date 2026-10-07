@@ -30,6 +30,26 @@ pipeline {
             }
         }
 
+        stage('Deploy Image') {
+            // do not run when building a release from a branch-Jenkins-Job
+            // In Jenkins there's a special Tag-Job, that handles the release
+            when {
+                anyOf {
+                    expression { return shouldBuildDevOrRelease() && shouldBuildDockerImage() }
+                    allOf {
+                        buildingTag()
+                        expression { return currentBuild.number > 1 && shouldBuildDockerImage() }
+                    }
+                }
+            }
+            environment {
+                DOCKER_REGISTRY_CREDS = credentials('registry-opencode')
+            }
+            steps {
+                sh './gradlew -Djib.console=plain publishImage'
+            }
+        }
+
         stage ('Create SBOMs') {
             when {
                 anyOf {
@@ -75,26 +95,6 @@ pipeline {
                         '''
                     }
                 }
-            }
-        }
-
-        stage('Deploy Image') {
-            // do not run when building a release from a branch-Jenkins-Job
-            // In Jenkins there's a special Tag-Job, that handles the release
-            when {
-                anyOf {
-                    expression { return shouldBuildDevOrRelease() && shouldBuildDockerImage() }
-                    allOf {
-                        buildingTag()
-                        expression { return currentBuild.number > 1 && shouldBuildDockerImage() }
-                    }
-                }
-            }
-            environment {
-                DOCKER_REGISTRY_CREDS = credentials('registry-opencode')
-            }
-            steps {
-                sh './gradlew -Djib.console=plain publishImage'
             }
         }
 

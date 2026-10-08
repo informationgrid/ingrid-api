@@ -107,8 +107,8 @@ pipeline {
             }
             steps {
                 script {
-                    def imageVersion = determineVersion() == 'main' ? 'latest' : determineVersion()
                     def parentId = 'cc710f3c-7329-4980-a5da-f4d8f10e7367'
+                    def componentName = 'ingrid-api'
 
                     // Attach SBOM to Docker Image
                     withCredentials([
@@ -117,7 +117,7 @@ pipeline {
                         usernamePassword(credentialsId: 'registry-opencode', usernameVariable: 'REG_USER', passwordVariable: 'REG_PASS')
                     ]) {
                         def imageDigest = readFile('build/jib-image.digest').trim()
-                        def imageToScan = "registry.opencode.de/informationgrid/ingrid-api@${imageDigest}"
+                        def imageToScan = "registry.opencode.de/informationgrid/${componentName}@${imageDigest}"
                         sh """
                             docker run -u 0:0 --rm \
                               -e COSIGN_PASSWORD \
@@ -143,11 +143,7 @@ pipeline {
 
                         sbomConfigs.each { cfg ->
                             def props = [group: 'InGrid', parentId: parentId, tags: ['ingrid', cfg.tag]]
-                            if (imageVersion == 'latest') {
-                                props.isLatest = true
-                            }
-
-                            dependencyTrackPublisher(artifact: cfg.artifact, projectName: 'ingrid-api', projectVersion: baseVersion + cfg.suffix, synchronous: true, dependencyTrackApiKey: API_KEY, projectProperties: props)
+                            dependencyTrackPublisher(artifact: cfg.artifact, projectName: componentName, projectVersion: baseVersion + cfg.suffix, synchronous: true, dependencyTrackApiKey: API_KEY, projectProperties: props)
                         }
                     }
 

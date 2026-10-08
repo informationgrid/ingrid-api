@@ -116,7 +116,7 @@ pipeline {
                         string(credentialsId: 'cosign-key-password', variable: 'COSIGN_PASSWORD'),
                         usernamePassword(credentialsId: 'registry-opencode', usernameVariable: 'REG_USER', passwordVariable: 'REG_PASS')
                     ]) {
-                        def imageDigest = readFile('build/jib-image-digest').trim()
+                        def imageDigest = readFile('build/jib-image.digest').trim()
                         def imageToScan = "registry.opencode.de/informationgrid/ingrid-api@${imageDigest}"
                         sh """
                             docker run -u 0:0 --rm \
@@ -144,7 +144,7 @@ pipeline {
                         sbomConfigs.each { cfg ->
                             def props = [group: 'InGrid', parentId: parentId, tags: ['ingrid', cfg.tag]]
                             if (imageVersion == 'latest') {
-                                props.isLatestVersion = true
+                                props.isLatest = true
                             }
 
                             dependencyTrackPublisher(artifact: cfg.artifact, projectName: 'ingrid-api', projectVersion: baseVersion + cfg.suffix, synchronous: true, dependencyTrackApiKey: API_KEY, projectProperties: props)

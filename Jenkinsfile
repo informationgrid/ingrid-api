@@ -107,12 +107,15 @@ pipeline {
             }
             steps {
                 script {
+                    def imageVersion = determineVersion() == 'main' ? 'latest' : determineVersion()
+                    def parentId = 'cc710f3c-7329-4980-a5da-f4d8f10e7367'
+
+                    // Attach SBOM to Docker Image
                     withCredentials([
                         file(credentialsId: 'cosign-private-key', variable: 'COSIGN_KEY_FILE'),
                         string(credentialsId: 'cosign-key-password', variable: 'COSIGN_PASSWORD'),
                         usernamePassword(credentialsId: 'registry-opencode', usernameVariable: 'REG_USER', passwordVariable: 'REG_PASS')
                     ]) {
-                        def imageVersion = determineVersion() == 'main' ? 'latest' : determineVersion()
                         def imageToScan = "registry.opencode.de/informationgrid/ingrid-api:${imageVersion}"
                         sh """
                             docker run -u 0:0 --rm \
@@ -127,11 +130,26 @@ pipeline {
                               ${imageToScan}
                         """
                     }
+
+                    // Dependency Track
                     withCredentials([string(credentialsId: 'api-token-dependency-track', variable: 'API_KEY')]) {
-                        dependencyTrackPublisher artifact: 'build/reports/sbom.json', projectName: 'ingrid-api', projectVersion: determineVersion(), synchronous: true, dependencyTrackApiKey: API_KEY, projectProperties: [group: 'InGrid', parentId: 'cc710f3c-7329-4980-a5da-f4d8f10e7367',tags: ['ingrid', 'deps_prod']]
-                        dependencyTrackPublisher artifact: 'build/reports/sbom-dev.json', projectName: 'ingrid-api', projectVersion: determineVersion() + '-dev', synchronous: true, dependencyTrackApiKey: API_KEY, projectProperties: [group: 'InGrid', parentId: 'cc710f3c-7329-4980-a5da-f4d8f10e7367',tags: ['ingrid', 'deps_dev']]
-                        dependencyTrackPublisher artifact: 'build/reports/sbom-docker.json', projectName: 'ingrid-api', projectVersion: determineVersion() + '-docker-image', synchronous: true, dependencyTrackApiKey: API_KEY, projectProperties: [group: 'InGrid', parentId: 'cc710f3c-7329-4980-a5da-f4d8f10e7367',tags: ['ingrid', 'deps_docker']]
+                        def sbomConfigs = [
+                            [artifact: 'build/reports/sbom.json',        suffix: '',              tag: 'deps_prod'],
+                            [artifact: 'build/reports/sbom-dev.json',    suffix: '-dev',          tag: 'deps_dev'],
+                            [artifact: 'build/reports/sbom-docker.json', suffix: '-docker-image', tag: 'deps_docker']
+                        ]
+
+                        sbomConfigs.each { cfg ->
+                            def props = [group: 'InGrid', parentId: parentId, tags: ['ingrid', cfg.tag]]
+                            if (imageVersion == 'latest') {
+                                props.isLatestVersion = true
+                            }
+
+                            dependencyTrackPublisher(artifact: cfg.artifact, projectName: 'ingrid-api', projectVersion: baseVersion + cfg.suffix, synchronous: true, dependencyTrackApiKey: API_KEY, projectProperties: props)
+                        }
                     }
+
+                    // NEXUS
                     def repoType = env.TAG_NAME ? "rpm-ingrid-releases" : "rpm-ingrid-snapshots"
                     sh "mv build/reports/sbom.json build/reports/ingrid-api-${determineRpmVersion()}.sbom.json"
                     withCredentials([usernamePassword(credentialsId: '9623a365-d592-47eb-9029-a2de40453f68', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {

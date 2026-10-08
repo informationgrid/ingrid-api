@@ -88,28 +88,19 @@ pipeline {
                         usernamePassword(credentialsId: 'registry-opencode', usernameVariable: 'REG_USER', passwordVariable: 'REG_PASS')
                     ]) {
                         def imageVersion = determineVersion() == 'main' ? 'latest' : determineVersion()
-                        sh '''
-                            # Copy secret file into local workspace so the container can access it
-                            cp "$COSIGN_KEY_FILE" ./temp_cosign.key
-
-                            # Ensure it is readable by any user running inside the container
-                            chmod 644 ./temp_cosign.key
-                            # 1. Pre-create the directory and make it writable for any container UID
-                            mkdir -p ./docker-config
-                            chmod 777 ./docker-config
-
-                            # 1. Log in to registry inside the cosign container
-                            docker run --rm \
-                              -u 0:0 \
-                              -v "$(pwd)/docker-config:/root/.docker" \
-                              ghcr.io/sigstore/cosign/cosign:v3.1.3 login registry.opencode.de \
-                              -u "$REG_USER" \
-                              -p "$REG_PASS"
-
-                            docker run -u 0:0 --rm -e COSIGN_PASSWORD="$COSIGN_PASSWORD" -v "$(pwd)/docker-config:/root/.docker" --volumes-from jenkins ghcr.io/sigstore/cosign/cosign:v3.1.3 attest --type cyclonedx --predicate ${WORKSPACE}/build/reports/sbom-docker.json --key ${WORKSPACE}/temp_cosign.key registry.opencode.de/informationgrid/ingrid-api:latest
-                            # Clean up key and temporary config folder
-                            rm -rf ./temp_cosign.key ./docker-config
-                        '''
+                        def imageToScan = "registry.opencode.de/informationgrid/ingrid-api:${imageVersion}"
+                        sh """
+                            docker run -u 0:0 --rm \
+                              -e COSIGN_PASSWORD \
+                              --volumes-from jenkins \
+                              ghcr.io/sigstore/cosign/cosign:v3.1.3 attest \
+                              --type cyclonedx \
+                              --predicate \${WORKSPACE}/build/reports/sbom-docker.json \
+                              --key "\$COSIGN_KEY_FILE" \
+                              --registry-username "\$REG_USER" \
+                              --registry-password "\$REG_PASS" \
+                              ${imageToScan}
+                        """
                     }
                     withCredentials([string(credentialsId: 'api-token-dependency-track', variable: 'API_KEY')]) {
                         dependencyTrackPublisher artifact: 'build/reports/sbom.json', projectName: 'ingrid-api', projectVersion: determineVersion(), synchronous: true, dependencyTrackApiKey: API_KEY, projectProperties: [group: 'InGrid', parentId: 'cc710f3c-7329-4980-a5da-f4d8f10e7367',tags: ['ingrid', 'deps_prod']]

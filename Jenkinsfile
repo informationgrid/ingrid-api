@@ -116,7 +116,8 @@ pipeline {
                         string(credentialsId: 'cosign-key-password', variable: 'COSIGN_PASSWORD'),
                         usernamePassword(credentialsId: 'registry-opencode', usernameVariable: 'REG_USER', passwordVariable: 'REG_PASS')
                     ]) {
-                        def imageToScan = "registry.opencode.de/informationgrid/ingrid-api:${imageVersion}"
+                        def imageDigest = readFile('build/jib-image-digest').trim()
+                        def imageToScan = "registry.opencode.de/informationgrid/ingrid-api@${imageDigest}"
                         sh """
                             docker run -u 0:0 --rm \
                               -e COSIGN_PASSWORD \
@@ -133,6 +134,7 @@ pipeline {
 
                     // Dependency Track
                     withCredentials([string(credentialsId: 'api-token-dependency-track', variable: 'API_KEY')]) {
+                        def baseVersion = determineVersion()
                         def sbomConfigs = [
                             [artifact: 'build/reports/sbom.json',        suffix: '',              tag: 'deps_prod'],
                             [artifact: 'build/reports/sbom-dev.json',    suffix: '-dev',          tag: 'deps_dev'],

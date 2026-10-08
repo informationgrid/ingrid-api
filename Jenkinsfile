@@ -66,9 +66,34 @@ pipeline {
 
                     docker.withRegistry('https://registry.opencode.de', 'registry-opencode') {
                         sh """
-                            docker run --rm --pull=always --volumes-from jenkins anchore/syft:latest ${imageToScan} --output cyclonedx-json=${WORKSPACE}/build/reports/sbom-docker.json
+                            docker run --rm --pull=always --volumes-from jenkins anchore/syft:latest ${imageToScan} --output cyclonedx-json=${WORKSPACE}/build/reports/sbom-docker-image.json
                         """
                     }
+                }
+            }
+        }
+
+        stage ('Merge SBOMs') {
+            when {
+                anyOf {
+                    branch 'main'
+                    buildingTag()
+                }
+            }
+            agent {
+                docker {
+                    image 'cyclonedx/cyclonedx-cli:latest'
+                    // CRITICAL: Overrides the entrypoint so Jenkins can run it as a regular shell agent
+                    args '-u root --entrypoint=""'
+                    reuseNode true
+                }
+            }
+            steps {
+                script {
+                    sh """
+                        mkdir -p build/reports
+                        cyclonedx merge --input-files build/reports/sbom.json build/reports/sbom-docker-image.json --output-file build/reports/sbom-docker.json --output-format json --output-version v1_6 --hierarchical --group de.ingrid --name ingrid-editor --version ${determineVersion()}
+                    """
                 }
             }
         }

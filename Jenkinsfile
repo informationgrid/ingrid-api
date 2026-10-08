@@ -14,7 +14,7 @@ pipeline {
         stage('Build Image') {
             when { expression { return shouldBuildDevOrRelease() } }
             steps {
-                sh './gradlew build cyclonedxBom -x test -x check'
+                sh './gradlew clean build cyclonedxBom -x test -x check'
             }
         }
 

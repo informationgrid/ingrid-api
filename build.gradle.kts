@@ -181,7 +181,6 @@ tasks.cyclonedxDirectBom {
 
 tasks {
     test {
-        ignoreFailures = true
         jvmArgs("--enable-native-access=ALL-UNNAMED")
     }
 }

@@ -2,6 +2,7 @@ package de.ingrid.ingridapi
 
 import de.ingrid.ingridapi.admin.configureAdminRouting
 import de.ingrid.ingridapi.ogc.records.configureOgcRecordsRouting
+import de.ingrid.ingridapi.opensearch.configureOpenSearchRouting
 import de.ingrid.ingridapi.plugins.configureCompression
 import de.ingrid.ingridapi.plugins.configureCors
 import de.ingrid.ingridapi.plugins.configureDi
@@ -37,6 +38,10 @@ fun Application.portal() {
 
 fun Application.ogcRecords() {
     configureOgcRecordsRouting()
+}
+
+fun Application.openSearch() {
+    configureOpenSearchRouting()
 }
 
 fun Application.admin() {

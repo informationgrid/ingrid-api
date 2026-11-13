@@ -19,5 +19,12 @@ fun Application.configureSwagger() {
                 description = "OGC API Records endpoints as specified by OGC."
             }
         }
+        spec("opensearch") {
+            info {
+                title = "OpenSearch API"
+                description = "OpenSearch 1.1 interface to search the InGrid data space. " +
+                    "Results are returned as RSS 2.0 with OpenSearch response elements."
+            }
+        }
     }
 }

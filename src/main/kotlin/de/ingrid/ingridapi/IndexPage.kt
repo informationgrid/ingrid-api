@@ -54,6 +54,15 @@ fun HTML.renderIndexPage(root: String) {
                 }
             }
 
+            article(classes = "api-card") {
+                h2 { +"OpenSearch API" }
+                p { +"OpenSearch 1.1 interface to search the InGrid data space. Returns results as RSS 2.0 with OpenSearch response elements and InGrid extensions." }
+                div(classes = "api-links") {
+                    a(href = "$root/opensearch/swagger", classes = "button") { +"Swagger UI" }
+                    a(href = "$root/opensearch/descriptor", classes = "button outline") { +"Description Document" }
+                }
+            }
+
             div(classes = "footer") {
                 hr {}
                 nav {

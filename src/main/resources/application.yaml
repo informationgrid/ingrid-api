@@ -7,6 +7,7 @@ ktor:
       - de.ingrid.ingridapi.ApplicationKt.security
       - de.ingrid.ingridapi.ApplicationKt.portal
       - de.ingrid.ingridapi.ApplicationKt.ogcRecords
+      - de.ingrid.ingridapi.ApplicationKt.openSearch
       - de.ingrid.ingridapi.ApplicationKt.admin
   deployment:
     port: $SERVER_PORT:8080
@@ -31,3 +32,11 @@ ktor:
   session:
     signKey: "$SESSION_SIGN_KEY:000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
     secure: "$SESSION_SECURE:true"
+  opensearch:
+    shortName: "$OS_SHORT_NAME:InGrid OpenSearch"
+    description: "$OS_DESCRIPTION:Here you can search inside the InGrid data space."
+    tags: "$OS_TAGS:ingrid opensearch web"
+    contact: "$OS_CONTACT:"
+    channelDescription: "$OS_CHANNEL_DESCRIPTION:Search results"
+    detailsUrl: "$OS_DETAILS_URL:"
+    maxHitsPerPage: "$OS_MAX_HITS_PER_PAGE:100"

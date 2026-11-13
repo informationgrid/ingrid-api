@@ -174,7 +174,7 @@ tasks.cyclonedxDirectBom {
         skipConfigs = listOf("compileClasspath", "testCompileClasspath")
     }
     projectType = APPLICATION
-    schemaVersion = Version.VERSION_16
+    schemaVersion = Version.VERSION_17
     componentVersion = rootProject.version.toString()
     xmlOutput.convention(null as RegularFile?)
 }

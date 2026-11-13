@@ -62,7 +62,7 @@ pipeline {
                 sh "./gradlew cyclonedxDirectBom -PdevSBOM"
                 script {
                     def imageVersion = determineVersion() == 'main' ? 'latest' : determineVersion()
-                    def imageToScan = "registry.opencode.de/informationgrid/ingrid-api:${imageVersion}"
+                    def imageToScan = "bellsoft/liberica-openjre-alpine:25"
 
                     docker.withRegistry('https://registry.opencode.de', 'registry-opencode') {
                         sh """
@@ -92,7 +92,7 @@ pipeline {
                 script {
                     sh """
                         mkdir -p build/reports
-                        cyclonedx merge --input-files build/reports/sbom.json build/reports/sbom-docker-image.json --output-file build/reports/sbom-docker.json --output-format json --output-version v1_6 --hierarchical --group de.ingrid --name ingrid-editor --version ${determineVersion()}
+                        cyclonedx merge --input-files build/reports/sbom.json build/reports/sbom-docker-image.json --output-file build/reports/sbom-docker.json --output-format json --output-version v1_7 --hierarchical --group de.ingrid --name ingrid-editor --version ${determineVersion()}
                     """
                 }
             }

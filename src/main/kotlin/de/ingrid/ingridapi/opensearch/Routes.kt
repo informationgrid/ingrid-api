@@ -4,6 +4,7 @@ import de.ingrid.ingridapi.opensearch.service.DescriptorRenderer
 import de.ingrid.ingridapi.opensearch.service.OpenSearchParams
 import de.ingrid.ingridapi.opensearch.service.OpenSearchService
 import de.ingrid.ingridapi.opensearch.service.RssRenderer
+import de.ingrid.ingridapi.opensearch.service.UvpSupport
 import io.github.smiley4.ktoropenapi.config.RouteConfig
 import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.openApi
@@ -43,6 +44,8 @@ fun Application.configureOpenSearchRouting() {
             ?.getString()
             ?.trimEnd('/') ?: ""
     val config = OpenSearchConfig(environment.config)
+    // --- UVP: parse the UVP-specific channel settings ---
+    val uvpChannelConfig = UvpSupport.parseChannelConfig(environment.config)
 
     routing {
         route("opensearch", { specName = "opensearch" }) {
@@ -74,9 +77,8 @@ fun Application.configureOpenSearchRouting() {
                 description =
                     "OpenSearch 1.1 query endpoint. Executes an InGrid query string against the Elasticsearch " +
                         "indices of all active catalogs and returns the results as RSS 2.0 with OpenSearch " +
-                        "response elements and InGrid extensions. The legacy parameters 'georss', 'uvp', " +
-                        "'detail', 'xml', 't', 'docid', 'altdocid' and 'plugid' are accepted for compatibility " +
-                        "but ignored."
+                        "response elements and InGrid extensions. The legacy parameters 'georss', 'detail', " +
+                        "'xml', 't', 'docid', 'altdocid' and 'plugid' are accepted for compatibility but ignored."
                 request {
                     queryParameter<String>("q") {
                         description =
@@ -95,6 +97,14 @@ fun Application.configureOpenSearchRouting() {
                     }
                     queryParameter<String>("format") {
                         description = "Output format: 'rss' (default). 'rdf' (DCAT-AP.DE) is not supported yet."
+                    }
+                    // --- UVP: legacy parameter of the UVP-Verbund, isolated in UvpSupport and
+                    // removed together with it when it is not needed anymore ---
+                    queryParameter<Int>("uvp") {
+                        description =
+                            "Set to 1 to deliver the UVP-specific response format of the UVP-Verbund: " +
+                                "no OpenSearch response elements, channel pubDate of the most recent hit and " +
+                                "UVP item elements (guid, author, pubDate, uvp:latest-phase)."
                     }
                 }
                 response {
@@ -124,6 +134,8 @@ fun Application.configureOpenSearchRouting() {
                             (call.request.queryParameters["h"]?.toIntOrNull()?.takeIf { it > 0 } ?: 10)
                                 .coerceAtMost(config.maxHitsPerPage),
                         channelTitle = call.request.queryParameters["title"],
+                        // --- UVP: activate the UVP-specific response with `uvp=1` (legacy semantics) ---
+                        withUvp = (call.request.queryParameters[UvpSupport.REQUEST_PARAM]?.toIntOrNull() ?: 0) == 1,
                     )
 
                 val service = dependencies.resolve<OpenSearchService>()
@@ -137,6 +149,7 @@ fun Application.configureOpenSearchRouting() {
                         selfUrl = baseUrl + call.request.path() + "?" + call.request.queryString(),
                         channelDescription = config.channelDescription,
                         detailsUrlTemplate = config.detailsUrl,
+                        uvpChannelConfig = uvpChannelConfig,
                     )
                 call.respondText(rss, ContentType.parse("application/rss+xml"))
             }

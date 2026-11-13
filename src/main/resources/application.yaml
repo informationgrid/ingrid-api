@@ -40,6 +40,10 @@ ktor:
     channelDescription: "$OS_CHANNEL_DESCRIPTION:Search results"
     detailsUrl: "$OS_DETAILS_URL:"
     maxHitsPerPage: "$OS_MAX_HITS_PER_PAGE:100"
+    # --- UVP: settings that are only used in UVP mode, removed together with UvpSupport ---
+    uvp:
+      language: "$OS_UVP_LANGUAGE:"
+      copyright: "$OS_UVP_COPYRIGHT:"
   atom:
     metadataAccessUrl: "$ATOM_METADATA_ACCESS_URL:"
     metadataDetailsUrl: "$ATOM_METADATA_DETAILS_URL:"

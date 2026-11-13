@@ -17,6 +17,8 @@ data class OpenSearchParams(
     val hitsPerPage: Int,
     /** Optional channel title from the `title` parameter. */
     val channelTitle: String? = null,
+    /** Whether the UVP-specific response format is requested (legacy parameter `uvp=1`). */
+    val withUvp: Boolean = false,
 )
 
 /** One hit of an OpenSearch search result. */

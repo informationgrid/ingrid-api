@@ -34,6 +34,7 @@ kotlin {
 ktor {
     docker {
         jreVersion.set(JavaVersion.VERSION_25)
+        customBaseImage.set("bellsoft/liberica-openjre-alpine:25")
 
         val branchName = System.getenv("BRANCH_NAME").orEmpty()
         val tagName = System.getenv("TAG_NAME").orEmpty()

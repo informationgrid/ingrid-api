@@ -8,7 +8,6 @@ import de.ingrid.ingridapi.atom.service.OpensearchDescriptionProducer
 import de.ingrid.ingridapi.atom.service.ServiceFeedProducer
 import de.ingrid.ingridapi.atom.service.ServiceFeedListRequest
 import de.ingrid.ingridapi.atom.service.ServiceFeedRequest
-import io.github.smiley4.ktoropenapi.config.RouteConfig
 import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.openApi
 import io.github.smiley4.ktoropenapi.route
@@ -17,17 +16,27 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.html.respondHtml
+import io.ktor.server.http.content.staticResources
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.plugins.origin
+import io.ktor.server.response.respondBytes
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
-import kotlinx.html.*
 
 private const val ATOM_CONTENT_TYPE = "application/atom+xml"
 private const val OPENSEARCH_DESCRIPTION_CONTENT_TYPE = "application/opensearchdescription+xml"
 
+/**
+ * The Atom Download Service: the Atom feed endpoints and the static website of the
+ * ATOM-Feed-Client (served from the `static` directory of the `atom-feed-client` dependency).
+ *
+ * This is the migration of the servlet and the static resource handler of
+ * `de.ingrid.iface.IFaceServer` (ingrid-interface-search): the static website of the client
+ * is served at the root of the download service, and requests to paths without a static
+ * resource fall through to the Atom feed endpoints, like the Jetty `ResourceHandler` of the
+ * legacy implementation let requests pass for resources that do not exist.
+ */
 fun Application.configureAtomRouting() {
     val root =
         environment.config
@@ -37,20 +46,33 @@ fun Application.configureAtomRouting() {
 
     routing {
         route("atom", { specName = "atom" }) {
-            // Landing page at '/atom' and '/atom/'
-            get {
-                handleLandingPage(call, root)
+            // The static website of the ATOM-Feed-Client at '/atom/...' (welcome file
+            // 'index.html'), like the Jetty ResourceHandler of the legacy implementation.
+            // The tailcard route has the lowest priority, so all Atom feed endpoints below
+            // take precedence.
+            staticResources("/", "static") {
+                enableAutoHeadResponse()
             }
+
+            // The website of the ATOM-Feed-Client at '/atom/' (welcome file 'index.html').
+            // Note: in Ktor, a route with a trailing slash ('/') matches requests WITH the
+            // trailing slash only, so this handler only serves '/atom/'.
             get("/", {
-                defaultResponseSpec()
-            }) {
-                handleLandingPage(call, root)
-            }
-            get("", {
-                description = "The landing page of this ATOM Download Service."
+                description = "The website of the ATOM-Feed-Client."
                 hidden = true
-                defaultResponseSpec()
-            }) {}
+            }) {
+                serveWelcomeFile(call)
+            }
+
+            // Redirect '/atom' to '/atom/' so that the relative URLs of the client
+            // ('./service-list', ...) resolve correctly, like the welcome file handling
+            // of the Jetty ResourceHandler of the legacy implementation
+            get({
+                description = "Redirects to the ATOM-Feed-Client website at '/atom/'."
+                hidden = true
+            }) {
+                call.respondRedirect("$root/atom/")
+            }
 
             // Serve the OpenAPI JSON for the ATOM Download Service at '/atom/api'
             route("api") { openApi("atom") }
@@ -288,56 +310,21 @@ private suspend fun handleDatasetFeed(
     }
 }
 
-private suspend fun handleLandingPage(
-    call: ApplicationCall,
-    root: String,
-) {
-    call.respondHtml {
-        attributes["data-theme"] = "light"
-        head {
-            meta(charset = "utf-8")
-            meta("viewport", "width=device-width, initial-scale=1")
-            title("ATOM Download Service")
-            unsafe {
-                +"""
-                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-                <style>
-                    body { background-color: #f4f7f9; }
-                    main { padding-top: 3rem; padding-bottom: 3rem; }
-                    .api-card { padding: 1.5rem; border-left: 6px solid #1565c0; margin-bottom: 2rem; }
-                </style>
-                """.trimIndent()
-            }
-        }
-        body {
-            main(classes = "container") {
-                header {
-                    h1 { +"ATOM Download Service" }
-                    p {
-                        +"INSPIRE ATOM Download Service interface to the InGrid data space. Lists download "
-                        +"services as Atom feeds and provides the download links of their datasets."
-                    }
-                }
-                article(classes = "api-card") {
-                    h2 { +"Endpoints" }
-                    ul {
-                        li {
-                            a(href = "$root/atom/swagger") { +"Swagger UI" }
-                            p { +"Interactive documentation of this API." }
-                        }
-                        li {
-                            a(href = "$root/atom/service-list") { +"Service Feed List" }
-                            p { +"Atom feed listing all download services (optionally filtered by the 'q' parameter)." }
-                        }
-                        li {
-                            a(href = "$root/atom/opensearch-description/{servicefeed-uuid}") { +"OpenSearch Description" }
-                            p { +"The OpenSearch Description Document of a download service." }
-                        }
-                    }
-                }
-            }
-        }
+/**
+ * Serves the welcome file `index.html` of the ATOM-Feed-Client website, like the welcome file
+ * handling of the Jetty ResourceHandler of the legacy implementation.
+ */
+private suspend fun serveWelcomeFile(call: ApplicationCall) {
+    val index =
+        Thread
+            .currentThread()
+            .contextClassLoader
+            ?.getResource("static/index.html")
+    if (index == null) {
+        call.respondText("Not found", ContentType.Text.Plain, HttpStatusCode.NotFound)
+        return
     }
+    call.respondBytes(index.readBytes(), ContentType.Text.Html)
 }
 
 /** Builds the absolute base URL (scheme, host, optional port, context path) of the request. */
@@ -351,12 +338,4 @@ internal fun requestBaseUrl(
             (origin.scheme == "http" && (origin.serverPort == 80 || origin.serverPort <= 0))
     val port = if (isDefaultPort) "" else ":${origin.serverPort}"
     return "${origin.scheme}://${origin.serverHost}$port$root"
-}
-
-private fun RouteConfig.defaultResponseSpec() {
-    response {
-        HttpStatusCode.OK to {
-            description = "Successful response"
-        }
-    }
 }

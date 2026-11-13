@@ -7,6 +7,12 @@ import io.ktor.server.application.install
 fun Application.configureSwagger() {
     install(OpenApi) {
         info { version = "latest" }
+        // exclude the static content routes (e.g. the ATOM download client website) from the
+        // documentation: the tailcard selector of the Ktor static content routes renders as
+        // the path segment "(static-content)"
+        pathFilter = { _, path ->
+            path.none { it == "(static-content)" }
+        }
         spec("portal") {
             info {
                 title = "Portal API"

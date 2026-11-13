@@ -51,11 +51,45 @@ class AtomRoutesTest {
         }
 
     @Test
-    fun testLandingPage() =
-        addWrapper { client, _ ->
+    fun testLandingPageRedirectsToClient() =
+        addWrapper(followRedirects = false) { client, _ ->
             client.get("/atom").apply {
+                // like the welcome file handling of the Jetty ResourceHandler: redirect to
+                // the trailing slash so that the relative URLs of the client resolve
+                assertEquals(HttpStatusCode.Found, status)
+                assertContains(headers["Location"].orEmpty(), "/atom/")
+            }
+        }
+
+    @Test
+    fun testClientWebsiteIsServed() =
+        addWrapper { client, _ ->
+            // the welcome file at '/atom/'
+            client.get("/atom/").apply {
                 assertEquals(HttpStatusCode.OK, status)
-                assertContains(bodyAsText(), "ATOM Download Service")
+                assertContains(bodyAsText(), "<title>ATOM-Feed Client</title>")
+            }
+            // static resources of the client
+            client.get("/atom/favicon.ico").apply {
+                assertEquals(HttpStatusCode.OK, status)
+            }
+            client.get("/atom/assets/logo/ingrid.png").apply {
+                assertEquals(HttpStatusCode.OK, status)
+            }
+            // unknown resources are not found
+            client.get("/atom/does-not-exist.js").apply {
+                assertEquals(HttpStatusCode.NotFound, status)
+            }
+        }
+
+    @Test
+    fun testFeedEndpointTakesPrecedenceOverStaticContent() =
+        addWrapper { client, esMock ->
+            coEvery { esMock.search(any()) } returns SearchResult(0, buildJsonArray { })
+            // there is no static file 'service-list', so the atom feed endpoint answers
+            client.get("/atom/service-list").apply {
+                assertEquals(HttpStatusCode.NotFound, status)
+                assertContains(bodyAsText(), "No service feeds found")
             }
         }
 

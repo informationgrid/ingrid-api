@@ -87,6 +87,12 @@ repositories {
             includeGroup("com.jillesvangurp")
         }
     }
+    // InGrid artifacts (atom-feed-client with the static website of the ATOM download client)
+    maven("https://nexus.informationgrid.eu/repository/maven-public") {
+        content {
+            includeGroup("de.ingrid")
+        }
+    }
 }
 
 configurations.all {
@@ -133,6 +139,9 @@ dependencies {
 
     // elasticsearch-client
     implementation("com.jillesvangurp:search-client:2.9.0")
+
+    // static website of the ATOM download client, served at '/atom' (see atom module)
+    implementation("de.ingrid:atom-feed-client:8.0.0")
 
     // dependency injection (Ktor DI)
     implementation("io.ktor:ktor-server-di")

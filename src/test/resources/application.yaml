@@ -7,3 +7,19 @@ ktor:
     https: "false"
     username: ""
     password: ""
+  keycloak:
+    serverUrl: "http://localhost:8080"
+    realm: "InGrid"
+    clientId: "ingrid-api"
+    clientSecret: "test"
+  security:
+    authDisabled: "true"
+  session:
+    secure: "false"
+  deployment:
+    rootPath: ""
+  opensearch:
+    shortName: "InGrid OpenSearch"
+  atom:
+    metadataAccessUrl: "https://localhost/csw?service=CSW&request=GetRecordById&id={uuid}"
+    metadataDetailsUrl: "https://localhost/portal/detail"

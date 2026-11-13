@@ -1,6 +1,7 @@
 package de.ingrid.ingridapi
 
 import de.ingrid.ingridapi.admin.configureAdminRouting
+import de.ingrid.ingridapi.atom.configureAtomRouting
 import de.ingrid.ingridapi.ogc.records.configureOgcRecordsRouting
 import de.ingrid.ingridapi.opensearch.configureOpenSearchRouting
 import de.ingrid.ingridapi.plugins.configureCompression
@@ -42,6 +43,10 @@ fun Application.ogcRecords() {
 
 fun Application.openSearch() {
     configureOpenSearchRouting()
+}
+
+fun Application.atom() {
+    configureAtomRouting()
 }
 
 fun Application.admin() {

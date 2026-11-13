@@ -26,5 +26,12 @@ fun Application.configureSwagger() {
                     "Results are returned as RSS 2.0 with OpenSearch response elements."
             }
         }
+        spec("atom") {
+            info {
+                title = "ATOM Download Service"
+                description = "INSPIRE ATOM Download Service interface to the InGrid data space. " +
+                    "Lists download services as Atom feeds and provides the download links of their datasets."
+            }
+        }
     }
 }

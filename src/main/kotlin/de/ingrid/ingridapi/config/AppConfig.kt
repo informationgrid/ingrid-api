@@ -30,6 +30,32 @@ class AppConfig {
 
     val rootPath: String = applicationConfiguration.property("ktor.deployment.rootPath").getString()
 
+    // --- ATOM Download Service ----------------------------------------------
+    /** URL template of the CSW GetRecordById access to the metadata records (`{uuid}` placeholder). */
+    val atomMetadataAccessUrl: String =
+        applicationConfiguration.propertyOrNull("ktor.atom.metadataAccessUrl")?.getString() ?: ""
+
+    /** URL of the portal detail page (linked from dataset feeds when `detail=true`). */
+    val atomMetadataDetailsUrl: String =
+        applicationConfiguration.propertyOrNull("ktor.atom.metadataDetailsUrl")?.getString() ?: ""
+
+    /** Connect timeout in milliseconds for external HTTP calls (nested Atom/XML documents). */
+    val atomUrlConnectTimeout: Int =
+        applicationConfiguration.propertyOrNull("ktor.atom.urlConnectTimeout")?.getString()?.toIntOrNull() ?: 1000
+
+    /** Read timeout in milliseconds for external HTTP calls (nested Atom/XML documents). */
+    val atomUrlReadTimeout: Int =
+        applicationConfiguration.propertyOrNull("ktor.atom.urlReadTimeout")?.getString()?.toIntOrNull() ?: 1000
+
+    /** Optional InGrid query string appended to all queries of the ATOM Download Service. */
+    val atomQueryExtension: String =
+        applicationConfiguration.propertyOrNull("ktor.atom.queryExtension")?.getString() ?: ""
+
+    /** Comma separated list of supported languages of the ATOM Download Service. */
+    val atomSupportedLanguages: List<String> =
+        applicationConfiguration.propertyOrNull("ktor.atom.supportedLanguages")
+            ?.getString()?.split(",")?.map(String::trim)?.filter(String::isNotEmpty) ?: listOf("de")
+
     val keycloakIssuer: String
         get() = "${keycloakServerUrl.trimEnd('/')}/realms/$keycloakRealm"
     val keycloakAuthorizeUrl: String get() = "$keycloakIssuer/protocol/openid-connect/auth"

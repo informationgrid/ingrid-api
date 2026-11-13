@@ -27,7 +27,7 @@ object EsQueryBuilder {
             put("query", buildQuery(parsed))
         }
 
-    private fun buildQuery(parsed: ParsedIngridQuery): JsonElement {
+    internal fun buildQuery(parsed: ParsedIngridQuery): JsonElement {
         val activeGroups =
             parsed.groups.filter { it.must.isNotEmpty() || it.mustNot.isNotEmpty() }
         return when (activeGroups.size) {

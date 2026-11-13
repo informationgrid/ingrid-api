@@ -63,6 +63,15 @@ fun HTML.renderIndexPage(root: String) {
                 }
             }
 
+            article(classes = "api-card") {
+                h2 { +"ATOM Download Service" }
+                p { +"INSPIRE ATOM Download Service interface to the InGrid data space. Lists download services as Atom feeds and provides the download links of their datasets." }
+                div(classes = "api-links") {
+                    a(href = "$root/atom/swagger", classes = "button") { +"Swagger UI" }
+                    a(href = "$root/atom/service-list", classes = "button outline") { +"Service Feed List" }
+                }
+            }
+
             div(classes = "footer") {
                 hr {}
                 nav {

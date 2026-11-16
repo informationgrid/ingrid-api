@@ -24,6 +24,7 @@ ktor:
     indexPrefix: "$INDEX_PREFIX:"
   keycloak:
     serverUrl: "$KEYCLOAK_SERVER_URL:http://localhost:8080"
+    internalServerUrl: "$KEYCLOAK_INTERNAL_SERVER_URL:"
     realm: "$KEYCLOAK_REALM:InGrid"
     clientId: "$KEYCLOAK_CLIENT_ID:ingrid-api"
     clientSecret: "$KEYCLOAK_CLIENT_SECRET:B8L4SgFXeRcLazRgPp0HAN24HvFHltKv"

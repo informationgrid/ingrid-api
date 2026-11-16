@@ -9,6 +9,7 @@ ktor:
     password: ""
   keycloak:
     serverUrl: "http://localhost:8080"
+    internalServerUrl: "http://localhost:8080"
     realm: "InGrid"
     clientId: "ingrid-api"
     clientSecret: "test"

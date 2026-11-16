@@ -14,6 +14,9 @@ class AppConfig {
 
     // --- Keycloak / OAuth2 (used by the admin GUI BFF) ----------------------
     val keycloakServerUrl: String = applicationConfiguration.property("ktor.keycloak.serverUrl").getString()
+    val keycloakInternalServerUrl: String =
+        applicationConfiguration.propertyOrNull("ktor.keycloak.internalServerUrl")?.getString()
+            ?.takeIf(String::isNotBlank) ?: keycloakServerUrl
     val keycloakRealm: String = applicationConfiguration.property("ktor.keycloak.realm").getString()
     val keycloakClientId: String = applicationConfiguration.property("ktor.keycloak.clientId").getString()
     val keycloakClientSecret: String = applicationConfiguration.property("ktor.keycloak.clientSecret").getString()
@@ -58,7 +61,9 @@ class AppConfig {
 
     val keycloakIssuer: String
         get() = "${keycloakServerUrl.trimEnd('/')}/realms/$keycloakRealm"
+    val keycloakInternalIssuer: String
+        get() = "${keycloakInternalServerUrl.trimEnd('/')}/realms/$keycloakRealm"
     val keycloakAuthorizeUrl: String get() = "$keycloakIssuer/protocol/openid-connect/auth"
-    val keycloakTokenUrl: String get() = "$keycloakIssuer/protocol/openid-connect/token"
+    val keycloakTokenUrl: String get() = "$keycloakInternalIssuer/protocol/openid-connect/token"
     val keycloakLogoutUrl: String get() = "$keycloakIssuer/protocol/openid-connect/logout"
 }

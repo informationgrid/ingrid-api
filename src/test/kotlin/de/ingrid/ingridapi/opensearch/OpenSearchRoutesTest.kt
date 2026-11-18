@@ -133,15 +133,27 @@ class OpenSearchRoutesTest {
             coEvery { esMock.search(capture(captured)) } returns SearchResult(0, buildJsonArray { })
             coEvery { esMock.getActiveCatalogs() } returns emptyList()
 
-            client.get("/opensearch/query?q=wasser%20datatype:default%20ranking:score").apply {
+            client.get("/opensearch/query?q=datatype:default+ranking:date").apply {
                 assertEquals(HttpStatusCode.OK, status)
             }
             val esQuery = Json.parseToJsonElement(captured.captured).jsonObject
-            // the search term is translated into a multi_match query...
+            assertContains(esQuery.toString(), """"datatype":{"query":"default"}""")
+            assertContains(esQuery.toString(), """"ranking":{"query":"date"}""")
+        }
+
+    @Test
+    fun testQueryDropsIgnoredMetaFields() =
+        addWrapper { client, esMock ->
+            val captured = slot<String>()
+            coEvery { esMock.search(capture(captured)) } returns SearchResult(0, buildJsonArray { })
+            coEvery { esMock.getActiveCatalogs() } returns emptyList()
+
+            client.get("/opensearch/query?q=wasser%20iplugs:test").apply {
+                assertEquals(HttpStatusCode.OK, status)
+            }
+            val esQuery = Json.parseToJsonElement(captured.captured).jsonObject
             assertContains(esQuery.toString(), """"query":"wasser"""")
-            // ...while the meta terms are dropped
-            assertFalse(esQuery.toString().contains("datatype"))
-            assertFalse(esQuery.toString().contains("ranking"))
+            assertFalse(esQuery.toString().contains("iplugs"))
         }
 
     @Test

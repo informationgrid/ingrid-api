@@ -31,9 +31,20 @@ class IngridQueryParserTest {
 
     @Test
     fun testMetaFieldsAreIgnored() {
-        val parsed = IngridQueryParser.parse("wasser datatype:default ranking:score")
+        val parsed = IngridQueryParser.parse("wasser iplugs:test buffer:50")
         assertEquals(1, parsed.groups.size)
         assertEquals(listOf(SearchTerm("wasser")), parsed.groups[0].must)
+    }
+
+    @Test
+    fun testDatatypeAndRankingQueryWithPlus() {
+        val parsed = IngridQueryParser.parse("datatype:default+ranking:date")
+        assertEquals(1, parsed.groups.size)
+        assertEquals(
+            listOf(FieldSearch("datatype", "default"), FieldSearch("ranking", "date")),
+            parsed.groups[0].must,
+        )
+        assertTrue(parsed.groups[0].mustNot.isEmpty())
     }
 
     @Test
@@ -112,5 +123,16 @@ class IngridQueryParserTest {
         val bool = query["query"]!!.jsonObject["bool"]!!.jsonObject
         assertTrue(bool.containsKey("should"))
         assertEquals(1, bool["minimum_should_match"]!!.jsonPrimitive.content.toInt())
+    }
+
+    @Test
+    fun testEsQueryForDatatypeAndRanking() {
+        val parsed = IngridQueryParser.parse("datatype:default+ranking:date")
+        val query = EsQueryBuilder.build(parsed, 0, 10).jsonObject
+        val bool = query["query"]!!.jsonObject["bool"]!!.jsonObject
+        val must = bool["must"]!!.jsonArray
+        assertEquals(2, must.size)
+        assertEquals("default", must[0].jsonObject["match"]!!.jsonObject["datatype"]!!.jsonObject["query"]!!.jsonPrimitive.content)
+        assertEquals("date", must[1].jsonObject["match"]!!.jsonObject["ranking"]!!.jsonObject["query"]!!.jsonPrimitive.content)
     }
 }

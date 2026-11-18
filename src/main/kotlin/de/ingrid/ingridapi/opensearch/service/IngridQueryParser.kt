@@ -10,9 +10,9 @@ package de.ingrid.ingridapi.opensearch.service
  * - field searches: `title:wasser`
  * - required terms: `+boden` and excluded terms: `-solar`
  * - the boolean operators `AND`, `OR`, `NOT` (uppercase)
- * - meta terms that only carry iBus/portal information (`ranking:score`, `datatype:default`,
- *   `iplugs:"..."`, `buffer:...`) are accepted for compatibility but dropped, because they have
- *   no equivalent in the Elasticsearch index.
+ * - meta terms that only carry iBus/portal information (`iplugs:"..."`, `buffer:...`)
+ *   are accepted for compatibility but dropped, because they have no equivalent in the
+ *   Elasticsearch index.
  */
 sealed interface QueryCondition
 
@@ -54,7 +54,7 @@ data class ParsedIngridQuery(
 object IngridQueryParser {
 
     /** Fields that only carry iBus/portal meta information and are ignored during the search. */
-    private val ignoredFields = setOf("ranking", "datatype", "iplugs", "buffer")
+    private val ignoredFields = setOf("iplugs", "buffer")
 
     /** Fields that identify a single document by its unique id. */
     private val documentIdFields = setOf("docuuid", "_id", "id", "t01_object.obj_id")
@@ -115,7 +115,7 @@ object IngridQueryParser {
                     current.append(char)
                 }
 
-                char.isWhitespace() && !inQuotes -> {
+                (char.isWhitespace() || char == '+') && !inQuotes -> {
                     if (current.isNotEmpty()) {
                         tokens.add(current.toString())
                         current.clear()

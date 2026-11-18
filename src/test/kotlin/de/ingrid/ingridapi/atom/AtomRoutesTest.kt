@@ -133,7 +133,7 @@ class AtomRoutesTest {
             val captured = slot<String>()
             coEvery { esMock.search(capture(captured)) } returns SearchResult(0, buildJsonArray { })
 
-            client.get("/atom/service-list?q=wasser%20datatype:default").apply {
+            client.get("/atom/service-list?q=wasser%20iplugs:default").apply {
                 assertEquals(HttpStatusCode.NotFound, status)
             }
             val esQuery = Json.parseToJsonElement(captured.captured).jsonObject
@@ -141,7 +141,7 @@ class AtomRoutesTest {
             assertContains(esQuery.toString(), """"t011_obj_serv.has_atom_download"""")
             // ...and the search term is translated, while the iBus meta term is dropped
             assertContains(esQuery.toString(), """"query":"wasser"""")
-            assertFalse(esQuery.toString().contains("datatype"))
+            assertFalse(esQuery.toString().contains("iplugs"))
         }
 
     @Test

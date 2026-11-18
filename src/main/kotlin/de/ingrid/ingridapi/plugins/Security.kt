@@ -121,7 +121,7 @@ fun Application.security() {
                     name = "keycloak",
                     authorizeUrl = cfg.keycloakAuthorizeUrl,
                     accessTokenUrl = cfg.keycloakTokenUrl,
-                    requestMethod = io.ktor.http.HttpMethod.Post,
+                    requestMethod = HttpMethod.Post,
                     clientId = cfg.keycloakClientId,
                     clientSecret = cfg.keycloakClientSecret,
                     defaultScopes = listOf("openid", "profile", "email"),

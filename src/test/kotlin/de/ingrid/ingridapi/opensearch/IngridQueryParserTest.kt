@@ -31,7 +31,7 @@ class IngridQueryParserTest {
 
     @Test
     fun testMetaFieldsAreIgnored() {
-        val parsed = IngridQueryParser.parse("wasser iplugs:test buffer:50")
+        val parsed = IngridQueryParser.parse("wasser ranking:score iplugs:test buffer:50")
         assertEquals(1, parsed.groups.size)
         assertEquals(listOf(SearchTerm("wasser")), parsed.groups[0].must)
     }
@@ -41,7 +41,7 @@ class IngridQueryParserTest {
         val parsed = IngridQueryParser.parse("datatype:default+ranking:date")
         assertEquals(1, parsed.groups.size)
         assertEquals(
-            listOf(FieldSearch("datatype", "default"), FieldSearch("ranking", "date")),
+            listOf(FieldSearch("datatype", "default")),
             parsed.groups[0].must,
         )
         assertTrue(parsed.groups[0].mustNot.isEmpty())
@@ -131,8 +131,7 @@ class IngridQueryParserTest {
         val query = EsQueryBuilder.build(parsed, 0, 10).jsonObject
         val bool = query["query"]!!.jsonObject["bool"]!!.jsonObject
         val must = bool["must"]!!.jsonArray
-        assertEquals(2, must.size)
+        assertEquals(1, must.size)
         assertEquals("default", must[0].jsonObject["match"]!!.jsonObject["datatype"]!!.jsonObject["query"]!!.jsonPrimitive.content)
-        assertEquals("date", must[1].jsonObject["match"]!!.jsonObject["ranking"]!!.jsonObject["query"]!!.jsonPrimitive.content)
     }
 }

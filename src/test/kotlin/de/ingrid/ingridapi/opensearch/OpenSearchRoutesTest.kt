@@ -138,7 +138,7 @@ class OpenSearchRoutesTest {
             }
             val esQuery = Json.parseToJsonElement(captured.captured).jsonObject
             assertContains(esQuery.toString(), """"datatype":{"query":"default"}""")
-            assertContains(esQuery.toString(), """"ranking":{"query":"date"}""")
+            assertFalse(esQuery.toString().contains("ranking"))
         }
 
     @Test
@@ -148,11 +148,12 @@ class OpenSearchRoutesTest {
             coEvery { esMock.search(capture(captured)) } returns SearchResult(0, buildJsonArray { })
             coEvery { esMock.getActiveCatalogs() } returns emptyList()
 
-            client.get("/opensearch/query?q=wasser%20iplugs:test").apply {
+            client.get("/opensearch/query?q=wasser%20ranking:score%20iplugs:test").apply {
                 assertEquals(HttpStatusCode.OK, status)
             }
             val esQuery = Json.parseToJsonElement(captured.captured).jsonObject
             assertContains(esQuery.toString(), """"query":"wasser"""")
+            assertFalse(esQuery.toString().contains("ranking"))
             assertFalse(esQuery.toString().contains("iplugs"))
         }
 

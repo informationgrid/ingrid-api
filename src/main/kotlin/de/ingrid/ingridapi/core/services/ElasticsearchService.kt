@@ -213,8 +213,7 @@ open class ElasticsearchService(
         val filteredCatalogs =
             getActiveCatalogs()
                 .filter {
-                    it["plugdescription"]
-                        ?.jsonObject["dataSourceName"]
+                    it["plugId"]
                         ?.jsonPrimitive
                         ?.content
                         .equals(id, ignoreCase = true)

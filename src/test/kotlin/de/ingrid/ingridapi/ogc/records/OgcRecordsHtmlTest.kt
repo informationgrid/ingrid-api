@@ -52,6 +52,7 @@ class OgcRecordsHtmlTest {
                 listOf(
                     JsonObject(
                         mapOf(
+                            "plugId" to JsonPrimitive("test-collection"),
                             "plugdescription" to
                                 JsonObject(
                                     mapOf(

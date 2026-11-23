@@ -78,7 +78,7 @@ class ElasticsearchServiceTest {
     }
 
     @Test
-    fun `getIndicesForDataSource should filter indices by prefix`() = runBlocking {
+    fun `getIndicesForDataSource should filter by plugId and index prefix`() = runBlocking {
         val config = mockk<AppConfig>()
         every { config.elasticHost } returns "localhost"
         every { config.elasticPort } returns 9200
@@ -91,22 +91,26 @@ class ElasticsearchServiceTest {
 
         val catalog1 = buildJsonObject {
             put("linkedIndex", JsonPrimitive("pre_index1"))
+            put("plugId", JsonPrimitive("ds1"))
             put("plugdescription", buildJsonObject {
-                put("dataSourceName", JsonPrimitive("ds1"))
+                put("dataSourceName", JsonPrimitive("Data Source One"))
             })
         }
         val catalog2 = buildJsonObject {
             put("linkedIndex", JsonPrimitive("other_index"))
+            put("plugId", JsonPrimitive("ds1"))
             put("plugdescription", buildJsonObject {
-                put("dataSourceName", JsonPrimitive("ds1"))
+                put("dataSourceName", JsonPrimitive("Data Source One"))
             })
         }
 
         coEvery { service.getActiveCatalogs() } returns listOf(catalog1, catalog2)
 
         val indices = service.getIndicesForDataSource("ds1")
+        val indicesByDisplayName = service.getIndicesForDataSource("Data Source One")
 
         assertEquals("pre_index1", indices)
+        assertNull(indicesByDisplayName)
     }
 
     @Test
@@ -123,6 +127,7 @@ class ElasticsearchServiceTest {
 
         val catalog = buildJsonObject {
             put("linkedIndex", JsonPrimitive("other_index"))
+            put("plugId", JsonPrimitive("ds1"))
             put("plugdescription", buildJsonObject {
                 put("dataSourceName", JsonPrimitive("ds1"))
             })

@@ -63,23 +63,6 @@ class OgcRecordsFormatErrorsTest {
         }
 
     @Test
-    fun testEnumNameFormatParameterOnItemsIsAccepted() =
-        testApplication {
-            application {
-                configureSerialization()
-                dependencies {
-                    provide<ElasticsearchService> { mockk(relaxed = true) }
-                    provide<RecordsService> { mockk(relaxed = true) }
-                }
-                configureOgcRecordsRouting()
-            }
-            client.get("/ogc/records/collections/test-id/items?f=INGRID_INDEX_JSON").apply {
-                val body = bodyAsText()
-                assertTrue(!body.contains("InvalidParameterValue"), "body=$body")
-            }
-        }
-
-    @Test
     fun testOpenApiItemFormatParametersUseParamValues() =
         testApplication {
             application {

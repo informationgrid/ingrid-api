@@ -175,6 +175,7 @@ class OgcRecordsCoreRequirementsTest {
                 listOf(
                     JsonObject(
                         mapOf(
+                            "plugId" to JsonPrimitive("test-plug-id"),
                             "plugdescription" to
                                 JsonObject(
                                     mapOf(
@@ -216,7 +217,7 @@ class OgcRecordsCoreRequirementsTest {
                     assertTrue(collections.size >= 1)
 
                     val collection = collections[0].jsonObject
-                    assertEquals("test-catalog", collection["id"]?.jsonPrimitive?.content)
+                    assertEquals("test-plug-id", collection["id"]?.jsonPrimitive?.content)
                     // Requirement 15: /req/core/fc-md-items-links
                     val links = collection["links"]?.jsonArray
                     assertNotNull(links, "Collection must have links")

@@ -101,6 +101,7 @@ class OgcRecordsJsonTest {
                 listOf(
                     JsonObject(
                         mapOf(
+                            "plugId" to JsonPrimitive("test-plugin-id"),
                             "plugdescription" to
                                 JsonObject(
                                     mapOf(
@@ -118,7 +119,7 @@ class OgcRecordsJsonTest {
                     assertEquals(HttpStatusCode.OK, status)
                     val body = body<JsonObject>()
                     val collection = body["collections"]!!.jsonArray[0].jsonObject
-                    assertContains(collection["id"]!!.jsonPrimitive.content, "test-title")
+                    assertEquals("test-plugin-id", collection["id"]!!.jsonPrimitive.content)
                     assertContains(collection["title"]!!.jsonPrimitive.content, "Test description")
                 }
         }

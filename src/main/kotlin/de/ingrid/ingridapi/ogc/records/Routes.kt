@@ -303,7 +303,7 @@ fun Application.configureOgcRecordsRouting() {
                         .getCollections()
                         .map {
                             val plug = it["plugdescription"] as JsonObject
-                            val id = plug["dataSourceName"].asSafeString()
+                            val id = it["plugId"].asSafeString()
                             val itemsLinks =
                                 ItemExportFormat.entries.map { fmt ->
                                     Link(

@@ -108,21 +108,35 @@ open class ElasticsearchService(
         return client.search(indices) {
             this.from = from
             this.resultSize = size
+            // Only datasets: either isfolder=false or no isfolder field at all
+            val notFolder =
+                bool {
+                    should(
+                        term("isfolder", "false"),
+                        bool {
+                            mustNot(existsQuery("isfolder"))
+                        },
+                    )
+                }
             query =
                 if (bbox != null && bbox.size >= 4) {
                     bool {
                         must(
                             matchAll(),
-                            term("isfolder", "false"),
+                            notFolder,
                         )
                         filter(
                             geoShapeEnvelope("spatial.geometries", bbox),
                         )
                     }
                 } else {
-                    term("isfolder", "false")
+                    notFolder
                 }
         }
+    }
+
+    private fun existsQuery(field: String): ESQuery = ESQuery("exists").apply {
+        put("field", field)
     }
 
     private fun geoShapeEnvelope(

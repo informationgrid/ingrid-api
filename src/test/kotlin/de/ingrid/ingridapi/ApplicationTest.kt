@@ -18,6 +18,7 @@ class ApplicationTest {
             client.get("/").apply {
                 assertEquals(HttpStatusCode.OK, status)
                 assertContains(bodyAsText(), "InGrid API")
+                assertContains(bodyAsText(), "Version")
                 assertContains(bodyAsText(), "Portal API")
                 assertContains(bodyAsText(), "OGC API - Records")
             }

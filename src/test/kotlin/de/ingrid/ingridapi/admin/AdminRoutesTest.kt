@@ -1,5 +1,6 @@
 package de.ingrid.ingridapi.admin
 
+import de.ingrid.ingridapi.AppVersion
 import de.ingrid.ingridapi.core.services.ElasticsearchService
 import de.ingrid.ingridapi.core.services.SearchResult
 import io.ktor.client.request.get
@@ -466,6 +467,7 @@ class AdminRoutesTest {
                 mapOf(
                     "shared_index" to emptySet(),
                     "other_index" to emptySet(),
+                    ".internal_index" to emptySet(),
                 )
             coEvery { esMock.listIndicesConfig() } returns buildJsonObject {}
             coEvery { esMock.getMetaEntries() } returns
@@ -496,6 +498,12 @@ class AdminRoutesTest {
             client.get("/admin").apply {
                 assertEquals(HttpStatusCode.OK, status)
                 val body = bodyAsText()
+                assertTrue(body.contains("Version: ${AppVersion.value}"), "Should show the application version")
+                assertTrue(body.contains("Interne Indizes verstecken"), "Should show the internal-index option")
+                assertTrue(body.contains("id=\"hide-internal\""), "Should identify the hide-internal switch")
+                assertTrue(body.contains("checked"), "Should enable hiding internal indices by default")
+                assertTrue(body.contains("class=\"compact-list hide-internal\""), "Should hide internal indices by default")
+                assertTrue(body.contains("class=\"compact-row-container internal\""), "Should mark internal index rows")
                 // Both datasources should be grouped under the same index
                 assertTrue(
                     body.contains("Data Source 1, Data Source 2"),

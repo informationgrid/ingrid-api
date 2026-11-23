@@ -30,11 +30,6 @@ object AdminComponents {
         val allActive = entries.all { it.active }
         val anyActive = entries.any { it.active }
 
-        // Determine the overall active state
-        // If all entries have the same state, use that state
-        // If mixed, use false (off) as the default
-        val toggleActive = if (allActive || !anyActive) allActive else false
-
         article(classes = "card") {
             // TOP ROW: Flex layout with toggle, info, and right-side (last-indexed + delete)
             div(classes = "card-main") {
@@ -130,8 +125,10 @@ object AdminComponents {
         docCount: Long?,
         config: JsonObject?,
         root: String,
+        classes: String = "",
     ) {
-        div(classes = "compact-row-container") {
+        val rowClasses = listOf("compact-row-container", classes).filter { it.isNotBlank() }.joinToString(" ")
+        div(classes = rowClasses) {
             div(classes = "compact-row") {
                 div(classes = "compact-name") { +index }
                 div(classes = "compact-count") {
@@ -380,8 +377,14 @@ object AdminComponents {
         }
         
         article.compact-list { padding: 0; overflow: hidden; margin-top: 1rem; }
+        .compact-list.hide-internal .internal { display: none; }
         .compact-row-container { border-bottom: 1px solid var(--pico-muted-border-color); }
         .compact-row-container:last-child { border-bottom: none; }
+        .indices-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+        .indices-heading h2 { margin-bottom: 0; }
+        .hide-internal-option { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0; white-space: nowrap; }
+        .hide-internal-option input { margin-bottom: 0; }
+        .admin-footer { margin-top: 3rem; padding-top: 1rem; padding-bottom: 1rem; color: #a0a6ae; text-align: center; font-size: 0.875rem; }
         .compact-row {
             display: flex;
             align-items: center;

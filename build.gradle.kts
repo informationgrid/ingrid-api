@@ -75,6 +75,30 @@ jgitver {
     )
 }
 
+val generatedVersionResources = layout.buildDirectory.dir("generated/resources/version")
+val generateVersionProperties = tasks.register("generateVersionProperties") {
+    val version = project.version.toString()
+    inputs.property("version", version)
+    val versionPropertiesFile = generatedVersionResources.map { it.file("ingrid-api-version.properties") }
+    outputs.file(versionPropertiesFile)
+    doLast {
+        versionPropertiesFile.get().asFile.apply {
+            parentFile.mkdirs()
+            writeText("version=$version\n")
+        }
+    }
+}
+
+sourceSets {
+    main {
+        resources.srcDir(generatedVersionResources)
+    }
+}
+
+tasks.named("processResources") {
+    dependsOn(generateVersionProperties)
+}
+
 /*spotless {
     kotlin {
         ktfmt().kotlinlangStyle()

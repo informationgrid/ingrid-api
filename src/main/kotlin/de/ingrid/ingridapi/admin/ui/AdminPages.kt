@@ -3,7 +3,6 @@ package de.ingrid.ingridapi.admin.ui
 import de.ingrid.ingridapi.admin.ui.AdminComponents.renderCompactRow
 import de.ingrid.ingridapi.admin.ui.AdminComponents.renderManagedCard
 import de.ingrid.ingridapi.admin.ui.AdminComponents.renderPagination
-import de.ingrid.ingridapi.admin.ui.GroupedIndex
 import de.ingrid.ingridapi.core.services.IngridMetaEntry
 import de.ingrid.ingridapi.core.services.SearchResult
 import kotlinx.html.ButtonType
@@ -20,7 +19,9 @@ import kotlinx.html.div
 import kotlinx.html.form
 import kotlinx.html.h2
 import kotlinx.html.h3
+import kotlinx.html.id
 import kotlinx.html.input
+import kotlinx.html.label
 import kotlinx.html.onClick
 import kotlinx.html.p
 import kotlinx.html.pre
@@ -107,14 +108,33 @@ object AdminPages {
                 }
             }
 
-            h2 { +"Weitere Indizes" }
+            div(classes = "indices-heading") {
+                h2 { +"Weitere Indizes" }
+                label(classes = "hide-internal-option") {
+                    input(type = InputType.checkBox) {
+                        id = "hide-internal"
+                        checked = true
+                        attributes["role"] = "switch"
+                        attributes["onchange"] =
+                            "document.getElementById('other-indices')?.classList.toggle('hide-internal', this.checked)"
+                    }
+                    +"Interne Indizes verstecken"
+                }
+            }
             if (others.isEmpty()) {
                 p { +"Keine weiteren Indizes vorhanden." }
             } else {
-                article(classes = "compact-list") {
+                article(classes = "compact-list hide-internal") {
+                    id = "other-indices"
                     others.entries.sortedBy { it.key }.forEach { (index, _) ->
                         val config = indicesConfig[index]?.jsonObject
-                        renderCompactRow(index, counts[index], config, root)
+                        renderCompactRow(
+                            index,
+                            counts[index],
+                            config,
+                            root,
+                            classes = if (index.startsWith(".")) "internal" else "",
+                        )
                     }
                 }
             }

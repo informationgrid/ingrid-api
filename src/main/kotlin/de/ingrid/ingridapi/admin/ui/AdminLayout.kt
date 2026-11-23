@@ -1,5 +1,6 @@
 package de.ingrid.ingridapi.admin.ui
 
+import de.ingrid.ingridapi.AppVersion
 import kotlinx.html.*
 
 fun HTML.adminLayout(
@@ -55,6 +56,9 @@ fun HTML.adminLayout(
         }
         main(classes = "container") {
             content()
+        }
+        footer(classes = "container admin-footer") {
+            small { +"Version: ${AppVersion.value}" }
         }
         script {
             unsafe {

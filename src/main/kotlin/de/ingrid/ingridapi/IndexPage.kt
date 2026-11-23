@@ -26,6 +26,7 @@ fun HTML.renderIndexPage(root: String) {
                 .api-card h2 { margin-top: 0; margin-bottom: 0.5rem; }
                 .api-links { display: flex; gap: 1rem; margin-top: 1.25rem; }
                 .footer { margin-top: 3rem; text-align: center; color: var(--pico-muted-color); }
+                .footer .version { color: #a0a6ae; font-size: 0.875rem; }
                 """.trimIndent()
             }
         }
@@ -35,6 +36,7 @@ fun HTML.renderIndexPage(root: String) {
             header {
                 h1 { +"InGrid API" }
                 p { +"Welcome to the InGrid API services. Below you can find the available APIs and their documentation." }
+                p { +"Version: ${AppVersion.value}" }
             }
 
             article(classes = "api-card") {
@@ -78,6 +80,9 @@ fun HTML.renderIndexPage(root: String) {
                 nav {
                     ul {
                         li { a(href = "$root/admin") { +"Administration" } }
+                    }
+                    ul {
+                        li(classes = "version") { +"Version: ${AppVersion.value}" }
                     }
                 }
             }

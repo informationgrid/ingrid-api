@@ -127,6 +127,7 @@ dependencies {
     // swagger
     implementation("io.github.smiley4:ktor-swagger-ui:5.7.0")
     implementation("io.github.smiley4:ktor-openapi:5.7.0")
+    implementation("io.swagger.core.v3:swagger-models:2.2.45")
 
     // Admin GUI: server-side HTML via kotlinx.html DSL (no separate template files)
     implementation("io.ktor:ktor-server-html-builder")

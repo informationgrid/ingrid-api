@@ -2,6 +2,7 @@ package de.ingrid.ingridapi.ogc.records
 
 import de.ingrid.ingridapi.core.services.ElasticsearchService
 import de.ingrid.ingridapi.ogc.records.services.RecordsService
+import de.ingrid.ingridapi.plugins.configureSwagger
 import de.ingrid.ingridapi.plugins.configureSerialization
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -11,6 +12,10 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.testing.testApplication
 import io.mockk.mockk
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -54,6 +59,68 @@ class OgcRecordsFormatErrorsTest {
                 val body = bodyAsText()
                 assertTrue(body.contains("InvalidParameterValue"), "body=$body")
                 assertTrue(body.contains("\"ingrid-index-json\""))
+            }
+        }
+
+    @Test
+    fun testEnumNameFormatParameterOnItemsIsAccepted() =
+        testApplication {
+            application {
+                configureSerialization()
+                dependencies {
+                    provide<ElasticsearchService> { mockk(relaxed = true) }
+                    provide<RecordsService> { mockk(relaxed = true) }
+                }
+                configureOgcRecordsRouting()
+            }
+            client.get("/ogc/records/collections/test-id/items?f=INGRID_INDEX_JSON").apply {
+                val body = bodyAsText()
+                assertTrue(!body.contains("InvalidParameterValue"), "body=$body")
+            }
+        }
+
+    @Test
+    fun testOpenApiItemFormatParametersUseParamValues() =
+        testApplication {
+            application {
+                configureSwagger()
+                configureSerialization()
+                dependencies {
+                    provide<ElasticsearchService> { mockk(relaxed = true) }
+                    provide<RecordsService> { mockk(relaxed = true) }
+                }
+                configureOgcRecordsRouting()
+            }
+            val spec = Json.parseToJsonElement(client.get("/ogc/records/api").bodyAsText()).jsonObject
+            val paths = spec.getValue("paths").jsonObject
+            val expectedFormats = listOf("html", "iso", "geojson", "ingrid-index-json", "geodcat")
+            val itemPaths =
+                listOf(
+                    "/ogc/records/collections/{catalogId}/items",
+                    "/ogc/records/collections/{catalogId}/items/{recordId}",
+                )
+
+            itemPaths.forEach { path ->
+                val parameters =
+                    paths
+                        .getValue(path)
+                        .jsonObject
+                        .getValue("get")
+                        .jsonObject
+                        .getValue("parameters")
+                        .jsonArray
+                val formatParameter =
+                    parameters.first {
+                        it.jsonObject.getValue("name").jsonPrimitive.content == "format"
+                    }.jsonObject
+                val formats =
+                    formatParameter
+                        .getValue("schema")
+                        .jsonObject
+                        .getValue("enum")
+                        .jsonArray
+                        .map { it.jsonPrimitive.content }
+                assertEquals(expectedFormats, formats, "path=$path")
             }
         }
 

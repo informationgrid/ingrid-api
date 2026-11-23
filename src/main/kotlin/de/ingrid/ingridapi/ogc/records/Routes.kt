@@ -27,6 +27,7 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.response.respond
 import io.ktor.server.routing.routing
+import io.swagger.v3.oas.models.media.StringSchema
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -405,7 +406,7 @@ fun Application.configureOgcRecordsRouting() {
                     queryParameter<Int>("limit") { description = "Max number of items to return" }
                     queryParameter<Int>("offset") { description = "Start offset for paging" }
                     queryParameter<String>("bbox") { description = "Bounding box: minLon,minLat,maxLon,maxLat" }
-                    queryParameter<ItemExportFormat>("format") {
+                    queryParameter("format", itemFormatSchema()) {
                         description = "Output format of the collection items. Alias for parameter 'f'"
                     }
                 }
@@ -481,7 +482,7 @@ fun Application.configureOgcRecordsRouting() {
                 request {
                     pathParameter<String>("catalogId") { description = "Collection identifier" }
                     pathParameter<String>("recordId") { description = "Record identifier" }
-                    queryParameter<ItemExportFormat>("format") {
+                    queryParameter("format", itemFormatSchema()) {
                         description = "Output format of the record. Alias for parameter 'f'"
                     }
                 }
@@ -523,3 +524,8 @@ private fun RouteConfig.defaultParamSpec() {
         }
     }
 }
+
+private fun itemFormatSchema() =
+    StringSchema().apply {
+        SUPPORTED_ITEM_FORMATS.forEach { addEnumItem(it) }
+    }
